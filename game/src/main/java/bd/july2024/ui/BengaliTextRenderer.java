@@ -70,6 +70,19 @@ public class BengaliTextRenderer {
         return pic;
     }
 
+    public Texture2D createTexture(String text, float fontSize, boolean isBold, Color textColor, Color bgColor, int paddingX, int paddingY) {
+        long glContext = org.lwjgl.glfw.GLFW.glfwGetCurrentContext();
+        BufferedImage img = renderStringToImage(text, fontSize, isBold, textColor, bgColor, paddingX, paddingY);
+        if (glContext != 0L) {
+            org.lwjgl.glfw.GLFW.glfwMakeContextCurrent(glContext);
+        }
+        Image jmeImage = awtLoader.load(img, true);
+        Texture2D texture = new Texture2D(jmeImage);
+        texture.setMinFilter(com.jme3.texture.Texture.MinFilter.BilinearNoMipMaps);
+        texture.setMagFilter(com.jme3.texture.Texture.MagFilter.Bilinear);
+        return texture;
+    }
+
     public BufferedImage renderStringToImage(String text, float fontSize, boolean isBold, Color textColor, Color bgColor, int paddingX, int paddingY) {
         Font font = (isBold ? bengaliFontBold : bengaliFontRegular).deriveFont(fontSize);
         String[] lines = text != null ? text.split("\n") : new String[]{""};

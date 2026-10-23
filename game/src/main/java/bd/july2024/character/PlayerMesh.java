@@ -39,6 +39,9 @@ public class PlayerMesh {
         Material pantsMat = createLitMaterial(assetManager, pantsColor != null ? pantsColor : new ColorRGBA(0.12f, 0.18f, 0.28f, 1f), 0.04f);
         Material shoeMat = createLitMaterial(assetManager, new ColorRGBA(0.10f, 0.10f, 0.12f, 1f), 0.15f);
         Material badgeMat = createLitMaterial(assetManager, new ColorRGBA(0.88f, 0.22f, 0.20f, 1f), 0.4f);
+        Material backpackMat = createLitMaterial(assetManager, new ColorRGBA(0.18f, 0.22f, 0.26f, 1f), 0.08f);
+        Material headbandGreenMat = createLitMaterial(assetManager, new ColorRGBA(0.02f, 0.44f, 0.24f, 1f), 0.05f);
+        Material headbandRedMat = createLitMaterial(assetManager, new ColorRGBA(0.88f, 0.18f, 0.16f, 1f), 0.05f);
 
         // 1. Torso
         torsoNode = new Node("Torso");
@@ -55,6 +58,34 @@ public class PlayerMesh {
         badgeGeom.setMaterial(badgeMat);
         badgeGeom.setLocalTranslation(0.10f, 0.38f, -0.145f);
         torsoNode.attachChild(badgeGeom);
+
+        // Student Canvas Backpack (on back of torso)
+        Box packBox = new Box(0.17f, 0.25f, 0.09f);
+        Geometry packGeom = new Geometry("Backpack", packBox);
+        packGeom.setMaterial(backpackMat);
+        packGeom.setLocalTranslation(0f, 0.32f, 0.23f);
+        torsoNode.attachChild(packGeom);
+
+        // Backpack Top Flap & Zipper Pocket
+        Box flapBox = new Box(0.16f, 0.05f, 0.095f);
+        Geometry flapGeom = new Geometry("BackpackFlap", flapBox);
+        flapGeom.setMaterial(backpackMat);
+        flapGeom.setLocalTranslation(0f, 0.52f, 0.23f);
+        torsoNode.attachChild(flapGeom);
+
+        // Backpack Shoulder Straps
+        Box strapL = new Box(0.025f, 0.24f, 0.005f);
+        Geometry strapGeomL = new Geometry("StrapL", strapL);
+        strapGeomL.setMaterial(backpackMat);
+        strapGeomL.setLocalTranslation(-0.14f, 0.34f, -0.142f);
+        torsoNode.attachChild(strapGeomL);
+
+        Box strapR = new Box(0.025f, 0.24f, 0.005f);
+        Geometry strapGeomR = new Geometry("StrapR", strapR);
+        strapGeomR.setMaterial(backpackMat);
+        strapGeomR.setLocalTranslation(0.14f, 0.34f, -0.142f);
+        torsoNode.attachChild(strapGeomR);
+
         rootNode.attachChild(torsoNode);
 
         // 2. Head & Neck
@@ -67,12 +98,27 @@ public class PlayerMesh {
         headGeom.setLocalTranslation(0f, 0.14f, 0f);
         headNode.attachChild(headGeom);
 
-        // Hair Cap (towards back of head)
+        // Hair Cap (towards back and crown of head)
         Sphere hairSphere = new Sphere(16, 16, 0.145f);
         Geometry hairGeom = new Geometry("HairGeom", hairSphere);
         hairGeom.setMaterial(hairMat);
         hairGeom.setLocalTranslation(0f, 0.17f, 0.02f);
         headNode.attachChild(hairGeom);
+
+        // Bangladesh National Flag Headband (July 2024 Student Movement Symbol)
+        Box headbandBox = new Box(0.146f, 0.025f, 0.146f);
+        Geometry headbandGeom = new Geometry("Headband", headbandBox);
+        headbandGeom.setMaterial(headbandGreenMat);
+        headbandGeom.setLocalTranslation(0f, 0.155f, 0f);
+        headNode.attachChild(headbandGeom);
+
+        // Red Disc on Forehead Center of Headband
+        Cylinder redDisc = new Cylinder(16, 16, 0.032f, 0.006f, true);
+        Geometry redDiscGeom = new Geometry("HeadbandRedDisc", redDisc);
+        redDiscGeom.setMaterial(headbandRedMat);
+        redDiscGeom.setLocalTranslation(0f, 0.155f, -0.147f);
+        headNode.attachChild(redDiscGeom);
+
         torsoNode.attachChild(headNode);
 
         // 3. Left & Right Arms
@@ -144,17 +190,22 @@ public class PlayerMesh {
         float breath = FastMath.sin(idleTime * 2.2f) * 0.015f;
         torsoNode.setLocalTranslation(0f, (isCrouching ? 0.65f : 0.95f) + breath, 0f);
 
-        if (speed > 0.2f) {
-            float swingMax = (speed > 5f) ? 0.75f : 0.45f;
-            float legSwing = FastMath.sin(stridePhase) * swingMax;
-            float armSwing = -legSwing * 0.85f;
+        // Locomotion lean & subtle lateral spine roll
+        float lean = isCrouching ? 0.22f : (speed > 5f ? 0.14f : (speed > 0.2f ? 0.06f : 0f));
+        float roll = (speed > 0.2f) ? FastMath.sin(stridePhase) * 0.02f : 0f;
+        torsoNode.setLocalRotation(new Quaternion().fromAngles(lean, 0f, roll));
 
-            // Pitch rotation for legs and arms
+        if (speed > 0.2f) {
+            float swingMax = (speed > 5f) ? 0.78f : 0.46f;
+            float legSwing = FastMath.sin(stridePhase) * swingMax;
+            float armSwing = -legSwing * 0.88f;
+
+            // Pitch rotation for legs and arms with natural slight outward arm splay
             leftLegNode.setLocalRotation(new Quaternion().fromAngleAxis(legSwing, Vector3f.UNIT_X));
             rightLegNode.setLocalRotation(new Quaternion().fromAngleAxis(-legSwing, Vector3f.UNIT_X));
 
-            leftArmNode.setLocalRotation(new Quaternion().fromAngleAxis(armSwing, Vector3f.UNIT_X));
-            rightArmNode.setLocalRotation(new Quaternion().fromAngleAxis(-armSwing, Vector3f.UNIT_X));
+            leftArmNode.setLocalRotation(new Quaternion().fromAngles(armSwing, 0f, -0.05f));
+            rightArmNode.setLocalRotation(new Quaternion().fromAngles(-armSwing, 0f, 0.05f));
         } else {
             // Smoothly return to neutral idle stance
             leftLegNode.setLocalRotation(Quaternion.IDENTITY);

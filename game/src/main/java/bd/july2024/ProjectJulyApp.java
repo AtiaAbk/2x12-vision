@@ -186,7 +186,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         docModal = new HistoricalDocumentModal(guiNode, textRenderer, settings.getWidth(), settings.getHeight());
 
         // 2. Build 3D Campus Environment & Realistic Summer Lighting
-        campusWorld = new CampusWorld(assetManager, rootNode);
+        campusWorld = new CampusWorld(assetManager, rootNode, textRenderer);
         lighting = new LightingManager(assetManager, rootNode, viewPort);
 
         // 3. Setup Screenshot Processor on GUI viewport (captures post-processed scene + HUD)
