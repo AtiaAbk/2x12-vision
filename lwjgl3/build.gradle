@@ -19,7 +19,7 @@ apply plugin: 'io.github.fourlastor.construo'
 import io.github.fourlastor.construo.Target
 
 sourceSets.main.resources.srcDirs += [ rootProject.file('assets').path ]
-application.mainClass = 'bd.spark36.launcher.DesktopLauncher'
+application.mainClass = 'bd.july2024.launcher.DesktopLauncher'
 application.applicationName = appName
 eclipse.project.name = appName + '-lwjgl3'
 java.sourceCompatibility = 8
