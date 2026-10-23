@@ -74,9 +74,14 @@ public class CampusWorld {
     }
 
     private void initMaterials(AssetManager assetManager) {
-        asphaltMat = createLitMaterial(assetManager, new ColorRGBA(0.15f, 0.16f, 0.18f, 1f), 10f);
+        asphaltMat = createLitMaterial(assetManager, new ColorRGBA(0.16f, 0.17f, 0.18f, 1f), 1f);
+        asphaltMat.setColor("Specular", ColorRGBA.Black); // Rough matte asphalt has zero specular shine
+
         roadLineMat = createLitMaterial(assetManager, new ColorRGBA(0.92f, 0.92f, 0.88f, 1f), 30f);
-        grassMat = createLitMaterial(assetManager, new ColorRGBA(0.22f, 0.38f, 0.18f, 1f), 6f);
+
+        grassMat = createLitMaterial(assetManager, new ColorRGBA(0.22f, 0.38f, 0.18f, 1f), 1f);
+        grassMat.setColor("Specular", ColorRGBA.Black); // Matte grass lawn has zero specular shine
+
         concreteMat = createLitMaterial(assetManager, new ColorRGBA(0.80f, 0.78f, 0.74f, 1f), 20f);
         darkConcreteMat = createLitMaterial(assetManager, new ColorRGBA(0.48f, 0.47f, 0.45f, 1f), 15f);
         terracottaBrickMat = createLitMaterial(assetManager, new ColorRGBA(0.68f, 0.26f, 0.20f, 1f), 8f);
@@ -98,6 +103,7 @@ public class CampusWorld {
     private Material createLitMaterial(AssetManager assetManager, ColorRGBA diffuse, float shininess) {
         Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
         mat.setBoolean("UseMaterialColors", true);
+        mat.setColor("Ambient", diffuse.mult(0.65f));
         mat.setColor("Diffuse", diffuse);
         mat.setColor("Specular", ColorRGBA.White.mult(0.12f));
         mat.setFloat("Shininess", shininess);
@@ -131,47 +137,55 @@ public class CampusWorld {
     }
 
     private void buildRoadsAndGround() {
-        // Main base ground plane (Asphalt)
-        Box groundBox = new Box(85f, 0.1f, 85f);
-        Geometry ground = new Geometry("GroundAsphalt", groundBox);
-        ground.setMaterial(asphaltMat);
-        ground.setLocalTranslation(0, -0.1f, 0);
-        rootNode.attachChild(ground);
+        // Expansive grass ground base (covers entire visible area, lush tropical summer lawn)
+        Box grassBase = new Box(250f, 0.05f, 250f);
+        Geometry grassBaseGeom = new Geometry("GrassBase", grassBase);
+        grassBaseGeom.setMaterial(grassMat);
+        grassBaseGeom.setLocalTranslation(0, -0.05f, 0);
+        rootNode.attachChild(grassBaseGeom);
 
-        // North Avenue Pedestrian Walkway (Herringbone Red Brick Footpath)
-        Box footNorth = new Box(3.2f, 0.12f, 32.0f);
+        // Main campus asphalt road network (dark charcoal asphalt at y = 0.02f)
+        Box roadBox = new Box(50f, 0.02f, 50f);
+        Geometry roadGeom = new Geometry("GroundAsphalt", roadBox);
+        roadGeom.setMaterial(asphaltMat);
+        roadGeom.setLocalTranslation(0, 0.02f, 0);
+        rootNode.attachChild(roadGeom);
+
+        // North Avenue Sidewalk (West side of road, towards Library)
+        Box footNorth = new Box(2.5f, 0.06f, 32.0f);
         Geometry footNorthGeom = new Geometry("FootNorth", footNorth);
         footNorthGeom.setMaterial(terracottaBrickMat);
-        footNorthGeom.setLocalTranslation(-11.5f, 0.12f, -14.0f);
+        footNorthGeom.setLocalTranslation(-14.5f, 0.06f, -14.0f);
         rootNode.attachChild(footNorthGeom);
 
-        Box footNorthEast = new Box(3.2f, 0.12f, 32.0f);
+        // North Avenue Sidewalk (East side of road)
+        Box footNorthEast = new Box(2.5f, 0.06f, 32.0f);
         Geometry footNorthEastGeom = new Geometry("FootNorthEast", footNorthEast);
         footNorthEastGeom.setMaterial(terracottaBrickMat);
-        footNorthEastGeom.setLocalTranslation(11.5f, 0.12f, -14.0f);
+        footNorthEastGeom.setLocalTranslation(14.5f, 0.06f, -14.0f);
         rootNode.attachChild(footNorthEastGeom);
 
-        // East Avenue Walkway towards TSC
-        Box footEast = new Box(30.0f, 0.12f, 3.2f);
+        // East Avenue Sidewalk (Bordering TSC road, NOT cutting across the road)
+        Box footEast = new Box(26.0f, 0.06f, 2.5f);
         Geometry footEastGeom = new Geometry("FootEast", footEast);
         footEastGeom.setMaterial(terracottaBrickMat);
-        footEastGeom.setLocalTranslation(24.0f, 0.12f, 8.5f);
+        footEastGeom.setLocalTranslation(26.0f, 0.06f, 15.5f);
         rootNode.attachChild(footEastGeom);
 
         // Road Divider / Median along North Avenue
-        Box medianNorth = new Box(0.6f, 0.22f, 18.0f);
+        Box medianNorth = new Box(0.6f, 0.15f, 18.0f);
         Geometry medNorth = new Geometry("MedianNorth", medianNorth);
         medNorth.setMaterial(curbMat);
-        medNorth.setLocalTranslation(0f, 0.22f, -20.0f);
+        medNorth.setLocalTranslation(0f, 0.15f, -20.0f);
         rootNode.attachChild(medNorth);
         addCollider(-0.6f, 0f, -38.0f, 0.6f, 0.44f, -2.0f);
 
         // Median Green Hedges
         for (float mz = -35.0f; mz <= -5.0f; mz += 4.2f) {
-            Box hedgeBox = new Box(0.45f, 0.38f, 1.4f);
+            Box hedgeBox = new Box(0.45f, 0.35f, 1.4f);
             Geometry hGeom = new Geometry("MedianHedge_" + mz, hedgeBox);
             hGeom.setMaterial(hedgeMat);
-            hGeom.setLocalTranslation(0f, 0.58f, mz);
+            hGeom.setLocalTranslation(0f, 0.45f, mz);
             rootNode.attachChild(hGeom);
         }
 
@@ -181,7 +195,7 @@ public class CampusWorld {
             Box stripe = new Box(0.65f, 0.005f, 2.8f);
             Geometry sGeom = new Geometry("ZebraN_" + i, stripe);
             sGeom.setMaterial(roadLineMat);
-            sGeom.setLocalTranslation(i * 1.8f, 0.005f, -10.0f);
+            sGeom.setLocalTranslation(i * 1.8f, 0.045f, -10.0f);
             rootNode.attachChild(sGeom);
         }
 
@@ -190,7 +204,7 @@ public class CampusWorld {
             Box stripe = new Box(2.8f, 0.005f, 0.65f);
             Geometry sGeom = new Geometry("ZebraE_" + i, stripe);
             sGeom.setMaterial(roadLineMat);
-            sGeom.setLocalTranslation(10.0f, 0.005f, i * 1.8f);
+            sGeom.setLocalTranslation(10.0f, 0.045f, i * 1.8f);
             rootNode.attachChild(sGeom);
         }
     }
@@ -212,15 +226,16 @@ public class CampusWorld {
         islandGeom.setMaterial(grassMat);
         rootNode.attachChild(islandGeom);
 
-        // Outer Flowerbed Border (Lush seasonal marigolds & foliage)
-        for (int b = 0; b < 24; b++) {
-            float angle = b * (FastMath.TWO_PI / 24f);
-            float bx = FastMath.cos(angle) * 7.4f;
-            float bz = FastMath.sin(angle) * 7.4f;
-            Sphere flower = new Sphere(8, 8, 0.28f);
-            Geometry fGeom = new Geometry("RajuFlower_" + b, flower);
-            fGeom.setMaterial(radhachuraBloomMat);
-            fGeom.setLocalTranslation(bx, 0.38f, bz);
+        // Outer Flowerbed Border (Natural rounded hedge border with yellow & red blooms)
+        for (int b = 0; b < 32; b++) {
+            float angle = b * (FastMath.TWO_PI / 32f);
+            float bx = FastMath.cos(angle) * 7.6f;
+            float bz = FastMath.sin(angle) * 7.6f;
+            Sphere shrub = new Sphere(10, 10, 0.22f);
+            Geometry fGeom = new Geometry("RajuShrub_" + b, shrub);
+            fGeom.setMaterial((b % 4 == 0) ? radhachuraBloomMat : ((b % 4 == 2) ? krishnachuraBloomMat : hedgeMat));
+            fGeom.setLocalScale(1.1f, 0.65f, 1.1f);
+            fGeom.setLocalTranslation(bx, 0.22f, bz);
             rootNode.attachChild(fGeom);
         }
 
