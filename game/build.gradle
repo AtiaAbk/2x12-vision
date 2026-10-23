@@ -1,0 +1,66 @@
+plugins {
+    id 'application'
+    id 'java'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+def jmeVersion = '3.7.0-stable'
+def lwjglVersion = '3.3.3'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // jMonkeyEngine 3 Core Engine
+    implementation "org.jmonkeyengine:jme3-core:$jmeVersion"
+    implementation "org.jmonkeyengine:jme3-desktop:$jmeVersion"
+    implementation "org.jmonkeyengine:jme3-lwjgl3:$jmeVersion"
+    implementation "org.jmonkeyengine:jme3-plugins:$jmeVersion"
+    implementation "org.jmonkeyengine:jme3-effects:$jmeVersion"
+    implementation "org.jmonkeyengine:jme3-terrain:$jmeVersion"
+
+    // LWJGL 3 Natives for Apple Silicon macOS (arm64) and desktop fallbacks
+    runtimeOnly "org.lwjgl:lwjgl:$lwjglVersion:natives-macos-arm64"
+    runtimeOnly "org.lwjgl:lwjgl-glfw:$lwjglVersion:natives-macos-arm64"
+    runtimeOnly "org.lwjgl:lwjgl-jemalloc:$lwjglVersion:natives-macos-arm64"
+    runtimeOnly "org.lwjgl:lwjgl-openal:$lwjglVersion:natives-macos-arm64"
+    runtimeOnly "org.lwjgl:lwjgl-opengl:$lwjglVersion:natives-macos-arm64"
+
+    // Unit Testing
+    testImplementation "org.junit.jupiter:junit-jupiter:5.10.0"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+application {
+    mainClass = 'bd.july2024.ProjectJulyApp'
+}
+
+run {
+    standardInput = System.in
+    workingDir = rootProject.projectDir
+    environment System.getenv()
+    systemProperties System.properties
+    if (project.hasProperty('appArgs')) {
+        args project.property('appArgs').split('\\s+')
+    }
+    def exitProp = System.getProperty("bd.july2024.testExitAfterFrames") ?: System.getenv("TEST_EXIT_FRAMES")
+    if (exitProp) {
+        systemProperty "bd.july2024.testExitAfterFrames", exitProp
+        args "--exit-frames=" + exitProp
+    }
+    jvmArgs = [
+        "-XstartOnFirstThread",
+        "-Djava.awt.headless=true",
+        "-Xms256M",
+        "-Xmx2G"
+    ]
+}
