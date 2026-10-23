@@ -8,7 +8,10 @@ import bd.july2024.character.PlayerMesh;
 import bd.july2024.dialogue.DialogueManager;
 import bd.july2024.dialogue.HistoricalDialogues;
 import bd.july2024.level.MissionTracker;
+import bd.july2024.level.SaveManager;
 import bd.july2024.ui.BengaliTextRenderer;
+import bd.july2024.ui.HistoricalDocumentModal;
+import bd.july2024.ui.PauseMenu;
 import bd.july2024.ui.ProjectJulyHUD;
 import bd.july2024.world.CampusWorld;
 import bd.july2024.world.LightingManager;
@@ -65,6 +68,9 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     private PlayerControl playerControl;
     private MissionTracker missionTracker;
     private DialogueManager dialogueManager;
+    private SaveManager saveManager;
+    private PauseMenu pauseMenu;
+    private HistoricalDocumentModal docModal;
     private boolean capturePending = false;
     private String pendingScreenshotPath = null;
 
@@ -174,7 +180,10 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         textRenderer = new BengaliTextRenderer(assetManager);
         missionTracker = new MissionTracker();
         dialogueManager = new DialogueManager();
+        saveManager = new SaveManager();
         hud = new ProjectJulyHUD(guiNode, textRenderer, settings.getWidth(), settings.getHeight());
+        pauseMenu = new PauseMenu(guiNode, textRenderer, settings.getWidth(), settings.getHeight());
+        docModal = new HistoricalDocumentModal(guiNode, textRenderer, settings.getWidth(), settings.getHeight());
 
         // 2. Build 3D Campus Environment & Realistic Summer Lighting
         campusWorld = new CampusWorld(assetManager, rootNode);
@@ -194,6 +203,16 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         playerControl.setPosition(0f, 0f, 8f);
         playerControl.setHeadingDegrees(0f);
         playerControl.setColliders(campusWorld.getColliders());
+
+        // Restore checkpoint if saved
+        SaveManager.SaveData saved = saveManager.loadCheckpoint();
+        if (saved != null) {
+            missionTracker.setCurrentObjectiveIndex(saved.objectiveIndex);
+            playerControl.setPosition(saved.posX, saved.posY, saved.posZ);
+            playerControl.setHeadingDegrees(saved.heading);
+            playerControl.setStamina(saved.stamina);
+            System.out.println("[ProjectJulyApp] Loaded saved checkpoint (Objective " + saved.objectiveIndex + ")");
+        }
 
         // 4. Setup Cinematic Orbit Camera
         orbitCam = new CinematicOrbitCamera(cam);
@@ -253,18 +272,58 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         inputManager.addMapping("Crouch", new KeyTrigger(KeyInput.KEY_C));
         inputManager.addMapping("Interact", new KeyTrigger(KeyInput.KEY_E), new KeyTrigger(KeyInput.KEY_RETURN));
         inputManager.addMapping("Screenshot", new KeyTrigger(KeyInput.KEY_F12), new KeyTrigger(KeyInput.KEY_SYSRQ));
+        inputManager.addMapping("Pause", new KeyTrigger(KeyInput.KEY_ESCAPE), new KeyTrigger(KeyInput.KEY_P));
+        inputManager.addMapping("MenuRestart", new KeyTrigger(KeyInput.KEY_R));
+        inputManager.addMapping("MenuQuit", new KeyTrigger(KeyInput.KEY_Q));
 
         inputManager.addMapping("CamLeft", new MouseAxisTrigger(MouseInput.AXIS_X, true));
         inputManager.addMapping("CamRight", new MouseAxisTrigger(MouseInput.AXIS_X, false));
         inputManager.addMapping("CamUp", new MouseAxisTrigger(MouseInput.AXIS_Y, true));
         inputManager.addMapping("CamDown", new MouseAxisTrigger(MouseInput.AXIS_Y, false));
 
-        inputManager.addListener(this, "Forward", "Backward", "Left", "Right", "Sprint", "Jump", "Crouch", "Interact", "Screenshot");
+        inputManager.addListener(this, "Forward", "Backward", "Left", "Right", "Sprint", "Jump", "Crouch", "Interact", "Screenshot", "Pause", "MenuRestart", "MenuQuit");
         inputManager.addListener(this, "CamLeft", "CamRight", "CamUp", "CamDown");
     }
 
     @Override
     public void onAction(String name, boolean isPressed, float tpf) {
+        if ("Pause".equals(name) && isPressed) {
+            if (docModal.isOpen()) {
+                docModal.close();
+                audio.playClick();
+                return;
+            }
+            audio.playClick();
+            pauseMenu.toggle();
+            return;
+        }
+
+        if (pauseMenu.isOpen()) {
+            if (isPressed) {
+                if ("Backward".equals(name)) { // S key triggers checkpoint save in pause menu
+                    saveGameCheckpoint();
+                } else if ("MenuRestart".equals(name)) {
+                    restartLevel();
+                } else if ("MenuQuit".equals(name)) {
+                    System.out.println("[ProjectJulyApp] Player quit from pause menu.");
+                    stop(true);
+                    new Thread(() -> {
+                        try { Thread.sleep(200); } catch (Exception ignored) {}
+                        System.exit(0);
+                    }).start();
+                }
+            }
+            return;
+        }
+
+        if (docModal.isOpen()) {
+            if (isPressed && ("Interact".equals(name) || "Jump".equals(name))) {
+                docModal.close();
+                audio.playClick();
+            }
+            return;
+        }
+
         if ("Forward".equals(name)) moveForward = isPressed;
         if ("Backward".equals(name)) moveBackward = isPressed;
         if ("Left".equals(name)) moveLeft = isPressed;
@@ -284,6 +343,9 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
     @Override
     public void onAnalog(String name, float value, float tpf) {
+        if (pauseMenu.isOpen() || docModal.isOpen()) {
+            return; // Freeze camera rotation during pause or document modal
+        }
         float sens = 45.0f;
         if ("CamLeft".equals(name)) orbitCam.rotate(value * sens, 0f);
         if ("CamRight".equals(name)) orbitCam.rotate(-value * sens, 0f);
@@ -292,6 +354,12 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     }
 
     private void handleInteraction() {
+        if (docModal.isOpen()) {
+            docModal.close();
+            audio.playClick();
+            return;
+        }
+
         // Priority 1: Advance active dialogue line
         if (dialogueManager.isActive()) {
             boolean hasMore = dialogueManager.advanceDialogue();
@@ -333,15 +401,14 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             }
         }
 
-        // Priority 3: Check Memorial Plaque
+        // Priority 3: Check Memorial Plaque (opens archival document modal)
         if (pPos.distance(new Vector3f(2f, 0.8f, -6f)) <= 3.2f) {
             audio.playClick();
-            dialogueManager.startDialogue(HistoricalDialogues.getMemorialPlaqueDialogue(), () -> {
-                if (missionTracker.getCurrentObjectiveIndex() == 3) {
-                    missionTracker.advanceObjective();
-                    audio.playBell();
-                }
-            });
+            docModal.open(HistoricalDialogues.getRajuMemorialDocument());
+            if (missionTracker.getCurrentObjectiveIndex() == 3) {
+                missionTracker.advanceObjective();
+                audio.playBell();
+            }
             return;
         }
 
@@ -355,8 +422,37 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         }
     }
 
+    public void saveGameCheckpoint() {
+        boolean ok = saveManager.saveCheckpoint(
+            missionTracker.getCurrentObjectiveIndex(),
+            playerControl.getPosition(),
+            playerControl.getHeadingDegrees(),
+            playerControl.getStamina()
+        );
+        if (ok) {
+            audio.playObjective();
+            pauseMenu.setStatusMessage("চেকপয়েন্ট সংরক্ষিত হয়েছে! (Checkpoint Saved)");
+            System.out.println("[ProjectJulyApp] Checkpoint saved successfully at objective " + missionTracker.getCurrentObjectiveIndex());
+        } else {
+            pauseMenu.setStatusMessage("সংরক্ষণ ব্যর্থ হয়েছে! (Save Failed)");
+        }
+    }
+
+    public void restartLevel() {
+        saveManager.clearCheckpoint();
+        missionTracker.reset();
+        playerControl.setPosition(0f, 0f, 8f);
+        playerControl.setHeadingDegrees(0f);
+        playerControl.setStamina(100f);
+        if (dialogueManager.isActive()) dialogueManager.endDialogue();
+        if (docModal.isOpen()) docModal.close();
+        if (pauseMenu.isOpen()) pauseMenu.close();
+        audio.playObjective();
+        System.out.println("[ProjectJulyApp] Level 01 restarted to initial state.");
+    }
+
     private String getContextPrompt() {
-        if (dialogueManager.isActive()) return "";
+        if (dialogueManager.isActive() || pauseMenu.isOpen() || docModal.isOpen()) return "";
         Vector3f pPos = playerControl.getPosition();
 
         for (CompanionNPC c : companions) {
@@ -386,8 +482,8 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             System.out.println("[ProjectJulyApp] Frame " + frameCounter + " rendered (tpf=" + String.format("%.4f", tpf) + ", autoExit=" + autoExitFrames + ")");
         }
 
-        // 1. Update Player Locomotion (Pause movement during active dialogue)
-        boolean canMove = !dialogueManager.isActive();
+        // 1. Update Player Locomotion (Pause movement during active dialogue, pause menu, or document modal)
+        boolean canMove = !dialogueManager.isActive() && !pauseMenu.isOpen() && !docModal.isOpen();
         if (canMove) {
             playerControl.update(
                 tpf, orbitCam.getYaw(),
@@ -524,4 +620,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     public MissionTracker getMissionTracker() { return missionTracker; }
     public DialogueManager getDialogueManager() { return dialogueManager; }
     public List<CompanionNPC> getCompanions() { return companions; }
+    public SaveManager getSaveManager() { return saveManager; }
+    public PauseMenu getPauseMenu() { return pauseMenu; }
+    public HistoricalDocumentModal getDocModal() { return docModal; }
 }

@@ -192,6 +192,7 @@ public class PlayerControl {
     public Vector3f getPosition() { return position; }
     public float getHeadingDegrees() { return headingDegrees; }
     public float getStamina() { return stamina; }
+    public void setStamina(float st) { this.stamina = Math.max(0f, Math.min(100f, st)); }
     public boolean isSprinting() { return isSprinting; }
     public boolean isCrouching() { return isCrouching; }
 }

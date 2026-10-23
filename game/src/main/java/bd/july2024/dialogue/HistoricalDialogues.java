@@ -45,4 +45,37 @@ public class HistoricalDialogues {
         lines.add(new DialogueLine("আরিফ (Arif)", "আমরা অন্যায়ের কাছে মাথা নত করব না। ঐক্যই আমাদের বিজয়।", "We will not bow to injustice. Unity is our victory."));
         return lines;
     }
+
+    public static bd.july2024.ui.HistoricalDocumentModal.DocumentRecord getRajuMemorialDocument() {
+        return new bd.july2024.ui.HistoricalDocumentModal.DocumentRecord(
+            "সন্ত্রাসবিরোধী রাজু স্মারক ভাস্কর্য",
+            "ANTI-TERRORISM RAJU MEMORIAL",
+            "July 1 – 14, 2024",
+            "TSC Raju Sculpture Roundabout, Dhaka University",
+            "১৯৯২ সালের ১৩ মার্চ ক্যাম্পাসে সন্ত্রাসবিরোধী গণতান্ত্রিক মিছিলে শহীদ মঈন হোসেন রাজুর স্মৃতিতে এই ভাস্কর্য নির্মিত হয়। ২০২৪ সালের জুলাইয়ে কোটা সংস্কার ও মেধার মূল্যায়নের দাবিতে শিক্ষার্থীরা এই ভাস্কর্যের চারপাশেই শান্তিপূর্ণ ঐক্যের প্রাচীর গড়ে তোলে।",
+            "Erected in memory of martyr Moin Hossain Raju, killed during an anti-terrorism democratic march on March 13, 1992. In July 2024, students locked arms here to form a peaceful wall of solidarity demanding equality and merit-based governance."
+        );
+    }
+
+    public static bd.july2024.ui.HistoricalDocumentModal.DocumentRecord getLibraryDocument() {
+        return new bd.july2024.ui.HistoricalDocumentModal.DocumentRecord(
+            "ঢাকা বিশ্ববিদ্যালয় কেন্দ্রীয় লাইব্রেরি ও হাকিম চত্বর",
+            "CENTRAL LIBRARY & HAKIM CHATTAR",
+            "July 7 – 18, 2024",
+            "Central Library Steps & Pilotis Colonnade",
+            "স্থপতি মাজহারুল ইসলামের ১৯৫৩ সালের আধুনিক স্থাপত্যে নির্মিত এই লাইব্রেরি মুক্তচিন্তা ও বুদ্ধিবৃত্তিক প্রতিরোধের কেন্দ্রবিন্দু। আন্দোলনের সময় হাকিম চত্বর ও লাইব্রেরির উন্মুক্ত চত্বরে শিক্ষার্থীরা চিকিৎসাসেবা, খাদ্য বিতরণ ও ব্ল্যাকআউট চলাকালে যোগাযোগ কেন্দ্র পরিচালনা করে।",
+            "Designed by pioneer architect Muzharul Islam in 1953, this regional modernist landmark became the nexus of intellectual solidarity. Students established study circles, emergency aid, and dispatch centers beneath its iconic open pilotis."
+        );
+    }
+
+    public static bd.july2024.ui.HistoricalDocumentModal.DocumentRecord getTscDocument() {
+        return new bd.july2024.ui.HistoricalDocumentModal.DocumentRecord(
+            "টিএসসি ও ঐতিহাসিক জুলাই সংহতি ঘোষণা",
+            "TEACHER-STUDENT CENTRE (TSC)",
+            "August 5, 2024 (36 July)",
+            "TSC Main Plaza & Modernist Pavilion",
+            "১৯৬১ সালে বিশ্বখ্যাত স্থপতি কনস্টান্টিনোস ডক্সিয়াডিসের মাস্টারপ্ল্যানে নির্মিত ছাত্র-শিক্ষক কেন্দ্র (টিএসসি) বাঙালির প্রতিটি জাতীয় গণতান্ত্রিক উত্তরণের সূতিকাগার। ২০২৪ সালের ৫ আগস্ট এই প্রাঙ্গণেই ঘোষিত হয় ঐতিহাসিক বিজয়, যাকে ছাত্র-জনতা নাম দেয় '৩৬ জুলাই'।",
+            "Constructed under the master plan of architect Constantinos Doxiadis in 1961, the Teacher-Student Centre has sheltered student conscience through every turning point. Here, the historic culmination was proclaimed as '36 July' — rewriting time for justice."
+        );
+    }
 }

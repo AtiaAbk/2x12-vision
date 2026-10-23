@@ -1,15 +1,22 @@
 package bd.july2024;
 
+import bd.july2024.character.PlayerControl;
 import bd.july2024.dialogue.DialogueLine;
 import bd.july2024.dialogue.DialogueManager;
 import bd.july2024.dialogue.HistoricalDialogues;
 import bd.july2024.level.MissionObjective;
 import bd.july2024.level.MissionTracker;
+import bd.july2024.level.SaveManager;
 import bd.july2024.ui.BengaliTextRenderer;
+import bd.july2024.ui.HistoricalDocumentModal;
+import com.jme3.math.Vector3f;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -53,6 +60,76 @@ public class ProjectJulyJmeTest {
     }
 
     @Test
+    public void testMissionTrackerResetAndSetIndex() {
+        MissionTracker tracker = new MissionTracker();
+        tracker.setCurrentObjectiveIndex(3);
+        assertEquals(3, tracker.getCurrentObjectiveIndex());
+        assertTrue(tracker.getAllObjectives().get(0).isCompleted());
+        assertTrue(tracker.getAllObjectives().get(1).isCompleted());
+        assertTrue(tracker.getAllObjectives().get(2).isCompleted());
+        assertFalse(tracker.getAllObjectives().get(3).isCompleted());
+
+        tracker.reset();
+        assertEquals(0, tracker.getCurrentObjectiveIndex());
+        for (MissionObjective obj : tracker.getAllObjectives()) {
+            assertFalse(obj.isCompleted());
+        }
+    }
+
+    @Test
+    public void testSaveManagerPersistence(@TempDir Path tempDir) {
+        File saveDir = tempDir.resolve("save").toFile();
+        SaveManager saveManager = new SaveManager(saveDir);
+
+        assertFalse(saveManager.hasCheckpoint());
+        assertNull(saveManager.loadCheckpoint());
+
+        Vector3f pos = new Vector3f(12.5f, 0.5f, -8.2f);
+        float heading = 45f;
+        float stamina = 85.5f;
+        int objectiveIndex = 2;
+
+        assertTrue(saveManager.saveCheckpoint(objectiveIndex, pos, heading, stamina));
+        assertTrue(saveManager.hasCheckpoint());
+
+        SaveManager.SaveData data = saveManager.loadCheckpoint();
+        assertNotNull(data);
+        assertEquals(2, data.objectiveIndex);
+        assertEquals(12.5f, data.posX, 0.01f);
+        assertEquals(0.5f, data.posY, 0.01f);
+        assertEquals(-8.2f, data.posZ, 0.01f);
+        assertEquals(45f, data.heading, 0.01f);
+        assertEquals(85.5f, data.stamina, 0.01f);
+
+        // Clear checkpoint
+        saveManager.clearCheckpoint();
+        assertFalse(saveManager.hasCheckpoint());
+        assertNull(saveManager.loadCheckpoint());
+    }
+
+    @Test
+    public void testHistoricalArchivalDocuments() {
+        HistoricalDocumentModal.DocumentRecord rajuDoc = HistoricalDialogues.getRajuMemorialDocument();
+        assertNotNull(rajuDoc);
+        assertTrue(rajuDoc.titleBengali.contains("রাজু"));
+        assertTrue(rajuDoc.titleEnglish.contains("RAJU"));
+        assertTrue(rajuDoc.textBengali.contains("১৯৯২"));
+        assertTrue(rajuDoc.textEnglish.contains("1992"));
+
+        HistoricalDocumentModal.DocumentRecord libDoc = HistoricalDialogues.getLibraryDocument();
+        assertNotNull(libDoc);
+        assertTrue(libDoc.titleBengali.contains("লাইব্রেরি"));
+        assertTrue(libDoc.textBengali.contains("মাজহারুল ইসলাম"));
+        assertTrue(libDoc.textEnglish.contains("Muzharul Islam"));
+
+        HistoricalDocumentModal.DocumentRecord tscDoc = HistoricalDialogues.getTscDocument();
+        assertNotNull(tscDoc);
+        assertTrue(tscDoc.titleBengali.contains("টিএসসি"));
+        assertTrue(tscDoc.textBengali.contains("৩৬ জুলাই"));
+        assertTrue(tscDoc.textEnglish.contains("36 July"));
+    }
+
+    @Test
     public void testHistoricalDialoguesIntegrity() {
         List<DialogueLine> rafiLines = HistoricalDialogues.getRafiDialogue();
         assertNotNull(rafiLines);
@@ -93,7 +170,7 @@ public class ProjectJulyJmeTest {
     @Test
     public void testBengaliTypographyRendering() {
         BengaliTextRenderer renderer = new BengaliTextRenderer(null);
-        String testText = "বাঙালি ছাত্র-জনতার ঐতিহাসিক জুলাই অভ্যুত্থান";
+        String testText = "বাঙালি ছাত্র-জনতার ঐতিহাসিক জুলাই অভ্যুত্থান\nদ্বিতীয় লাইন (Second Line)";
         BufferedImage img = renderer.renderStringToImage(testText, 20f, true, Color.WHITE, new Color(0, 0, 0, 180), 10, 5);
 
         assertNotNull(img);

@@ -99,6 +99,22 @@ public class MissionTracker {
         return currentObjectiveIndex;
     }
 
+    public void setCurrentObjectiveIndex(int index) {
+        if (index >= 0 && index < objectives.size()) {
+            for (int i = 0; i < index; i++) {
+                objectives.get(i).setCompleted(true);
+            }
+            this.currentObjectiveIndex = index;
+        }
+    }
+
+    public void reset() {
+        this.currentObjectiveIndex = 0;
+        for (MissionObjective o : objectives) {
+            o.setCompleted(false);
+        }
+    }
+
     public List<MissionObjective> getAllObjectives() {
         return objectives;
     }

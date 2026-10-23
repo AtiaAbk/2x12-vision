@@ -55,4 +55,8 @@ public class DialogueManager {
         currentLines.clear();
         currentLineIndex = 0;
     }
+
+    public void endDialogue() {
+        dismiss();
+    }
 }
