@@ -170,6 +170,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     @Override
     public void simpleInitApp() {
         flyCam.setEnabled(false); // Use custom cinematic third person orbit camera
+        inputManager.setCursorVisible(false); // disabling flyCam re-shows the OS cursor; the orbit camera uses raw mouse motion
         setPauseOnLostFocus(false); // Keep running and rendering even when window loses OS focus
         this.paused = false;
         this.speed = 1f;
@@ -522,12 +523,27 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     public void simpleUpdate(float tpf) {
         frameCounter++;
         totalDeltaTime += tpf;
+        if (frameCounter == 1) {
+            // The LWJGL3 window only forwards cursor-mode changes once it is renderable, which is
+            // after simpleInitApp here, so the call made there is repeated on the first frame.
+            inputManager.setCursorVisible(false);
+        }
         if (autoExitFrames != null && frameCounter > autoExitFrames - STEADY_FRAMES) {
             steadyDeltaTime += tpf;
             steadyFrames++;
         }
         if (tpf < minDelta) minDelta = tpf;
         if (tpf > maxDelta) maxDelta = tpf;
+        // TEST_UI=pause|interact opens the pause menu or triggers one interaction at frame 60 so the
+        // automated capture can show those panels.
+        if (frameCounter == 60) {
+            String testUi = System.getenv("TEST_UI");
+            if ("pause".equals(testUi)) {
+                pauseMenu.open();
+            } else if ("interact".equals(testUi)) {
+                handleInteraction();
+            }
+        }
         if (frameCounter <= 5 || frameCounter % 15 == 0) {
             System.out.println("[ProjectJulyApp] Frame " + frameCounter + " rendered (tpf=" + String.format("%.4f", tpf) + ", autoExit=" + autoExitFrames + ")");
         }

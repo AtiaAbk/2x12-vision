@@ -3,7 +3,12 @@ package bd.july2024.ui;
 import com.jme3.scene.Node;
 import com.jme3.ui.Picture;
 
+import bd.july2024.ui.BengaliTextRenderer.Line;
+import bd.july2024.ui.BengaliTextRenderer.PanelStyle;
+
 import java.awt.Color;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Historical Archival Document Modal for Project July 2024.
@@ -54,26 +59,23 @@ public class HistoricalDocumentModal {
             guiNode.detachChild(modalPicture);
         }
 
-        String content = String.format(
-            "%s\n%s  |  তারিখ: %s  |  স্থান: %s\n\n%s\n\n%s\n\n[E / SPACE / ENTER] নথিটি বন্ধ করুন (Close Document)",
-            doc.titleBengali,
-            doc.titleEnglish,
-            doc.date,
-            doc.location,
-            doc.textBengali,
-            doc.textEnglish
-        );
+        List<Line> lines = new ArrayList<>();
+        lines.add(new Line("ঐতিহাসিক নথি  ·  HISTORICAL DOCUMENT", 12f, true, ProjectJulyHUD.MUTED));
+        lines.add(new Line(doc.titleBengali, 22f, true, ProjectJulyHUD.TEXT, 4));
+        lines.add(new Line(doc.titleEnglish, 15f, false, ProjectJulyHUD.MUTED, 2));
+        lines.add(new Line(String.format("তারিখ  %s   ·   স্থান  %s", doc.date, doc.location), 13f, false, ProjectJulyHUD.AMBER, 6));
+        lines.add(new Line(doc.textBengali, 16f, false, ProjectJulyHUD.TEXT, 16));
+        lines.add(new Line(doc.textEnglish, 14.5f, false, ProjectJulyHUD.MUTED, 10));
+        lines.add(new Line("E / Space / Enter  ·  নথিটি বন্ধ করুন (close)", 12f, false, ProjectJulyHUD.MUTED, 16));
 
-        modalPicture = textRenderer.createTextPicture(
-            "HistDocModal",
-            content,
-            16f,
-            false,
-            new Color(250, 240, 215),
-            new Color(18, 22, 28, 235),
-            28,
-            20
-        );
+        PanelStyle style = new PanelStyle();
+        style.background = new Color(10, 12, 16, 232);
+        style.accent = ProjectJulyHUD.AMBER;
+        style.paddingX = 30;
+        style.paddingY = 22;
+        style.minWidth = 640;
+        style.maxWidth = 860;
+        modalPicture = textRenderer.createPanelPicture("HistDocModal", lines, style, null);
 
         float x = (screenWidth - modalPicture.getWidth()) / 2f;
         float y = (screenHeight - modalPicture.getHeight()) / 2f;
