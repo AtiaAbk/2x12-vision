@@ -1,0 +1,478 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-10-25T08:53:21Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 11824686638,
+  "lat": 23.7330626,
+  "lon": 90.3948649,
+  "tags": {
+    "historic": "pillory",
+    "name": "Hakim Chattar - Historical landmark, University of Dhaka, Dhaka"
+  }
+},
+{
+  "type": "way",
+  "id": 295394032,
+  "bounds": {
+    "minlat": 23.7334853,
+    "minlon": 90.3947175,
+    "maxlat": 23.7341766,
+    "maxlon": 90.3950826
+  },
+  "nodes": [
+    2991000094,
+    2991000095,
+    11459315910,
+    2991000096,
+    2991000097,
+    2991000098,
+    2991000099,
+    2991000094
+  ],
+  "geometry": [
+    { "lat": 23.7341766, "lon": 90.3950797 },
+    { "lat": 23.7341718, "lon": 90.3947175 },
+    { "lat": 23.7338541, "lon": 90.3947225 },
+    { "lat": 23.7334853, "lon": 90.3947283 },
+    { "lat": 23.7334877, "lon": 90.3949109 },
+    { "lat": 23.7339873, "lon": 90.3949030 },
+    { "lat": 23.7339897, "lon": 90.3950826 },
+    { "lat": 23.7341766, "lon": 90.3950797 }
+  ],
+  "tags": {
+    "amenity": "library",
+    "building": "yes",
+    "building:age": "103_years",
+    "building:entrances": "yes",
+    "building:levels": "3",
+    "building:material": "concrete",
+    "building:stairs": "yes",
+    "building:use": "library",
+    "check_date": "2024-02-27",
+    "elevator": "no",
+    "emergency": "fire_extinguisher",
+    "emergency:fire_equipment": "yes",
+    "extinguishing:medium": "CO2",
+    "internet_access": "wlan",
+    "internet_access:fee": "no",
+    "name": "Central Library Building I",
+    "opening_hours": "Su-Th 08:00-21:00",
+    "operator": "Dhaka University",
+    "operator:type": "university",
+    "payment:cards": "no",
+    "payment:cash": "yes",
+    "payment:credit_cards": "no",
+    "payment:debit_cards": "no",
+    "vulnerability:earthquake": "high",
+    "vulnerability:earthquake:description": "old building, load bearing wall, large amount of books and lots of students",
+    "vulnerability:fire": "low",
+    "vulnerability:fire:description": "functional fire alarms in every floors and lots of fire extinguishers with proper maintenance",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 296813434,
+  "bounds": {
+    "minlat": 23.7315983,
+    "minlon": 90.3958469,
+    "maxlat": 23.7320215,
+    "maxlon": 90.3964994
+  },
+  "nodes": [
+    3006323506,
+    3006323507,
+    3006323508,
+    3006323509,
+    3006323506
+  ],
+  "geometry": [
+    { "lat": 23.7319766, "lon": 90.3958469 },
+    { "lat": 23.7320215, "lon": 90.3961499 },
+    { "lat": 23.7316772, "lon": 90.3964994 },
+    { "lat": 23.7315983, "lon": 90.3959087 },
+    { "lat": 23.7319766, "lon": 90.3958469 }
+  ],
+  "tags": {
+    "landuse": "recreation_ground",
+    "name": "TSC Ground"
+  }
+},
+{
+  "type": "way",
+  "id": 296847311,
+  "bounds": {
+    "minlat": 23.7302237,
+    "minlon": 90.3938431,
+    "maxlat": 23.7303783,
+    "maxlon": 90.3941758
+  },
+  "nodes": [
+    3006629043,
+    3006629044,
+    3006629045,
+    10742185600,
+    10742185599,
+    3006629046,
+    3006629047,
+    3006629048,
+    3006629049,
+    3006629050,
+    3006629051,
+    10742185601,
+    3006629052,
+    3006629053,
+    3006629054,
+    3006629055,
+    3006629056,
+    3006629057,
+    3006629058,
+    10742185597,
+    10742185598,
+    3006629043
+  ],
+  "geometry": [
+    { "lat": 23.7303740, "lon": 90.3939578 },
+    { "lat": 23.7303783, "lon": 90.3940444 },
+    { "lat": 23.7303136, "lon": 90.3940482 },
+    { "lat": 23.7303158, "lon": 90.3940922 },
+    { "lat": 23.7303395, "lon": 90.3940982 },
+    { "lat": 23.7303429, "lon": 90.3941727 },
+    { "lat": 23.7302866, "lon": 90.3941758 },
+    { "lat": 23.7302843, "lon": 90.3941252 },
+    { "lat": 23.7302284, "lon": 90.3941283 },
+    { "lat": 23.7302237, "lon": 90.3940249 },
+    { "lat": 23.7302974, "lon": 90.3940209 },
+    { "lat": 23.7303085, "lon": 90.3940085 },
+    { "lat": 23.7303074, "lon": 90.3939855 },
+    { "lat": 23.7302299, "lon": 90.3939901 },
+    { "lat": 23.7302250, "lon": 90.3938918 },
+    { "lat": 23.7302883, "lon": 90.3938880 },
+    { "lat": 23.7302862, "lon": 90.3938454 },
+    { "lat": 23.7303235, "lon": 90.3938431 },
+    { "lat": 23.7303268, "lon": 90.3939105 },
+    { "lat": 23.7303097, "lon": 90.3939115 },
+    { "lat": 23.7303122, "lon": 90.3939615 },
+    { "lat": 23.7303740, "lon": 90.3939578 }
+  ],
+  "tags": {
+    "building": "dormitory",
+    "building:age": "25",
+    "building:levels": "4",
+    "building:material": "concrete",
+    "building:name": "teacher's quarter",
+    "building:stairs": "yes",
+    "building:use": "residential",
+    "name": "teacher's quarter",
+    "vulnerability:earthquake": "high",
+    "vulnerability:fire": "moderate"
+  }
+},
+{
+  "type": "way",
+  "id": 367201436,
+  "bounds": {
+    "minlat": 23.7261074,
+    "minlon": 90.4006474,
+    "maxlat": 23.7264674,
+    "maxlon": 90.4010160
+  },
+  "nodes": [
+    3711523405,
+    3711523406,
+    3711523407,
+    3711523408,
+    3711523405
+  ],
+  "geometry": [
+    { "lat": 23.7264674, "lon": 90.4006474 },
+    { "lat": 23.7264633, "lon": 90.4010146 },
+    { "lat": 23.7261074, "lon": 90.4010160 },
+    { "lat": 23.7261095, "lon": 90.4006536 },
+    { "lat": 23.7264674, "lon": 90.4006474 }
+  ],
+  "tags": {
+    "building": "university",
+    "building:levels": "20",
+    "cuisine": "regional",
+    "internet_access": "no",
+    "name": "New Curzon Buinding",
+    "smoking": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 447734507,
+  "bounds": {
+    "minlat": 23.7316012,
+    "minlon": 90.3953345,
+    "maxlat": 23.7318636,
+    "maxlon": 90.3958687
+  },
+  "nodes": [
+    4447983612,
+    4447983613,
+    4447983614,
+    4447983615,
+    4447983612
+  ],
+  "geometry": [
+    { "lat": 23.7317903, "lon": 90.3953345 },
+    { "lat": 23.7318636, "lon": 90.3958357 },
+    { "lat": 23.7316746, "lon": 90.3958687 },
+    { "lat": 23.7316012, "lon": 90.3953675 },
+    { "lat": 23.7317903, "lon": 90.3953345 }
+  ],
+  "tags": {
+    "amenity": "conference_centre",
+    "building": "yes",
+    "building:age": "60",
+    "building:entrances": "1",
+    "building:material": "Concrete",
+    "building:stairs": "1",
+    "building:use": "Auditorium",
+    "name": "TSC Auditorium",
+    "roof:levels": "2",
+    "roof:shape": "round",
+    "vulnerability:earthquake": "Moderate",
+    "vulnerability:earthquake:description": "None",
+    "vulnerability:fire": "Moderate",
+    "vulnerability:fire:description": "None",
+    "website": "https://www.du.ac.bd/offices/TSC"
+  }
+},
+{
+  "type": "way",
+  "id": 655714604,
+  "bounds": {
+    "minlat": 23.7319295,
+    "minlon": 90.3953872,
+    "maxlat": 23.7321609,
+    "maxlon": 90.3961669
+  },
+  "nodes": [
+    6143293998,
+    6143293999,
+    6143294000,
+    6143294001,
+    6143293998
+  ],
+  "geometry": [
+    { "lat": 23.7320501, "lon": 90.3953872 },
+    { "lat": 23.7319295, "lon": 90.3954082 },
+    { "lat": 23.7320401, "lon": 90.3961669 },
+    { "lat": 23.7321609, "lon": 90.3961459 },
+    { "lat": 23.7320501, "lon": 90.3953872 }
+  ],
+  "tags": {
+    "addr:city": "University of Dhaka",
+    "addr:postcode": "1000",
+    "building": "university",
+    "building:age": "60",
+    "building:entrances": "2",
+    "building:levels": "5",
+    "building:material": "Concrete",
+    "building:stairs": "2",
+    "building:use": "Community Use",
+    "height": "15.0",
+    "layer": "1",
+    "name": "Teacher Student Center",
+    "vulnerability:earthquake": "High",
+    "vulnerability:earthquake:description": "None",
+    "vulnerability:fire": "Moderate",
+    "vulnerability:fire:description": "None"
+  }
+},
+{
+  "type": "way",
+  "id": 992323013,
+  "bounds": {
+    "minlat": 23.7347612,
+    "minlon": 90.3919487,
+    "maxlat": 23.7349243,
+    "maxlon": 90.3922709
+  },
+  "nodes": [
+    9168384277,
+    4320636987,
+    9168384286,
+    9168384282,
+    9168384285,
+    9168384280,
+    9168384283,
+    9168384281,
+    9168384284,
+    9168384278,
+    9168384279,
+    9168384277
+  ],
+  "geometry": [
+    { "lat": 23.7347621, "lon": 90.3920428 },
+    { "lat": 23.7348516, "lon": 90.3919487 },
+    { "lat": 23.7348765, "lon": 90.3919763 },
+    { "lat": 23.7349001, "lon": 90.3920113 },
+    { "lat": 23.7349156, "lon": 90.3920550 },
+    { "lat": 23.7349243, "lon": 90.3921047 },
+    { "lat": 23.7349139, "lon": 90.3921609 },
+    { "lat": 23.7348967, "lon": 90.3922054 },
+    { "lat": 23.7348755, "lon": 90.3922396 },
+    { "lat": 23.7348516, "lon": 90.3922709 },
+    { "lat": 23.7347612, "lon": 90.3921775 },
+    { "lat": 23.7347621, "lon": 90.3920428 }
+  ],
+  "tags": {
+    "addr:city": "Dhaka",
+    "addr:postcode": "1000",
+    "amenity": "conference_centre",
+    "building": "yes",
+    "name": "Sirajul Islam Lecture Hall"
+  }
+},
+{
+  "type": "way",
+  "id": 1152628065,
+  "bounds": {
+    "minlat": 23.7332156,
+    "minlon": 90.3947718,
+    "maxlat": 23.7337448,
+    "maxlon": 90.3953360
+  },
+  "nodes": [
+    10720708919,
+    10720708920,
+    4599151081,
+    10720708921,
+    10720708922,
+    10720708923,
+    10720708924,
+    10720708925,
+    10720708926,
+    10720708919
+  ],
+  "geometry": [
+    { "lat": 23.7333399, "lon": 90.3947729 },
+    { "lat": 23.7333431, "lon": 90.3951549 },
+    { "lat": 23.7333201, "lon": 90.3951551 },
+    { "lat": 23.7332156, "lon": 90.3951562 },
+    { "lat": 23.7332171, "lon": 90.3953360 },
+    { "lat": 23.7337448, "lon": 90.3953306 },
+    { "lat": 23.7337432, "lon": 90.3951465 },
+    { "lat": 23.7334541, "lon": 90.3951495 },
+    { "lat": 23.7334508, "lon": 90.3947718 },
+    { "lat": 23.7333399, "lon": 90.3947729 }
+  ],
+  "tags": {
+    "building": "university",
+    "building:age": "103_years",
+    "building:entrances": "yes",
+    "building:levels": "3",
+    "building:material": "concrete",
+    "building:stairs": "yes",
+    "building:use": "library",
+    "elevator": "no",
+    "emergency:fire_equipment": "yes",
+    "extinguishing:medium": "CO2",
+    "name": "Central Library Building II",
+    "vulnerability:earthquake": "high",
+    "vulnerability:earthquake:description": "old building with some cracks",
+    "vulnerability:fire": "low",
+    "vulnerability:fire:description": "functional fire alarms and fire extinguishers"
+  }
+},
+{
+  "type": "way",
+  "id": 1156216181,
+  "bounds": {
+    "minlat": 23.7304890,
+    "minlon": 90.3937899,
+    "maxlat": 23.7306032,
+    "maxlon": 90.3940094
+  },
+  "nodes": [
+    10752384577,
+    10752384578,
+    10752384579,
+    10752384580,
+    10752384577
+  ],
+  "geometry": [
+    { "lat": 23.7304890, "lon": 90.3938090 },
+    { "lat": 23.7305388, "lon": 90.3937899 },
+    { "lat": 23.7306032, "lon": 90.3939903 },
+    { "lat": 23.7305534, "lon": 90.3940094 },
+    { "lat": 23.7304890, "lon": 90.3938090 }
+  ],
+  "tags": {
+    "building": "residential",
+    "building:age": "30",
+    "building:entrances": "1",
+    "building:levels": "5",
+    "building:material": "concrete",
+    "building:use": "residential",
+    "name": "Teacher's Quarter",
+    "vulnerability:earthquake": "moderate",
+    "vulnerability:earthquake:description": "none",
+    "vulnerability:fire": "high",
+    "vulnerability:fire:description": "no extinguisher"
+  }
+},
+{
+  "type": "way",
+  "id": 1560050747,
+  "bounds": {
+    "minlat": 23.7312587,
+    "minlon": 90.3959119,
+    "maxlat": 23.7316637,
+    "maxlon": 90.3965702
+  },
+  "nodes": [
+    4971785550,
+    4971785549,
+    4971785548,
+    8630576055,
+    8630576056,
+    8791763654,
+    8791763653,
+    4971785546,
+    4971785545,
+    4971785547,
+    4971785550
+  ],
+  "geometry": [
+    { "lat": 23.7315817, "lon": 90.3959119 },
+    { "lat": 23.7312587, "lon": 90.3959609 },
+    { "lat": 23.7312843, "lon": 90.3961630 },
+    { "lat": 23.7313554, "lon": 90.3961523 },
+    { "lat": 23.7313677, "lon": 90.3962493 },
+    { "lat": 23.7314901, "lon": 90.3962308 },
+    { "lat": 23.7314966, "lon": 90.3962820 },
+    { "lat": 23.7315454, "lon": 90.3962746 },
+    { "lat": 23.7315829, "lon": 90.3965702 },
+    { "lat": 23.7316637, "lon": 90.3965580 },
+    { "lat": 23.7315817, "lon": 90.3959119 }
+  ],
+  "tags": {
+    "building": "cafe",
+    "building:age": "60",
+    "building:entrances": "1",
+    "building:levels": "1",
+    "building:material": "Concrete",
+    "building:stairs": "1",
+    "building:use": "Cafe",
+    "name": "TSC Cafeteria Wing",
+    "vulnerability:earthquake": "Moderate",
+    "vulnerability:earthquake:description": "None",
+    "vulnerability:fire": "High",
+    "vulnerability:fire:description": "None"
+  }
+}
+
+  ]
+}
