@@ -26,6 +26,26 @@ Last updated: 2026-10-25
 | Status | Integrated 2026-10-25. **Interim character**: human proportions and animation, but a faceless unclothed mannequin. A dressed student model on the same rig is still required to meet the visual gate. |
 | Placeholder | Yes, labelled as such in code and docs |
 
+| Field | Value |
+|---|---|
+| Asset | Ultimate Modular Men Pack and Ultimate Modular Women Pack: clothed low-poly characters, each with its own rig and 24 animation clips (Idle, Idle_Neutral, Walk, Run, Run_Back/Left/Right, Wave, Interact, Roll, Punch, Kick, HitRecieve, Death, gun and sword poses) |
+| Files in repo | `assets/Models/Characters/QuaterniusModular/Men/Casual_2.gltf` (3,058,092 bytes), `Casual_Hoodie.gltf` (3,104,001), `Suit.gltf` (3,315,342), `License.txt`, `How_To_Use.txt`; `assets/Models/Characters/QuaterniusModular/Women/Casual.gltf` (3,131,788), `License.txt`. Buffers are embedded (base64); no external textures, colours are material factors and vertex colours. |
+| Creator | Quaternius (https://quaternius.com) |
+| Official pages | https://quaternius.com/packs/ultimatemodularcharacters.html (Men, February 2022) and https://quaternius.com/packs/ultimatemodularwomen.html (Women); both pages state "License CC0" (checked 2026-10-25) |
+| Obtained from | The Google Drive folders linked from those pages: Men `1USAAquX2JJWuA2m6zol0KUkFe3UkZ8zX` → Individual Characters → glTF; Women `1720N9IGyQHXYvtvZJzazhxtTTlz-y2Vf` → Individual Characters → glTF. The packs' own `License.txt` (committed beside the models) states CC0 1.0 Universal. |
+| Licence | CC0 1.0 Universal (public domain dedication) |
+| Attribution | Not required. Credit given voluntarily: "Characters: Ultimate Modular Men / Women packs by Quaternius (CC0)". |
+| Modification permitted | Yes |
+| Commercial use permitted | Yes |
+| Restrictions | None under CC0 |
+| Modifications made | None to the files. At runtime the glTF PBR materials are replaced with Phong materials keeping the authored base colours; the shirt and trouser materials named in `CharacterSpec` are tinted per character; the model is scaled to 1.72 m. |
+| Used for | Arif (`Men/Casual_2`), Rafi (`Men/Casual_Hoodie`), Tanvir (`Men/Suit`), Nusrat (`Women/Casual`) via `character/CharacterSpec.java` and `character/PlayerMesh.java` |
+| Clips used | `Idle`, `Walk`, `Run` (also for sprint at a higher rate), `Idle_Neutral` (crouch idle), `Walk` (crouch move). No jump clip exists; the take-off clip keeps playing while airborne. |
+| Status | Integrated 2026-10-25. Clothed, with faces and hair; stylized low-poly rather than realistic. Current character of record. |
+| Placeholder | No, but the art style is stylized; a realistic character remains a later ambition. |
+
+Not integrated but downloaded and checked on 2026-10-25: Quaternius *Universal Base Characters* (Standard tier, CC0). The free tier contains only "Superhero" male and female bodies with skin textures and dark briefs, no clothing, and an Unreal-named rig; it was rejected for this project and is not in the repository.
+
 ## Fonts
 
 | Asset | Files | Creator | Licence | Notes |
