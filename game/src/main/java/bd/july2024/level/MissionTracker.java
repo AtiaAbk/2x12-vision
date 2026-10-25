@@ -22,7 +22,7 @@ public class MissionTracker {
             "১. রাজু ভাস্কর্যে সহযোদ্ধা রাফির সাথে সাক্ষাৎ করুন",
             "1. Meet your classmate Rafi at Raju Memorial Sculpture",
             "রাজু ভাস্কর্যের পাদদেশে রাফি অপেক্ষা করছে",
-            new Vector3f(2.4f, 0f, 3.2f),
+            new Vector3f(2.6f, 0f, 6.5f),
             3.5f
         ));
 
@@ -30,8 +30,8 @@ public class MissionTracker {
             "OBJ_02_LIBRARY",
             "২. হাকিম চত্বর ও কেন্দ্রীয় লাইব্রেরি থেকে লিফলেট সংগ্রহ করুন",
             "2. Collect July campaign leaflets from Hakim Chattar",
-            "লাইব্রেরির উত্তর দিকের বারান্দায় তানভীরের কাছে যান",
-            new Vector3f(-12f, 0f, -22f),
+            "কেন্দ্রীয় লাইব্রেরির দক্ষিণ প্রান্তে, খোলা নিচতলার সামনে তানভীরের কাছে যান",
+            new Vector3f(-40f, 0f, -60f),
             4.0f
         ));
 
@@ -40,7 +40,7 @@ public class MissionTracker {
             "৩. টিএসসি অডিটোরিয়াম প্রাঙ্গণে নুসরাতের কাছে লিফলেট হস্তান্তর করুন",
             "3. Hand over informational leaflets to Nusrat at TSC",
             "টিএসসির প্রজাপতি ছাদের প্রবেশদ্বারে যান",
-            new Vector3f(18f, 0f, 15f),
+            new Vector3f(0.75f, 0f, 60.15f),
             4.0f
         ));
 

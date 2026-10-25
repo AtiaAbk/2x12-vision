@@ -75,6 +75,14 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     private boolean capturePending = false;
     private String pendingScreenshotPath = null;
 
+    // Spawn and automated-capture settings (overridable through TEST_SPAWN="x,z,heading",
+    // TEST_CAM_PITCH and TEST_SHOT for verification screenshots from other viewpoints)
+    private float spawnX = 0f;
+    private float spawnZ = 17f;
+    private float spawnHeading = 180f; // face the Raju sculpture (north, -Z), back to the camera
+    private float camPitch = -8f;
+    private String autoScreenshotPath = "docs/screenshots/project_july_jme_gameplay.png";
+
     // Entities
     private Node playerNode;
     private PlayerMesh playerMesh;
@@ -93,6 +101,10 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     private static Integer autoExitFrames = null;
     private int frameCounter = 0;
     private float totalDeltaTime = 0f;
+    /** Frame time accumulated over the last STEADY_FRAMES frames of an automated run (excludes start-up). */
+    private static final int STEADY_FRAMES = 100;
+    private float steadyDeltaTime = 0f;
+    private int steadyFrames = 0;
     private float minDelta = Float.MAX_VALUE;
     private float maxDelta = 0f;
 
@@ -198,6 +210,8 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         setupScreenshotProcessor();
 
 
+        readTestOverrides();
+
         // 3. Spawn Student Protagonist (Arif)
         playerNode = new Node("Arif_Player");
         playerMesh = new PlayerMesh(assetManager, CharacterSpec.ARIF, new ColorRGBA(0.20f, 0.40f, 0.62f, 1f), new ColorRGBA(0.10f, 0.13f, 0.20f, 1f)); // blue shirt, dark jeans
@@ -205,9 +219,10 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         rootNode.attachChild(playerNode);
 
         playerControl = new PlayerControl(playerNode, playerMesh, audio);
-        playerControl.setPosition(0f, 0f, 8f);
-        playerControl.setHeadingDegrees(180f); // face the Raju sculpture (north, -Z), back to the camera
+        playerControl.setPosition(spawnX, campusWorld.groundHeightAt(spawnX, spawnZ), spawnZ);
+        playerControl.setHeadingDegrees(spawnHeading);
         playerControl.setColliders(campusWorld.getColliders());
+        playerControl.setGroundSampler(campusWorld::groundHeightAt);
 
         // Restore checkpoint if saved
         SaveManager.SaveData saved = saveManager.loadCheckpoint();
@@ -221,7 +236,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
         // 4. Setup Cinematic Orbit Camera
         orbitCam = new CinematicOrbitCamera(cam);
-        orbitCam.setAngles(180f, -8f);
+        orbitCam.setAngles(-spawnHeading, camPitch); // camera yaw is the mirror of the character heading (see PlayerControl)
         orbitCam.setColliders(campusWorld.getColliders());
 
         // 5. Spawn Companion NPCs
@@ -235,11 +250,35 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         System.out.println("[ProjectJulyApp] Level 01 (Dhaka University) initialized cleanly in jMonkeyEngine.");
     }
 
+    /** Optional environment overrides used by the automated verification runs. */
+    private void readTestOverrides() {
+        String spawn = System.getenv("TEST_SPAWN");
+        if (spawn != null && !spawn.trim().isEmpty()) {
+            try {
+                String[] p = spawn.trim().split(",");
+                spawnX = Float.parseFloat(p[0].trim());
+                spawnZ = Float.parseFloat(p[1].trim());
+                if (p.length > 2) spawnHeading = Float.parseFloat(p[2].trim());
+                System.out.println("[ProjectJulyApp] TEST_SPAWN override: x=" + spawnX + " z=" + spawnZ + " heading=" + spawnHeading);
+            } catch (Exception e) {
+                System.err.println("[ProjectJulyApp] Ignoring malformed TEST_SPAWN '" + spawn + "' (expected x,z[,heading])");
+            }
+        }
+        String pitch = System.getenv("TEST_CAM_PITCH");
+        if (pitch != null && !pitch.trim().isEmpty()) {
+            try { camPitch = Float.parseFloat(pitch.trim()); } catch (Exception ignored) {}
+        }
+        String shot = System.getenv("TEST_SHOT");
+        if (shot != null && !shot.trim().isEmpty()) {
+            autoScreenshotPath = shot.trim();
+        }
+    }
+
     private void spawnCompanions() {
         // 1. Rafi at Raju Memorial Sculpture
         CompanionNPC rafi = new CompanionNPC(
             assetManager, CharacterSpec.RAFI, "RAFI", "রাফি (Rafi)", "Classmate & Organizer",
-            new Vector3f(2.4f, 0.35f, 3.2f),
+            new Vector3f(2.6f, campusWorld.groundHeightAt(2.6f, 6.5f), 6.5f),
             new ColorRGBA(0.72f, 0.25f, 0.22f, 1f), // Red cotton shirt
             new ColorRGBA(0.15f, 0.18f, 0.22f, 1f)
         );
@@ -249,17 +288,19 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         // 2. Tanvir at Hakim Chattar / Central Library
         CompanionNPC tanvir = new CompanionNPC(
             assetManager, CharacterSpec.TANVIR, "TANVIR", "তানভীর (Tanvir)", "Leaflet Distribution",
-            new Vector3f(-12f, 0.15f, -22f),
+            new Vector3f(-40f, campusWorld.groundHeightAt(-40f, -60f), -60f),
             new ColorRGBA(0.16f, 0.20f, 0.30f, 1f), // Navy jacket and trousers
             new ColorRGBA(0.18f, 0.18f, 0.20f, 1f)
         );
         companions.add(tanvir);
         rootNode.attachChild(tanvir.getNode());
 
-        // 3. Nusrat at TSC Auditorium Entrance
+        // 3. Nusrat on the TSC entrance plaza, in front of the union block verandah
+        Vector3f nusratPos = campusWorld.tscLocalToWorld(-8f, -8f);
+        nusratPos.y = campusWorld.groundHeightAt(nusratPos.x, nusratPos.z);
         CompanionNPC nusrat = new CompanionNPC(
             assetManager, CharacterSpec.NUSRAT, "NUSRAT", "নুসরাত (Nusrat)", "Student Liaison",
-            new Vector3f(18f, 0f, 15f),
+            nusratPos,
             new ColorRGBA(0.80f, 0.58f, 0.16f, 1f), // Gold top
             new ColorRGBA(0.68f, 0.22f, 0.25f, 1f)
         );
@@ -446,8 +487,8 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     public void restartLevel() {
         saveManager.clearCheckpoint();
         missionTracker.reset();
-        playerControl.setPosition(0f, 0f, 8f);
-        playerControl.setHeadingDegrees(180f); // face the Raju sculpture (north, -Z), back to the camera
+        playerControl.setPosition(spawnX, campusWorld.groundHeightAt(spawnX, spawnZ), spawnZ);
+        playerControl.setHeadingDegrees(spawnHeading);
         playerControl.setStamina(100f);
         if (dialogueManager.isActive()) dialogueManager.endDialogue();
         if (docModal.isOpen()) docModal.close();
@@ -481,6 +522,10 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     public void simpleUpdate(float tpf) {
         frameCounter++;
         totalDeltaTime += tpf;
+        if (autoExitFrames != null && frameCounter > autoExitFrames - STEADY_FRAMES) {
+            steadyDeltaTime += tpf;
+            steadyFrames++;
+        }
         if (tpf < minDelta) minDelta = tpf;
         if (tpf > maxDelta) maxDelta = tpf;
         if (frameCounter <= 5 || frameCounter % 15 == 0) {
@@ -519,7 +564,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         if (autoExitFrames != null && autoExitFrames > 0) {
             int target = autoExitFrames;
             if (frameCounter == target - 10) {
-                triggerScreenshot("docs/screenshots/project_july_jme_gameplay.png");
+                triggerScreenshot(autoScreenshotPath);
             }
 
             if (frameCounter >= target) {
@@ -533,6 +578,11 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
                 System.out.println("Frames Rendered: " + frameCounter);
                 System.out.println("Average Frame Time: " + String.format("%.2f ms", avgFrameMs) + " (~" + String.format("%.1f", avgFps) + " FPS)");
                 System.out.println("Min Frame Time: " + String.format("%.2f ms", minDelta * 1000f) + ", Max Frame Time: " + String.format("%.2f ms", maxDelta * 1000f));
+                if (steadyFrames > 0) {
+                    float steadyMs = (steadyDeltaTime / steadyFrames) * 1000f;
+                    System.out.println("Steady-state (last " + steadyFrames + " frames): " + String.format("%.2f ms", steadyMs)
+                        + " (~" + String.format("%.1f", 1000f / steadyMs) + " FPS)");
+                }
                 System.out.println("Heap Memory: Used " + usedMem + " MB / Total " + totalMem + " MB (Max: " + maxMem + " MB)");
                 System.out.println("Resolution: " + settings.getWidth() + "x" + settings.getHeight());
                 System.out.println("Renderer: " + renderer.getClass().getSimpleName());

@@ -122,13 +122,17 @@ public class PlayerControl {
         if (diff < -180f) diff += 360f;
         headingDegrees += diff * Math.min(1f, 14f * delta);
 
-        // Apply gravity & vertical velocity
+        // Apply gravity & vertical velocity against the sampled ground height (kerbs, plinths, plazas)
+        float groundY = groundSampler != null ? groundSampler.heightAt(position.x, position.z) : 0f;
+        if (isGrounded && position.y > groundY + 0.02f) {
+            isGrounded = false; // walked off a kerb or step: start falling
+        }
         if (!isGrounded) {
             verticalVelocity += GRAVITY * delta;
         }
         position.y += verticalVelocity * delta;
-        if (position.y <= 0f) {
-            position.y = 0f;
+        if (position.y <= groundY) {
+            position.y = groundY;
             verticalVelocity = 0f;
             isGrounded = true;
         }
@@ -181,6 +185,17 @@ public class PlayerControl {
     public void setHeadingDegrees(float deg) {
         headingDegrees = deg;
         targetHeadingDegrees = deg;
+    }
+
+    /** Supplies the walkable ground height at a horizontal position (0 = base ground). */
+    public interface GroundSampler {
+        float heightAt(float x, float z);
+    }
+
+    private GroundSampler groundSampler;
+
+    public void setGroundSampler(GroundSampler sampler) {
+        this.groundSampler = sampler;
     }
 
     public void setColliders(List<float[]> colliders) {

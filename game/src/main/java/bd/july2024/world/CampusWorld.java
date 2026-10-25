@@ -2,62 +2,104 @@ package bd.july2024.world;
 
 import bd.july2024.ui.BengaliTextRenderer;
 import com.jme3.asset.AssetManager;
+import com.jme3.asset.TextureKey;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
+import com.jme3.math.Quaternion;
+import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
+import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
+import com.jme3.scene.Spatial;
+import com.jme3.scene.VertexBuffer;
 import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Cylinder;
 import com.jme3.scene.shape.Quad;
 import com.jme3.scene.shape.Sphere;
+import com.jme3.texture.Texture;
 import com.jme3.texture.Texture2D;
+import com.jme3.util.TangentBinormalGenerator;
+import jme3tools.optimize.GeometryBatchFactory;
 
 import java.awt.Color;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Authentic, Historically Grounded 3D Dhaka University Campus Reconstruction
- * for Project July 2024 (Level 01: Raju Memorial Sculpture, Central Library & TSC).
+ * Level 01: the TSC Mor area of the University of Dhaka at true scale.
  *
- * Implements:
- * 1. Anti-Terrorism Raju Memorial Sculpture (8 interconnected figures locked arm-in-arm in solidarity)
- * 2. Muzharul Islam's iconic 1953 Modernist Central Library (grand brick entry staircase, pilotis colonnade, brise-soleil louvers)
- * 3. Hakim Chattar cultural node with iconic Banyan Tree (Bot-tola) & tea stall pavilion
- * 4. Constantinos Doxiadis's 1961 TSC (butterfly roof cantilever, jaali perforated screens, sunken adda circle)
- * 5. Road networks with asphalt surface, white zebra crossings, center medians, brick pedestrian footpaths
- * 6. Authentic July 2024 street graffiti decals & student movement banners in high-res Bengali Unicode
- * 7. Lush Bangladeshi monsoon vegetation: scarlet Krishnachura, purple Jarul, golden Radhachura, and Banyan aerial roots
- * 8. Vintage cast-iron Dhaka University street lamps & concrete park benches.
+ * Coordinate convention: origin = Anti-Terrorism Raju Memorial Sculpture, +X east, +Z south, metres.
+ * Landmark positions and footprints come from OpenStreetMap; building programmes from published
+ * descriptions. Every dimension used here is listed with its source and status in
+ * docs/REFERENCE_LEDGER.md, including which parts are modelling choices rather than documented fact.
+ *
+ * Built from primitives and two custom meshes (parabolic vault, flat disc); surfaces use CC0 ambientCG
+ * textures (docs/ASSET_REGISTER.md). Static geometry is batched per material after construction.
  */
 public class CampusWorld {
 
+    // --- Layout constants (metres). See docs/REFERENCE_LEDGER.md for each value's source. ---
+    /** Memorial island around the sculpture: OSM way 225234308 is ~20.5 m across. */
+    private static final float ISLAND_RADIUS = 10.0f;
+    private static final float ISLAND_HEIGHT = 0.32f;
+    /** Roundabout carriageway: OSM centre-line radius ~18 m; four lanes assumed, outer kerb at 25 m. */
+    private static final float RING_OUTER_RADIUS = 25.0f;
+    private static final float ROAD_TOP = 0.015f;
+    private static final float FOOTPATH_HEIGHT = 0.12f;
+    private static final float PLAZA_HEIGHT = 0.10f;
+    /** TSC Student Union block centre (OSM way 655714604) and the 9 degree yaw shared by the TSC buildings. */
+    private static final float TSC_X = 9.9f;
+    private static final float TSC_Z = 66.8f;
+    private static final float TSC_YAW = 9f * FastMath.DEG_TO_RAD;
+    /** Hakim Chattar (OSM node 11824686638). */
+    private static final float HAKIM_X = -83f;
+    private static final float HAKIM_Z = -46f;
+
+    private static final boolean BATCH_STATIC_GEOMETRY = true;
+
     private final Node rootNode;
+    /** Everything that is opaque and never moves; batched per material at the end of construction. */
+    private final Node staticNode;
     private final BengaliTextRenderer textRenderer;
     private final List<float[]> colliders = new ArrayList<>();
+    private final List<Surface> surfaces = new ArrayList<>();
+    private final Map<Material, Float> tileOf = new HashMap<>();
+    private final Frame tscFrame = new Frame(TSC_X, TSC_Z, TSC_YAW);
+    private Node tscNode;
+    private Node tscDecalNode;
+    private int geometryCount = 0;
 
-    // PBR & Lit Materials
-    private Material asphaltMat;
-    private Material roadLineMat;
+    // Textured (ambientCG CC0) materials
     private Material grassMat;
+    private Material asphaltMat;
+    private Material pavingMat;
+    private Material brickMat;
+    private Material brickDarkMat;
     private Material concreteMat;
-    private Material darkConcreteMat;
-    private Material terracottaBrickMat;
+    private Material concreteDarkMat;
+    private Material plasterMat;
+    private Material plasterWarmMat;
+    // Plain lit materials
+    private Material roadLineMat;
     private Material glassMat;
-    private Material sculptureMat;
+    private Material bronzeMat;
+    private Material steelMat;
     private Material treeTrunkMat;
     private Material foliageMat;
     private Material krishnachuraBloomMat;
     private Material jarulBloomMat;
     private Material radhachuraBloomMat;
     private Material hedgeMat;
-    private Material curbMat;
     private Material lampMat;
     private Material memorialGoldMat;
+    private Material woodMat;
 
     public CampusWorld(AssetManager assetManager, Node sceneRoot) {
         this(assetManager, sceneRoot, null);
@@ -65,36 +107,57 @@ public class CampusWorld {
 
     public CampusWorld(AssetManager assetManager, Node sceneRoot, BengaliTextRenderer textRenderer) {
         this.rootNode = new Node("CampusWorld");
+        this.staticNode = new Node("CampusStatic");
         this.textRenderer = textRenderer;
+        rootNode.attachChild(staticNode);
+        rootNode.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
         initMaterials(assetManager);
-        buildWorld(assetManager);
+        // Tangent generation logs one warning per degenerate cap triangle on cylinders; silence it.
+        java.util.logging.Logger tbLog = java.util.logging.Logger.getLogger("com.jme3.util.TangentBinormalGenerator");
+        java.util.logging.Level previous = tbLog.getLevel();
+        tbLog.setLevel(java.util.logging.Level.SEVERE);
+        try {
+            buildWorld(assetManager);
+        } finally {
+            tbLog.setLevel(previous);
+        }
+        finishStaticGeometry();
         if (sceneRoot != null) {
             sceneRoot.attachChild(rootNode);
         }
     }
 
+    // ------------------------------------------------------------------------------------------
+    // Materials
+    // ------------------------------------------------------------------------------------------
+
     private void initMaterials(AssetManager assetManager) {
-        asphaltMat = createLitMaterial(assetManager, new ColorRGBA(0.16f, 0.17f, 0.18f, 1f), 1f);
-        asphaltMat.setColor("Specular", ColorRGBA.Black); // Rough matte asphalt has zero specular shine
+        grassMat = texturedMaterial(assetManager, "Grass004", new ColorRGBA(0.60f, 0.68f, 0.50f, 1f), 2f, 3.0f);
+        grassMat.setColor("Specular", ColorRGBA.Black);
+        asphaltMat = texturedMaterial(assetManager, "Asphalt010", new ColorRGBA(0.92f, 0.92f, 0.94f, 1f), 2f, 6.0f);
+        asphaltMat.setColor("Specular", ColorRGBA.Black);
+        pavingMat = texturedMaterial(assetManager, "PavingStones070", new ColorRGBA(0.92f, 0.88f, 0.84f, 1f), 6f, 3.0f);
+        brickMat = texturedMaterial(assetManager, "Bricks059", new ColorRGBA(1.0f, 0.92f, 0.86f, 1f), 6f, 3.0f);
+        brickDarkMat = texturedMaterial(assetManager, "Bricks059", new ColorRGBA(0.72f, 0.60f, 0.54f, 1f), 6f, 1.5f);
+        concreteMat = texturedMaterial(assetManager, "Concrete030", new ColorRGBA(0.95f, 0.94f, 0.92f, 1f), 10f, 4.0f);
+        concreteDarkMat = texturedMaterial(assetManager, "Concrete030", new ColorRGBA(0.62f, 0.62f, 0.62f, 1f), 10f, 2.0f);
+        plasterMat = texturedMaterial(assetManager, "PaintedPlaster017", new ColorRGBA(0.96f, 0.95f, 0.90f, 1f), 12f, 4.0f);
+        plasterWarmMat = texturedMaterial(assetManager, "PaintedPlaster017", new ColorRGBA(0.96f, 0.88f, 0.72f, 1f), 12f, 4.0f);
 
         roadLineMat = createLitMaterial(assetManager, new ColorRGBA(0.92f, 0.92f, 0.88f, 1f), 30f);
-
-        grassMat = createLitMaterial(assetManager, new ColorRGBA(0.22f, 0.38f, 0.18f, 1f), 1f);
-        grassMat.setColor("Specular", ColorRGBA.Black); // Matte grass lawn has zero specular shine
-
-        concreteMat = createLitMaterial(assetManager, new ColorRGBA(0.80f, 0.78f, 0.74f, 1f), 20f);
-        darkConcreteMat = createLitMaterial(assetManager, new ColorRGBA(0.48f, 0.47f, 0.45f, 1f), 15f);
-        terracottaBrickMat = createLitMaterial(assetManager, new ColorRGBA(0.68f, 0.26f, 0.20f, 1f), 8f);
-        glassMat = createLitMaterial(assetManager, new ColorRGBA(0.20f, 0.28f, 0.35f, 1f), 80f);
-        sculptureMat = createLitMaterial(assetManager, new ColorRGBA(0.68f, 0.65f, 0.60f, 1f), 16f);
+        glassMat = createLitMaterial(assetManager, new ColorRGBA(0.16f, 0.22f, 0.28f, 1f), 90f);
+        glassMat.setColor("Specular", ColorRGBA.White.mult(0.6f));
+        bronzeMat = createLitMaterial(assetManager, new ColorRGBA(0.20f, 0.14f, 0.09f, 1f), 40f);
+        bronzeMat.setColor("Specular", new ColorRGBA(0.35f, 0.28f, 0.18f, 1f));
+        steelMat = createLitMaterial(assetManager, new ColorRGBA(0.30f, 0.31f, 0.33f, 1f), 40f);
         treeTrunkMat = createLitMaterial(assetManager, new ColorRGBA(0.22f, 0.16f, 0.12f, 1f), 4f);
         foliageMat = createLitMaterial(assetManager, new ColorRGBA(0.24f, 0.46f, 0.20f, 1f), 6f);
         krishnachuraBloomMat = createLitMaterial(assetManager, new ColorRGBA(0.92f, 0.20f, 0.10f, 1f), 12f);
         jarulBloomMat = createLitMaterial(assetManager, new ColorRGBA(0.72f, 0.26f, 0.76f, 1f), 12f);
         radhachuraBloomMat = createLitMaterial(assetManager, new ColorRGBA(0.95f, 0.80f, 0.12f, 1f), 12f);
         hedgeMat = createLitMaterial(assetManager, new ColorRGBA(0.16f, 0.32f, 0.14f, 1f), 8f);
-        curbMat = createLitMaterial(assetManager, new ColorRGBA(0.72f, 0.70f, 0.68f, 1f), 22f);
         lampMat = createLitMaterial(assetManager, new ColorRGBA(0.10f, 0.20f, 0.14f, 1f), 35f);
+        woodMat = createLitMaterial(assetManager, new ColorRGBA(0.45f, 0.30f, 0.18f, 1f), 10f);
 
         memorialGoldMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         memorialGoldMat.setColor("Color", new ColorRGBA(1.0f, 0.86f, 0.32f, 1f));
@@ -110,384 +173,918 @@ public class CampusWorld {
         return mat;
     }
 
+    /**
+     * Lit material with an ambientCG colour and normal map, tiled every {@code tileMetres} in world space.
+     * Falls back to a plain tinted material if the texture files are missing.
+     */
+    private Material texturedMaterial(AssetManager assetManager, String id, ColorRGBA tint, float shininess, float tileMetres) {
+        Material mat = createLitMaterial(assetManager, tint, shininess);
+        mat.setColor("Ambient", tint.mult(0.75f));
+        mat.setColor("Specular", ColorRGBA.White.mult(0.08f));
+        mat.setName(id);
+        Texture color = loadTiledTexture(assetManager, "Textures/" + id + "/" + id + "_Color.jpg");
+        Texture normal = loadTiledTexture(assetManager, "Textures/" + id + "/" + id + "_NormalGL.jpg");
+        if (color != null) {
+            mat.setTexture("DiffuseMap", color);
+        }
+        if (normal != null) {
+            mat.setTexture("NormalMap", normal);
+        }
+        if (color == null && normal == null) {
+            System.err.println("[CampusWorld] Texture set " + id + " missing; using flat colour.");
+        }
+        tileOf.put(mat, tileMetres);
+        return mat;
+    }
+
+    private static Texture loadTiledTexture(AssetManager assetManager, String path) {
+        if (assetManager == null) return null;
+        try {
+            TextureKey key = new TextureKey(path, true);
+            key.setGenerateMips(true);
+            Texture t = assetManager.loadTexture(key);
+            t.setWrap(Texture.WrapMode.Repeat);
+            t.setMinFilter(Texture.MinFilter.Trilinear);
+            t.setAnisotropicFilter(4);
+            return t;
+        } catch (Throwable t) {
+            System.err.println("[CampusWorld] Could not load texture " + path + ": " + t);
+            return null;
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // Geometry helpers
+    // ------------------------------------------------------------------------------------------
+
+    /** A horizontal frame: origin and yaw (jME convention, rotation about +Y). */
+    private static final class Frame {
+        final float ox, oz, yaw, cos, sin;
+
+        Frame(float ox, float oz, float yaw) {
+            this.ox = ox;
+            this.oz = oz;
+            this.yaw = yaw;
+            this.cos = FastMath.cos(yaw);
+            this.sin = FastMath.sin(yaw);
+        }
+
+        float worldX(float lx, float lz) { return ox + lx * cos + lz * sin; }
+        float worldZ(float lx, float lz) { return oz - lx * sin + lz * cos; }
+        float localX(float wx, float wz) { float dx = wx - ox, dz = wz - oz; return dx * cos - dz * sin; }
+        float localZ(float wx, float wz) { float dx = wx - ox, dz = wz - oz; return dx * sin + dz * cos; }
+    }
+
+    /** A raised walkable surface: a rectangle in a frame (radius 0) or a disc centred on the frame origin. */
+    private static final class Surface {
+        final Frame frame;
+        final float hx, hz, radius, height;
+
+        Surface(Frame frame, float hx, float hz, float radius, float height) {
+            this.frame = frame;
+            this.hx = hx;
+            this.hz = hz;
+            this.radius = radius;
+            this.height = height;
+        }
+
+        boolean contains(float x, float z) {
+            if (radius > 0f) {
+                float dx = x - frame.ox, dz = z - frame.oz;
+                return dx * dx + dz * dz <= radius * radius;
+            }
+            float lx = frame.localX(x, z), lz = frame.localZ(x, z);
+            return Math.abs(lx) <= hx && Math.abs(lz) <= hz;
+        }
+    }
+
+    /** Walkable ground height at a horizontal position (0 on the base ground). */
+    public float groundHeightAt(float x, float z) {
+        float h = 0f;
+        for (Surface s : surfaces) {
+            if (s.height > h && s.contains(x, z)) h = s.height;
+        }
+        return h;
+    }
+
+    private void addSurfaceRect(Frame frame, float lcx, float lcz, float hx, float hz, float height) {
+        Frame f = new Frame(frame.worldX(lcx, lcz), frame.worldZ(lcx, lcz), frame.yaw);
+        surfaces.add(new Surface(f, hx, hz, 0f, height));
+    }
+
+    private void addSurfaceDisc(float cx, float cz, float radius, float height) {
+        surfaces.add(new Surface(new Frame(cx, cz, 0f), 0f, 0f, radius, height));
+    }
+
+    /** Attaches a geometry, applies world-space tiling for boxes and generates tangents for normal maps. */
+    private Geometry finish(Geometry g, Material mat, Node parent) {
+        g.setMaterial(mat);
+        Float tile = tileOf.get(mat);
+        if (tile != null) {
+            if (g.getMesh() instanceof Box) {
+                Vector3f t = g.getLocalTranslation();
+                applyWorldUV(g.getMesh(), tile, t.x, t.y, t.z);
+            }
+            if (mat.getTextureParam("NormalMap") != null) {
+                TangentBinormalGenerator.generate(g.getMesh());
+            }
+        }
+        (parent != null ? parent : staticNode).attachChild(g);
+        geometryCount++;
+        return g;
+    }
+
+    /** Planar projection of texture coordinates per face, so tiles are continuous across adjacent boxes. */
+    private static void applyWorldUV(Mesh mesh, float tile, float offX, float offY, float offZ) {
+        FloatBuffer pos = mesh.getFloatBuffer(VertexBuffer.Type.Position);
+        FloatBuffer nrm = mesh.getFloatBuffer(VertexBuffer.Type.Normal);
+        if (pos == null || nrm == null) return;
+        int n = mesh.getVertexCount();
+        float[] uv = new float[n * 2];
+        for (int i = 0; i < n; i++) {
+            float px = pos.get(i * 3) + offX, py = pos.get(i * 3 + 1) + offY, pz = pos.get(i * 3 + 2) + offZ;
+            float nx = Math.abs(nrm.get(i * 3)), ny = Math.abs(nrm.get(i * 3 + 1)), nz = Math.abs(nrm.get(i * 3 + 2));
+            float u, v;
+            if (ny >= nx && ny >= nz) { u = px; v = pz; }
+            else if (nx >= nz) { u = pz; v = py; }
+            else { u = px; v = py; }
+            uv[i * 2] = u / tile;
+            uv[i * 2 + 1] = v / tile;
+        }
+        mesh.clearBuffer(VertexBuffer.Type.TexCoord);
+        mesh.setBuffer(VertexBuffer.Type.TexCoord, 2, uv);
+    }
+
+    private Geometry addBox(String name, Material mat, float cx, float cy, float cz, float hx, float hy, float hz) {
+        return addBox(name, mat, cx, cy, cz, hx, hy, hz, null);
+    }
+
+    private Geometry addBox(String name, Material mat, float cx, float cy, float cz, float hx, float hy, float hz, Node parent) {
+        Geometry g = new Geometry(name, new Box(hx, hy, hz));
+        g.setLocalTranslation(cx, cy, cz);
+        return finish(g, mat, parent);
+    }
+
+    /** Box rotated about +Y by {@code yaw} radians, placed in world space. */
+    private Geometry addYawedBox(String name, Material mat, float cx, float cy, float cz, float hx, float hy, float hz, float yaw) {
+        Geometry g = new Geometry(name, new Box(hx, hy, hz));
+        g.setLocalTranslation(cx, cy, cz);
+        g.setLocalRotation(new Quaternion().fromAngleAxis(yaw, Vector3f.UNIT_Y));
+        return finish(g, mat, null);
+    }
+
+    /** Vertical cylinder standing on {@code baseY}. */
+    private Geometry addCylinderY(String name, Material mat, float cx, float baseY, float cz, float radius, float height, Node parent) {
+        Cylinder cyl = new Cylinder(2, 32, radius, height, true);
+        Float tile = tileOf.get(mat);
+        if (tile != null) {
+            cyl.scaleTextureCoordinates(new Vector2f(FastMath.TWO_PI * radius / tile, Math.max(1f, height / tile)));
+        }
+        Geometry g = new Geometry(name, cyl);
+        g.rotate(FastMath.HALF_PI, 0f, 0f);
+        g.setLocalTranslation(cx, baseY + height * 0.5f, cz);
+        return finish(g, mat, parent);
+    }
+
+    /** Thin cylinder between two points (limbs, branches). */
+    private Geometry addLimb(String name, Material mat, Vector3f a, Vector3f b, float radius, Node parent) {
+        float len = a.distance(b);
+        Cylinder cyl = new Cylinder(2, 10, radius, len, true);
+        Geometry g = new Geometry(name, cyl);
+        Vector3f dir = b.subtract(a).normalizeLocal();
+        Vector3f up = Math.abs(dir.y) > 0.9f ? Vector3f.UNIT_X : Vector3f.UNIT_Y;
+        g.setLocalRotation(new Quaternion().lookAt(dir, up));
+        g.setLocalTranslation(a.add(b).multLocal(0.5f));
+        return finish(g, mat, parent);
+    }
+
+    /** Flat disc facing up, texture coordinates in world space. */
+    private Geometry addDisc(String name, Material mat, float cx, float y, float cz, float radius, int segments) {
+        Float tile = tileOf.get(mat);
+        float t = tile != null ? tile : 1f;
+        float[] p = new float[(segments + 2) * 3];
+        float[] n = new float[(segments + 2) * 3];
+        float[] uv = new float[(segments + 2) * 2];
+        int[] idx = new int[segments * 3];
+        p[0] = 0; p[1] = 0; p[2] = 0;
+        n[1] = 1f;
+        uv[0] = cx / t; uv[1] = cz / t;
+        for (int i = 0; i <= segments; i++) {
+            float a = i * FastMath.TWO_PI / segments;
+            float x = FastMath.cos(a) * radius, z = FastMath.sin(a) * radius;
+            int v = i + 1;
+            p[v * 3] = x; p[v * 3 + 1] = 0; p[v * 3 + 2] = z;
+            n[v * 3 + 1] = 1f;
+            uv[v * 2] = (cx + x) / t; uv[v * 2 + 1] = (cz + z) / t;
+        }
+        for (int i = 0; i < segments; i++) {
+            // counter-clockwise seen from above (+Y): centre, next, current
+            idx[i * 3] = 0; idx[i * 3 + 1] = i + 2; idx[i * 3 + 2] = i + 1;
+        }
+        Mesh m = new Mesh();
+        m.setBuffer(VertexBuffer.Type.Position, 3, p);
+        m.setBuffer(VertexBuffer.Type.Normal, 3, n);
+        m.setBuffer(VertexBuffer.Type.TexCoord, 2, uv);
+        m.setBuffer(VertexBuffer.Type.Index, 3, idx);
+        m.updateBound();
+        Geometry g = new Geometry(name, m);
+        g.setLocalTranslation(cx, y, cz);
+        return finish(g, mat, null);
+    }
+
+    /**
+     * Parabolic barrel vault along local X: shell plus two end caps. The curve spans {@code width}
+     * across Z, starts at {@code baseY} at both edges and rises by {@code rise} at the crown.
+     */
+    private Mesh createVaultMesh(float length, float width, float baseY, float rise, int segments, float tile) {
+        float hl = length * 0.5f, hw = width * 0.5f;
+        List<Float> p = new ArrayList<>(), n = new ArrayList<>(), t = new ArrayList<>();
+        List<Integer> idx = new ArrayList<>();
+
+        float arc = 0f, prevZ = -hw, prevY = baseY;
+        for (int i = 0; i <= segments; i++) {
+            float z = -hw + width * i / segments;
+            float y = baseY + rise * (1f - (z / hw) * (z / hw));
+            float slope = -2f * rise * z / (hw * hw);
+            Vector3f nn = new Vector3f(0f, 1f, -slope).normalizeLocal();
+            if (i > 0) arc += FastMath.sqrt((z - prevZ) * (z - prevZ) + (y - prevY) * (y - prevY));
+            prevZ = z;
+            prevY = y;
+            pushVertex(p, n, t, -hl, y, z, nn, 0f, arc / tile);
+            pushVertex(p, n, t, hl, y, z, nn, length / tile, arc / tile);
+        }
+        for (int i = 0; i < segments; i++) {
+            int a = i * 2, b = a + 1, c = a + 3, d = a + 2;
+            pushTriangle(idx, p, n, a, d, c);
+            pushTriangle(idx, p, n, a, c, b);
+        }
+        for (int side = -1; side <= 1; side += 2) {
+            float x = side * hl;
+            Vector3f nn = new Vector3f(side, 0f, 0f);
+            int centre = p.size() / 3;
+            pushVertex(p, n, t, x, baseY + rise * 0.4f, 0f, nn, hw / tile, rise * 0.4f / tile);
+            int first = p.size() / 3;
+            for (int i = 0; i <= segments; i++) {
+                float z = -hw + width * i / segments;
+                float y = baseY + rise * (1f - (z / hw) * (z / hw));
+                pushVertex(p, n, t, x, y, z, nn, (z + hw) / tile, (y - baseY) / tile);
+            }
+            for (int i = 0; i < segments; i++) {
+                pushTriangle(idx, p, n, centre, first + i, first + i + 1);
+            }
+            pushTriangle(idx, p, n, centre, first + segments, first);
+        }
+
+        Mesh m = new Mesh();
+        m.setBuffer(VertexBuffer.Type.Position, 3, toArray(p));
+        m.setBuffer(VertexBuffer.Type.Normal, 3, toArray(n));
+        m.setBuffer(VertexBuffer.Type.TexCoord, 2, toArray(t));
+        int[] ind = new int[idx.size()];
+        for (int i = 0; i < ind.length; i++) ind[i] = idx.get(i);
+        m.setBuffer(VertexBuffer.Type.Index, 3, ind);
+        m.updateBound();
+        return m;
+    }
+
+    private static void pushVertex(List<Float> p, List<Float> n, List<Float> t, float x, float y, float z, Vector3f nn, float u, float v) {
+        p.add(x); p.add(y); p.add(z);
+        n.add(nn.x); n.add(nn.y); n.add(nn.z);
+        t.add(u); t.add(v);
+    }
+
+    /** Adds a triangle, flipping the winding if its face normal opposes the first vertex's normal. */
+    private static void pushTriangle(List<Integer> idx, List<Float> p, List<Float> n, int a, int b, int c) {
+        Vector3f pa = new Vector3f(p.get(a * 3), p.get(a * 3 + 1), p.get(a * 3 + 2));
+        Vector3f pb = new Vector3f(p.get(b * 3), p.get(b * 3 + 1), p.get(b * 3 + 2));
+        Vector3f pc = new Vector3f(p.get(c * 3), p.get(c * 3 + 1), p.get(c * 3 + 2));
+        Vector3f na = new Vector3f(n.get(a * 3), n.get(a * 3 + 1), n.get(a * 3 + 2));
+        Vector3f face = pb.subtract(pa).cross(pc.subtract(pa));
+        idx.add(a);
+        if (face.dot(na) >= 0f) { idx.add(b); idx.add(c); } else { idx.add(c); idx.add(b); }
+    }
+
+    private static float[] toArray(List<Float> l) {
+        float[] a = new float[l.size()];
+        for (int i = 0; i < a.length; i++) a[i] = l.get(i);
+        return a;
+    }
+
+    private void addCollider(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+        colliders.add(new float[]{minX, minY, minZ, maxX, maxY, maxZ});
+    }
+
+    /** Collider for a yawed rectangle: covered by a grid of axis-aligned boxes no larger than 4 m. */
+    private void addFrameCollider(Frame f, float lcx, float lcz, float hx, float hz, float minY, float maxY) {
+        int nx = Math.max(1, (int) Math.ceil(hx * 2f / 4f));
+        int nz = Math.max(1, (int) Math.ceil(hz * 2f / 4f));
+        float sx = hx * 2f / nx, sz = hz * 2f / nz;
+        for (int i = 0; i < nx; i++) {
+            for (int j = 0; j < nz; j++) {
+                float x0 = lcx - hx + i * sx, x1 = x0 + sx;
+                float z0 = lcz - hz + j * sz, z1 = z0 + sz;
+                float[] xs = {f.worldX(x0, z0), f.worldX(x1, z0), f.worldX(x1, z1), f.worldX(x0, z1)};
+                float[] zs = {f.worldZ(x0, z0), f.worldZ(x1, z0), f.worldZ(x1, z1), f.worldZ(x0, z1)};
+                float minX = Float.MAX_VALUE, maxX = -Float.MAX_VALUE, minZ = Float.MAX_VALUE, maxZ = -Float.MAX_VALUE;
+                for (int k = 0; k < 4; k++) {
+                    minX = Math.min(minX, xs[k]); maxX = Math.max(maxX, xs[k]);
+                    minZ = Math.min(minZ, zs[k]); maxZ = Math.max(maxZ, zs[k]);
+                }
+                addCollider(minX, minY, minZ, maxX, maxY, maxZ);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // World
+    // ------------------------------------------------------------------------------------------
+
     private void buildWorld(AssetManager assetManager) {
-        // 1. Campus Ground, Avenues, Zebra Crossings & Sidewalks
-        buildRoadsAndGround();
-
-        // 2. Anti-Terrorism Raju Memorial Sculpture (8 figures in solidarity)
+        buildGroundAndRoads();
         buildRajuMemorial();
-
-        // 3. Muzharul Islam's Central Library & Hakim Chattar
-        buildCentralLibrary();
-
-        // 4. Constantinos Doxiadis's Teacher-Student Centre (TSC)
-        buildTSC();
-
-        // 5. July Movement Commemorative Memorial Plaque
         buildMemorialPlaque();
-
-        // 6. Historic Street Graffiti Decals & Banner Artworks
-        buildJulyMovementBannersAndMurals(assetManager);
-
-        // 7. Lush Monsoon Vegetation & Banyan Tree
-        buildLushVegetation();
-
-        // 8. Campus Props (DU Vintage Street Lamps & Park Benches)
+        buildTSC();
+        buildCentralLibrary();
+        buildHakimChattar();
+        buildVegetation();
         buildCampusProps();
+        buildJulyMovementBannersAndMurals(assetManager);
     }
 
-    private void buildRoadsAndGround() {
-        // Expansive grass ground base (covers entire visible area, lush tropical summer lawn)
-        Box grassBase = new Box(250f, 0.05f, 250f);
-        Geometry grassBaseGeom = new Geometry("GrassBase", grassBase);
-        grassBaseGeom.setMaterial(grassMat);
-        grassBaseGeom.setLocalTranslation(0, -0.05f, 0);
-        rootNode.attachChild(grassBaseGeom);
-
-        // Main campus asphalt road network (dark charcoal asphalt at y = 0.02f)
-        Box roadBox = new Box(50f, 0.02f, 50f);
-        Geometry roadGeom = new Geometry("GroundAsphalt", roadBox);
-        roadGeom.setMaterial(asphaltMat);
-        roadGeom.setLocalTranslation(0, 0.02f, 0);
-        rootNode.attachChild(roadGeom);
-
-        // North Avenue Sidewalk (West side of road, towards Library)
-        Box footNorth = new Box(2.5f, 0.06f, 32.0f);
-        Geometry footNorthGeom = new Geometry("FootNorth", footNorth);
-        footNorthGeom.setMaterial(terracottaBrickMat);
-        footNorthGeom.setLocalTranslation(-14.5f, 0.06f, -14.0f);
-        rootNode.attachChild(footNorthGeom);
-
-        // North Avenue Sidewalk (East side of road)
-        Box footNorthEast = new Box(2.5f, 0.06f, 32.0f);
-        Geometry footNorthEastGeom = new Geometry("FootNorthEast", footNorthEast);
-        footNorthEastGeom.setMaterial(terracottaBrickMat);
-        footNorthEastGeom.setLocalTranslation(14.5f, 0.06f, -14.0f);
-        rootNode.attachChild(footNorthEastGeom);
-
-        // East Avenue Sidewalk (Bordering TSC road, NOT cutting across the road)
-        Box footEast = new Box(26.0f, 0.06f, 2.5f);
-        Geometry footEastGeom = new Geometry("FootEast", footEast);
-        footEastGeom.setMaterial(terracottaBrickMat);
-        footEastGeom.setLocalTranslation(26.0f, 0.06f, 15.5f);
-        rootNode.attachChild(footEastGeom);
-
-        // Road Divider / Median along North Avenue
-        Box medianNorth = new Box(0.6f, 0.15f, 18.0f);
-        Geometry medNorth = new Geometry("MedianNorth", medianNorth);
-        medNorth.setMaterial(curbMat);
-        medNorth.setLocalTranslation(0f, 0.15f, -20.0f);
-        rootNode.attachChild(medNorth);
-        addCollider(-0.6f, 0f, -38.0f, 0.6f, 0.44f, -2.0f);
-
-        // Median Green Hedges
-        for (float mz = -35.0f; mz <= -5.0f; mz += 4.2f) {
-            Box hedgeBox = new Box(0.45f, 0.35f, 1.4f);
-            Geometry hGeom = new Geometry("MedianHedge_" + mz, hedgeBox);
-            hGeom.setMaterial(hedgeMat);
-            hGeom.setLocalTranslation(0f, 0.45f, mz);
-            rootNode.attachChild(hGeom);
+    private void finishStaticGeometry() {
+        int before = geometryCount;
+        if (BATCH_STATIC_GEOMETRY) {
+            try {
+                rootNode.updateGeometricState();
+                GeometryBatchFactory.optimize(staticNode);
+                int after = countGeometries(staticNode);
+                System.out.println("[CampusWorld] Static geometry batched: " + before + " -> " + after
+                    + " geometries, " + colliders.size() + " colliders, " + surfaces.size() + " walkable surfaces.");
+            } catch (Throwable t) {
+                System.err.println("[CampusWorld] Batching failed, rendering unbatched: " + t);
+            }
+        } else {
+            System.out.println("[CampusWorld] " + before + " geometries (unbatched), " + colliders.size() + " colliders.");
         }
+    }
 
-        // White Zebra Crossings
-        // 1. Crosswalk across North Avenue (leading to Library)
+    private static int countGeometries(Node n) {
+        int[] c = {0};
+        n.depthFirstTraversal(sp -> { if (sp instanceof Geometry) c[0]++; });
+        return c[0];
+    }
+
+    // ---- Ground, roundabout and road arms --------------------------------------------------------
+
+    private void buildGroundAndRoads() {
+        // Lawn base, 600 m square, top at y = 0
+        addBox("GrassBase", grassMat, 0f, -0.05f, 0f, 300f, 0.05f, 300f);
+
+        // Roundabout carriageway (OSM: four lanes, asphalt) as a disc; the island sits on top.
+        addDisc("RingRoad", asphaltMat, 0f, 0.02f, 0f, RING_OUTER_RADIUS, 72);
+
+        // Road arms. Only the roundabout footprint and the south-west bearing of Shahid Minar Sarak are
+        // from OSM; the other bearings are approximate (docs/REFERENCE_LEDGER.md, section 4).
+        addRoadArm("RoadWest_NilkhetSarak", 180f, 6f, 150f, 8f);              // west, centre line 8 m north
+        addRoadArm("RoadSouthWest_ShahidMinarSarak", 120f, 6f, 150f, 0f);     // south-west
+        addRoadArm("RoadSouthEast_KaziNazrulIslamAve", 45f, 5f, 170f, 0f);    // south-east
+        addRoadArm("RoadNorthEast_Shahbagh", -50f, 6f, 150f, 0f);             // north-east
+
+        // Zebra crossings near the roundabout
         for (int i = -3; i <= 3; i++) {
-            Box stripe = new Box(0.65f, 0.005f, 2.8f);
-            Geometry sGeom = new Geometry("ZebraN_" + i, stripe);
-            sGeom.setMaterial(roadLineMat);
-            sGeom.setLocalTranslation(i * 1.8f, 0.045f, -10.0f);
-            rootNode.attachChild(sGeom);
+            addBox("ZebraW_" + i, roadLineMat, -31f, ROAD_TOP + 0.004f, -8f + i * 1.7f, 2.6f, 0.004f, 0.55f);
+        }
+        float a = 120f * FastMath.DEG_TO_RAD;
+        for (int i = -3; i <= 3; i++) {
+            float along = 31f, across = i * 1.7f;
+            float cx = FastMath.cos(a) * along - FastMath.sin(a) * across;
+            float cz = FastMath.sin(a) * along + FastMath.cos(a) * across;
+            addYawedBox("ZebraSW_" + i, roadLineMat, cx, ROAD_TOP + 0.004f, cz, 2.6f, 0.004f, 0.55f, -a);
         }
 
-        // 2. Crosswalk across East Avenue (leading to TSC)
-        for (int i = -2; i <= 2; i++) {
-            Box stripe = new Box(2.8f, 0.005f, 0.65f);
-            Geometry sGeom = new Geometry("ZebraE_" + i, stripe);
-            sGeom.setMaterial(roadLineMat);
-            sGeom.setLocalTranslation(10.0f, 0.045f, i * 1.8f);
-            rootNode.attachChild(sGeom);
+        // Footpath from the roundabout to the TSC plaza (axis-aligned, approximate)
+        addBox("PathToTSC", pavingMat, 6f, FOOTPATH_HEIGHT * 0.5f, 36.5f, 2.2f, FOOTPATH_HEIGHT * 0.5f, 11f);
+        addSurfaceRect(new Frame(0f, 0f, 0f), 6f, 36.5f, 2.2f, 11f, FOOTPATH_HEIGHT);
+    }
+
+    /**
+     * Straight road arm leaving the roundabout. {@code bearingDeg} is measured from +X towards +Z (south);
+     * {@code lateral} shifts the centre line sideways (positive = to the right when looking outward).
+     */
+    private void addRoadArm(String name, float bearingDeg, float halfWidth, float length, float lateral) {
+        float a = bearingDeg * FastMath.DEG_TO_RAD;
+        float dx = FastMath.cos(a), dz = FastMath.sin(a);
+        float px = -dz, pz = dx; // left-hand perpendicular
+        float start = RING_OUTER_RADIUS - 1.5f;
+        float mid = start + length * 0.5f;
+        float cx = dx * mid + px * lateral, cz = dz * mid + pz * lateral;
+        // Box local +X runs along the arm: yaw such that +X maps to (dx, dz); jME maps +X to (cos, -sin).
+        float yaw = -a;
+        addYawedBox(name, asphaltMat, cx, ROAD_TOP * 0.5f, cz, length * 0.5f, ROAD_TOP * 0.5f, halfWidth, yaw);
+        // Paved footpaths on both sides
+        float fpHalf = 2.5f;
+        for (int side = -1; side <= 1; side += 2) {
+            float off = lateral + side * (halfWidth + fpHalf);
+            float fx = dx * (mid + 2f) + px * off, fz = dz * (mid + 2f) + pz * off;
+            addYawedBox(name + "_Footpath" + (side < 0 ? "L" : "R"), pavingMat, fx, FOOTPATH_HEIGHT * 0.5f, fz,
+                length * 0.5f - 2f, FOOTPATH_HEIGHT * 0.5f, fpHalf, yaw);
+            surfaces.add(new Surface(new Frame(fx, fz, yaw), length * 0.5f - 2f, fpHalf, 0f, FOOTPATH_HEIGHT));
         }
     }
+
+    // ---- Anti-Terrorism Raju Memorial Sculpture ---------------------------------------------------
 
     private void buildRajuMemorial() {
-        // Outer Curb Ring
-        Cylinder curbCyl = new Cylinder(36, 36, 8.6f, 0.30f, true);
-        Geometry curbGeom = new Geometry("RajuCurb", curbCyl);
-        curbGeom.rotate(FastMath.HALF_PI, 0, 0);
-        curbGeom.setLocalTranslation(0, 0.15f, 0);
-        curbGeom.setMaterial(curbMat);
-        rootNode.attachChild(curbGeom);
+        Node raju = new Node("RajuMemorial");
+        staticNode.attachChild(raju);
 
-        // Circular Lawn Island
-        Cylinder islandCyl = new Cylinder(36, 36, 8.3f, 0.34f, true);
-        Geometry islandGeom = new Geometry("RajuIsland", islandCyl);
-        islandGeom.rotate(FastMath.HALF_PI, 0, 0);
-        islandGeom.setLocalTranslation(0, 0.17f, 0);
-        islandGeom.setMaterial(grassMat);
-        rootNode.attachChild(islandGeom);
+        // Island: concrete kerb cylinder with a lawn disc on top (OSM way 225234308, ~20.5 m across)
+        addCylinderY("IslandKerb", concreteDarkMat, 0f, 0f, 0f, ISLAND_RADIUS + 0.3f, ISLAND_HEIGHT, raju);
+        addDisc("IslandLawn", grassMat, 0f, ISLAND_HEIGHT + 0.015f, 0f, ISLAND_RADIUS, 48);
+        addSurfaceDisc(0f, 0f, ISLAND_RADIUS + 0.3f, ISLAND_HEIGHT);
 
-        // Outer Flowerbed Border (Natural rounded hedge border with yellow & red blooms)
-        for (int b = 0; b < 32; b++) {
-            float angle = b * (FastMath.TWO_PI / 32f);
-            float bx = FastMath.cos(angle) * 7.6f;
-            float bz = FastMath.sin(angle) * 7.6f;
-            Sphere shrub = new Sphere(10, 10, 0.22f);
-            Geometry fGeom = new Geometry("RajuShrub_" + b, shrub);
-            fGeom.setMaterial((b % 4 == 0) ? radhachuraBloomMat : ((b % 4 == 2) ? krishnachuraBloomMat : hedgeMat));
-            fGeom.setLocalScale(1.1f, 0.65f, 1.1f);
-            fGeom.setLocalTranslation(bx, 0.22f, bz);
-            rootNode.attachChild(fGeom);
+        // Flower border
+        for (int b = 0; b < 36; b++) {
+            float angle = b * (FastMath.TWO_PI / 36f);
+            float bx = FastMath.cos(angle) * (ISLAND_RADIUS - 0.7f);
+            float bz = FastMath.sin(angle) * (ISLAND_RADIUS - 0.7f);
+            Geometry fGeom = new Geometry("IslandShrub_" + b, new Sphere(8, 8, 0.26f));
+            fGeom.setLocalScale(1.1f, 0.6f, 1.1f);
+            fGeom.setLocalTranslation(bx, ISLAND_HEIGHT + 0.16f, bz);
+            finish(fGeom, (b % 3 == 0) ? radhachuraBloomMat : ((b % 3 == 1) ? krishnachuraBloomMat : hedgeMat), raju);
         }
 
-        // Stepped Brick & Terrazzo Pedestal
-        Box baseBox1 = new Box(3.6f, 0.4f, 3.6f);
-        Geometry base1 = new Geometry("RajuBase1", baseBox1);
-        base1.setMaterial(concreteMat);
-        base1.setLocalTranslation(0, 0.4f, 0);
-        rootNode.attachChild(base1);
-        addCollider(-3.6f, 0, -3.6f, 3.6f, 0.8f, 3.6f);
+        // Two-step plinth. Size and height are modelling choices (no measured source).
+        float y0 = ISLAND_HEIGHT;
+        addCylinderY("RajuPlinthLower", concreteMat, 0f, y0, 0f, 3.6f, 0.5f, raju);
+        addCylinderY("RajuPlinthUpper", concreteDarkMat, 0f, y0 + 0.5f, 0f, 2.7f, 0.6f, raju);
+        addCollider(-3.6f, 0f, -3.6f, 3.6f, y0 + 0.5f, 3.6f);
+        addCollider(-2.7f, 0f, -2.7f, 2.7f, y0 + 1.1f, 2.7f);
+        float top = y0 + 1.1f;
 
-        Box baseBox2 = new Box(2.6f, 0.5f, 2.6f);
-        Geometry base2 = new Geometry("RajuBase2", baseBox2);
-        base2.setMaterial(darkConcreteMat);
-        base2.setLocalTranslation(0, 0.9f, 0);
-        rootNode.attachChild(base2);
-        addCollider(-2.6f, 0.8f, -2.6f, 2.6f, 1.4f, 2.6f);
-
-        // 8 Interconnected Figures Representing Indomitable Student Solidarity
-        // (Sculpted in memory of martyr Moin Hossain Raju, standing arm-in-arm)
-        float[] figureHeights = {2.7f, 3.2f, 3.7f, 4.3f, 4.0f, 3.5f, 3.0f, 2.6f};
-        for (int i = 0; i < 8; i++) {
-            float angle = i * (FastMath.TWO_PI / 8f);
-            float radius = 1.55f;
-            float h = figureHeights[i];
-            float fx = FastMath.cos(angle) * radius;
-            float fz = FastMath.sin(angle) * radius;
-
-            // Torso
-            Box figBox = new Box(0.30f, h * 0.45f, 0.26f);
-            Geometry figGeom = new Geometry("RajuFigure_" + i, figBox);
-            figGeom.setMaterial(sculptureMat);
-            figGeom.setLocalTranslation(fx, 1.4f + h * 0.45f, fz);
-            figGeom.rotate(0f, -angle + FastMath.HALF_PI, 0f);
-            rootNode.attachChild(figGeom);
-
-            // Head of Figure
-            Sphere figHead = new Sphere(12, 12, 0.24f);
-            Geometry headGeom = new Geometry("RajuHead_" + i, figHead);
-            headGeom.setMaterial(sculptureMat);
-            headGeom.setLocalTranslation(fx, 1.4f + h * 0.9f + 0.22f, fz);
-            rootNode.attachChild(headGeom);
-
-            // Linking Arm to next figure (unbroken wall of resistance)
-            float nextAngle = (i + 1) * (FastMath.TWO_PI / 8f);
-            float nfx = FastMath.cos(nextAngle) * radius;
-            float nfz = FastMath.sin(nextAngle) * radius;
-            float armMidX = (fx + nfx) * 0.5f;
-            float armMidZ = (fz + nfz) * 0.5f;
-
-            Box armLink = new Box(0.10f, 0.12f, 0.48f);
-            Geometry armGeom = new Geometry("RajuArmLink_" + i, armLink);
-            armGeom.setMaterial(sculptureMat);
-            armGeom.setLocalTranslation(armMidX, 1.4f + h * 0.55f, armMidZ);
-            armGeom.rotate(0f, -angle + FastMath.QUARTER_PI, 0f);
-            rootNode.attachChild(armGeom);
-
-            addCollider(fx - 0.4f, 1.4f, fz - 0.4f, fx + 0.4f, 1.4f + h, fz + 0.4f);
+        // Eight figures in a ring, facing outward, arms raised and linked (composition per Wikipedia;
+        // figure height 2.3 m is an estimate). Each figure: two legs, torso, head, two arms to the
+        // shared raised hand points between neighbours.
+        final int count = 8;
+        final float ringR = 1.9f;
+        final float figureH = 2.3f;
+        Vector3f[] centres = new Vector3f[count];
+        Vector3f[] tangents = new Vector3f[count];
+        Vector3f[] hands = new Vector3f[count];
+        for (int i = 0; i < count; i++) {
+            float a = i * FastMath.TWO_PI / count;
+            centres[i] = new Vector3f(FastMath.cos(a) * ringR, top, FastMath.sin(a) * ringR);
+            tangents[i] = new Vector3f(-FastMath.sin(a), 0f, FastMath.cos(a));
+            float am = a + FastMath.PI / count;
+            hands[i] = new Vector3f(FastMath.cos(am) * (ringR + 0.1f), top + figureH * 0.98f, FastMath.sin(am) * (ringR + 0.1f));
         }
-    }
+        for (int i = 0; i < count; i++) {
+            Vector3f c = centres[i];
+            Vector3f tg = tangents[i];
+            float hipY = top + figureH * 0.46f;
+            float shoulderY = top + figureH * 0.78f;
+            float a = i * FastMath.TWO_PI / count;
 
-    private void buildCentralLibrary() {
-        // Muzharul Islam's Masterpiece: Dhaka University Central Library (1953)
-        float libZ = -28.0f;
-
-        // 1. Broad Terraced Entrance Steps (Grand brick staircase)
-        for (int step = 0; step < 5; step++) {
-            float stepY = step * 0.16f;
-            float stepW = 18f - step * 0.6f;
-            float stepD = 2.0f;
-            Box stepBox = new Box(stepW, 0.08f, stepD);
-            Geometry stepGeom = new Geometry("LibStep_" + step, stepBox);
-            stepGeom.setMaterial(terracottaBrickMat);
-            stepGeom.setLocalTranslation(0f, stepY + 0.08f, libZ + 12f - step * 1.2f);
-            rootNode.attachChild(stepGeom);
+            // Legs
+            for (int s = -1; s <= 1; s += 2) {
+                Vector3f hip = c.add(tg.mult(s * 0.10f)).setY(hipY);
+                Vector3f foot = c.add(tg.mult(s * 0.15f)).setY(top + 0.02f);
+                addLimb("RajuLeg_" + i + "_" + s, bronzeMat, hip, foot, 0.085f, raju);
+            }
+            // Torso (wider across the tangent), facing outward
+            Geometry torso = new Geometry("RajuTorso_" + i, new Box(0.22f, figureH * 0.17f, 0.12f));
+            torso.setLocalTranslation(c.x, (hipY + shoulderY) * 0.5f, c.z);
+            torso.setLocalRotation(new Quaternion().fromAngleAxis(-a + FastMath.HALF_PI, Vector3f.UNIT_Y));
+            finish(torso, bronzeMat, raju);
+            // Neck and head
+            Geometry head = new Geometry("RajuHead_" + i, new Sphere(12, 12, 0.14f));
+            head.setLocalTranslation(c.x, shoulderY + 0.24f, c.z);
+            finish(head, bronzeMat, raju);
+            addLimb("RajuNeck_" + i, bronzeMat, new Vector3f(c.x, shoulderY, c.z), new Vector3f(c.x, shoulderY + 0.14f, c.z), 0.05f, raju);
+            // Arms: right arm to the hand point ahead, left arm to the one behind
+            Vector3f shoulderR = c.add(tg.mult(0.24f)).setY(shoulderY);
+            Vector3f shoulderL = c.add(tg.mult(-0.24f)).setY(shoulderY);
+            addLimb("RajuArmR_" + i, bronzeMat, shoulderR, hands[i], 0.06f, raju);
+            addLimb("RajuArmL_" + i, bronzeMat, shoulderL, hands[(i + count - 1) % count], 0.06f, raju);
         }
-
-        // 2. Elevated Colonnade Terrace Walkway (Ground floor pilotis platform)
-        Box walkBox = new Box(26f, 0.4f, 7.5f);
-        Geometry walkGeom = new Geometry("LibTerrace", walkBox);
-        walkGeom.setMaterial(terracottaBrickMat);
-        walkGeom.setLocalTranslation(0f, 0.8f, libZ + 5.5f);
-        rootNode.attachChild(walkGeom);
-
-        // 3. Iconic Concrete Pilotis Colonnade (11 load-bearing columns elevating the structure)
-        for (int c = -5; c <= 5; c++) {
-            Cylinder colCyl = new Cylinder(18, 18, 0.48f, 5.2f, true);
-            Geometry colGeom = new Geometry("LibCol_" + c, colCyl);
-            colGeom.rotate(FastMath.HALF_PI, 0, 0);
-            float cx = c * 4.6f;
-            float cz = libZ + 4.2f;
-            colGeom.setLocalTranslation(cx, 3.4f, cz);
-            colGeom.setMaterial(concreteMat);
-            rootNode.attachChild(colGeom);
-            addCollider(cx - 0.6f, 0f, cz - 0.6f, cx + 0.6f, 6.0f, cz + 0.6f);
-        }
-
-        // 4. Ground Floor Recessed Glass Reading Halls & Entrance (Behind Pilotis)
-        Box glassBox = new Box(23.5f, 2.2f, 0.1f);
-        Geometry glassGeom = new Geometry("LibGlassWall", glassBox);
-        glassGeom.setMaterial(glassMat);
-        glassGeom.setLocalTranslation(0f, 3.2f, libZ + 1.2f);
-        rootNode.attachChild(glassGeom);
-
-        // 5. Library Upper Reading Hall (Terracotta Red Brick Block)
-        Box upperBox = new Box(26f, 4.6f, 10.0f);
-        Geometry upperGeom = new Geometry("LibUpperHall", upperBox);
-        upperGeom.setMaterial(terracottaBrickMat);
-        upperGeom.setLocalTranslation(0f, 10.6f, libZ);
-        rootNode.attachChild(upperGeom);
-        addCollider(-26f, 0f, libZ - 10f, 26f, 15.2f, libZ + 1f);
-
-        // 6. Muzharul Islam's Signature Vertical Louvers / Brise-Soleil Sunshades
-        for (int l = -12; l <= 12; l++) {
-            Box louver = new Box(0.14f, 3.8f, 0.65f);
-            Geometry lGeom = new Geometry("LibLouver_" + l, louver);
-            lGeom.setMaterial(concreteMat);
-            lGeom.setLocalTranslation(l * 1.9f, 10.6f, libZ + 10.2f);
-            rootNode.attachChild(lGeom);
-        }
-
-        // 7. Hakim Chattar Cultural Node & Tea Stall Kiosk
-        buildHakimChattar(libZ);
-    }
-
-    private void buildHakimChattar(float libZ) {
-        float hx = -15.5f;
-        float hz = libZ + 9.5f;
-
-        // Brick Raised Pavilion
-        Box pavilionBase = new Box(5.2f, 0.25f, 4.2f);
-        Geometry pavGeom = new Geometry("HakimBase", pavilionBase);
-        pavGeom.setMaterial(terracottaBrickMat);
-        pavGeom.setLocalTranslation(hx, 0.25f, hz);
-        rootNode.attachChild(pavGeom);
-
-        // Wooden Tea Stall Counter
-        Box stallBox = new Box(2.8f, 1.1f, 1.2f);
-        Geometry stallGeom = new Geometry("HakimTeaStall", stallBox);
-        stallGeom.setMaterial(treeTrunkMat);
-        stallGeom.setLocalTranslation(hx - 1.2f, 1.1f, hz);
-        rootNode.attachChild(stallGeom);
-        addCollider(hx - 4.0f, 0f, hz - 1.5f, hx + 1.8f, 2.4f, hz + 1.5f);
-
-        // Corrugated Roof Canopy
-        Box roofBox = new Box(3.6f, 0.08f, 2.2f);
-        Geometry rGeom = new Geometry("HakimRoof", roofBox);
-        rGeom.setMaterial(darkConcreteMat);
-        rGeom.rotate(0.08f, 0f, -0.05f);
-        rGeom.setLocalTranslation(hx - 1.0f, 2.6f, hz);
-        rootNode.attachChild(rGeom);
-
-        // Wooden Benches for Student Discussion (Adda)
-        Box bench1 = new Box(1.8f, 0.25f, 0.35f);
-        Geometry b1 = new Geometry("HakimBench1", bench1);
-        b1.setMaterial(concreteMat);
-        b1.setLocalTranslation(hx + 2.5f, 0.45f, hz - 1.5f);
-        rootNode.attachChild(b1);
-
-        Box bench2 = new Box(1.8f, 0.25f, 0.35f);
-        Geometry b2 = new Geometry("HakimBench2", bench2);
-        b2.setMaterial(concreteMat);
-        b2.setLocalTranslation(hx + 2.5f, 0.45f, hz + 1.5f);
-        rootNode.attachChild(b2);
-    }
-
-    private void buildTSC() {
-        // Constantinos Doxiadis's Teacher-Student Centre (TSC, 1961)
-        float tscX = 24.0f;
-        float tscZ = 19.0f;
-
-        // Paved TSC Front Plaza (Geometric brick courtyard)
-        Box plazaBox = new Box(16.0f, 0.12f, 14.0f);
-        Geometry plazaGeom = new Geometry("TSCPlaza", plazaBox);
-        plazaGeom.setMaterial(terracottaBrickMat);
-        plazaGeom.setLocalTranslation(tscX - 2.0f, 0.12f, tscZ - 12.0f);
-        rootNode.attachChild(plazaGeom);
-
-        // Main Auditorium Block
-        Box audBox = new Box(13.0f, 4.5f, 11.0f);
-        Geometry audGeom = new Geometry("TSCAuditorium", audBox);
-        audGeom.setMaterial(concreteMat);
-        audGeom.setLocalTranslation(tscX, 4.5f, tscZ);
-        rootNode.attachChild(audGeom);
-        addCollider(tscX - 13.0f, 0f, tscZ - 11.0f, tscX + 13.0f, 9.0f, tscZ + 11.0f);
-
-        // Modernist Butterfly Roof (Two distinct angled cantilever wings)
-        Box wingLeft = new Box(7.2f, 0.32f, 12.2f);
-        Geometry wlGeom = new Geometry("TSCRoofLeft", wingLeft);
-        wlGeom.rotate(0.06f, 0f, -0.12f);
-        wlGeom.setLocalTranslation(tscX - 6.0f, 9.6f, tscZ);
-        wlGeom.setMaterial(terracottaBrickMat);
-        rootNode.attachChild(wlGeom);
-
-        Box wingRight = new Box(7.2f, 0.32f, 12.2f);
-        Geometry wrGeom = new Geometry("TSCRoofRight", wingRight);
-        wrGeom.rotate(0.06f, 0f, 0.12f);
-        wrGeom.setLocalTranslation(tscX + 6.0f, 9.6f, tscZ);
-        wrGeom.setMaterial(terracottaBrickMat);
-        rootNode.attachChild(wrGeom);
-
-        // Front Entrance Gate & Columns
-        for (int g = -2; g <= 2; g++) {
-            Cylinder gateCol = new Cylinder(16, 16, 0.42f, 5.2f, true);
-            Geometry gc = new Geometry("TSCGateCol_" + g, gateCol);
-            gc.rotate(FastMath.HALF_PI, 0, 0);
-            gc.setMaterial(concreteMat);
-            float gcx = tscX - 8.0f + g * 2.8f;
-            float gcz = tscZ - 11.2f;
-            gc.setLocalTranslation(gcx, 2.6f, gcz);
-            rootNode.attachChild(gc);
-            addCollider(gcx - 0.5f, 0f, gcz - 0.5f, gcx + 0.5f, 5.2f, gcz + 0.5f);
-        }
-
-        // Sunken Circular Discussion Circle (Iconic DU TSC Adda Circle)
-        Cylinder addaRing = new Cylinder(28, 28, 4.2f, 0.35f, true);
-        Geometry addaGeom = new Geometry("TSCAddaRing", addaRing);
-        addaGeom.rotate(FastMath.HALF_PI, 0, 0);
-        addaGeom.setMaterial(darkConcreteMat);
-        addaGeom.setLocalTranslation(tscX - 6.0f, 0.25f, tscZ - 14.0f);
-        rootNode.attachChild(addaGeom);
+        addCollider(-ringR - 0.4f, top, -ringR - 0.4f, ringR + 0.4f, top + figureH, ringR + 0.4f);
     }
 
     private void buildMemorialPlaque() {
-        // Commemorative July Movement Plaque
-        Box plaqueBase = new Box(0.7f, 0.85f, 0.4f);
-        Geometry pBase = new Geometry("PlaqueBase", plaqueBase);
-        pBase.setMaterial(concreteMat);
-        pBase.setLocalTranslation(2f, 0.85f, -6f);
-        rootNode.attachChild(pBase);
-        addCollider(1.3f, 0f, -6.4f, 2.7f, 1.7f, -5.6f);
-
-        // Brass Information Face
-        Box plaqueFace = new Box(0.55f, 0.65f, 0.05f);
-        Geometry pFace = new Geometry("PlaqueFace", plaqueFace);
-        pFace.setMaterial(memorialGoldMat);
-        pFace.setLocalTranslation(2f, 0.95f, -5.58f);
-        rootNode.attachChild(pFace);
-
-        // Golden Memorial Beacon Indicator
-        Sphere beacon = new Sphere(16, 16, 0.18f);
-        Geometry bGeom = new Geometry("PlaqueBeacon", beacon);
-        bGeom.setMaterial(memorialGoldMat);
-        bGeom.setLocalTranslation(2f, 1.95f, -6f);
-        rootNode.attachChild(bGeom);
+        // Fictional commemorative plaque used by the Level 01 objectives; sits on the island lawn.
+        float y0 = ISLAND_HEIGHT;
+        addBox("PlaqueBase", concreteMat, 2f, y0 + 0.85f, -6f, 0.7f, 0.85f, 0.4f);
+        addCollider(1.3f, 0f, -6.4f, 2.7f, y0 + 1.7f, -5.6f);
+        Geometry face = new Geometry("PlaqueFace", new Box(0.55f, 0.65f, 0.05f));
+        face.setLocalTranslation(2f, y0 + 0.95f, -5.58f);
+        finish(face, memorialGoldMat, null);
+        Geometry beacon = new Geometry("PlaqueBeacon", new Sphere(16, 16, 0.18f));
+        beacon.setLocalTranslation(2f, y0 + 1.95f, -6f);
+        finish(beacon, memorialGoldMat, rootNode);
     }
+
+    // ---- Teacher-Student Centre -------------------------------------------------------------------
+
+    private void buildTSC() {
+        tscNode = new Node("TSC");
+        tscNode.setLocalTranslation(TSC_X, 0f, TSC_Z);
+        tscNode.setLocalRotation(new Quaternion().fromAngleAxis(TSC_YAW, Vector3f.UNIT_Y));
+        staticNode.attachChild(tscNode);
+        tscDecalNode = new Node("TSC_Decals");
+        tscDecalNode.setLocalTranslation(TSC_X, 0f, TSC_Z);
+        tscDecalNode.setLocalRotation(new Quaternion().fromAngleAxis(TSC_YAW, Vector3f.UNIT_Y));
+        rootNode.attachChild(tscDecalNode);
+
+        buildTSCUnionBlock();
+        buildTSCAuditorium();
+        buildTSCCafeteria();
+    }
+
+    /**
+     * Student Union Building: three storeys, 158 x 37 ft (48.2 x 11.3 m), RC frame with brick walls,
+     * double wing-like roof, brick jali, access from the north (Daily Star); 15 m high (OSM).
+     * Local frame: X along the length, north face at local z = -5.65.
+     */
+    private void buildTSCUnionBlock() {
+        Node n = tscNode;
+        float hl = 24.1f, hw = 5.65f;
+        float g0 = 0f, g1 = 4.2f;      // ground storey
+        float f1 = 4.5f, f1t = 8.0f;   // first floor
+        float f2 = 8.3f, f2t = 11.8f;  // second floor
+
+        // Entrance plaza on the north side
+        addBox("TSCPlaza", pavingMat, 0f, PLAZA_HEIGHT * 0.5f, -13f, 26f, PLAZA_HEIGHT * 0.5f, 7.2f, n);
+        addSurfaceRect(tscFrame, 0f, -13f, 26f, 7.2f, PLAZA_HEIGHT);
+
+        // Ground storey: verandah along the north face (2 m deep) in front of a plaster back wall
+        addBox("TSC_GroundWall", plasterWarmMat, 0f, (g0 + g1) * 0.5f, 1.0f, hl, (g1 - g0) * 0.5f, hw - 2.0f, n);
+        addFrameCollider(tscFrame, 0f, 1.0f, hl, hw - 2.0f, 0f, 12f);
+        for (int i = 0; i <= 12; i++) {
+            float x = -24f + i * 4f;
+            addBox("TSC_Col_" + i, concreteMat, x, g1 * 0.5f, -hw + 0.25f, 0.22f, g1 * 0.5f, 0.22f, n);
+            float wx = tscFrame.worldX(x, -hw + 0.25f), wz = tscFrame.worldZ(x, -hw + 0.25f);
+            addCollider(wx - 0.35f, 0f, wz - 0.35f, wx + 0.35f, g1, wz + 0.35f);
+        }
+        // Two entrances (OSM: building:entrances=2)
+        for (int s = -1; s <= 1; s += 2) {
+            addBox("TSC_Door_" + s, glassMat, s * 8f, 1.5f, -3.60f, 1.3f, 1.5f, 0.05f, n);
+            addBox("TSC_DoorFrame_" + s, concreteDarkMat, s * 8f, 3.3f, -3.58f, 1.6f, 0.3f, 0.08f, n);
+        }
+        // Brick jali panels on the verandah back wall
+        float[] jaliX = {-20f, -15f, 15f, 20f};
+        for (int j = 0; j < jaliX.length; j++) {
+            addJaliPanel("TSC_Jali_" + j, jaliX[j], 0.6f, -3.62f, 1.3f, 1.4f, n);
+        }
+
+        // Floor slabs
+        addBox("TSC_Slab1", concreteMat, 0f, (g1 + f1) * 0.5f, 0f, hl + 0.4f, (f1 - g1) * 0.5f, hw + 0.4f, n);
+        addBox("TSC_Slab2", concreteMat, 0f, (f1t + f2) * 0.5f, 0f, hl + 0.4f, (f2 - f1t) * 0.5f, hw + 0.4f, n);
+        // Upper floors: brick walls with a window per 4 m bay on both long faces
+        addBox("TSC_Floor1", brickMat, 0f, (f1 + f1t) * 0.5f, 0f, hl, (f1t - f1) * 0.5f, hw, n);
+        addBox("TSC_Floor2", brickMat, 0f, (f2 + f2t) * 0.5f, 0f, hl, (f2t - f2) * 0.5f, hw, n);
+        for (int i = 0; i < 12; i++) {
+            float x = -22f + i * 4f;
+            for (int s = -1; s <= 1; s += 2) {
+                addBox("TSC_Win1_" + i + "_" + s, glassMat, x, f1 + 2.0f, s * (hw + 0.03f), 1.4f, 0.8f, 0.04f, n);
+                addBox("TSC_Win2_" + i + "_" + s, glassMat, x, f2 + 2.0f, s * (hw + 0.03f), 1.4f, 0.8f, 0.04f, n);
+            }
+        }
+        // Roof: flat slab with the double "butterfly" roof above it, valley on the centre line, edges at 15 m
+        addBox("TSC_RoofSlab", concreteMat, 0f, f2t + 0.2f, 0f, hl + 0.4f, 0.2f, hw + 0.2f, n);
+        float valleyY = 12.5f, edgeY = 15.0f, wingHalf = 3.15f;
+        float tilt = FastMath.atan((edgeY - valleyY) / (wingHalf * 2f));
+        for (int s = -1; s <= 1; s += 2) {
+            Geometry wing = new Geometry("TSC_RoofWing_" + s, new Box(hl + 0.6f, 0.12f, wingHalf));
+            wing.setLocalTranslation(0f, (valleyY + edgeY) * 0.5f, s * wingHalf);
+            wing.setLocalRotation(new Quaternion().fromAngleAxis(-s * tilt, Vector3f.UNIT_X));
+            finish(wing, concreteMat, n);
+        }
+        addBox("TSC_RoofValley", concreteDarkMat, 0f, valleyY, 0f, hl + 0.6f, 0.18f, 0.35f, n);
+        // Clerestory glazing closes the gap between the flat slab and the raised wing edges (a choice)
+        float cleH = (edgeY - 0.3f - (f2t + 0.4f)) * 0.5f, cleY = f2t + 0.4f + cleH;
+        for (int s = -1; s <= 1; s += 2) {
+            addBox("TSC_Clerestory_" + s, glassMat, 0f, cleY, s * (hw - 0.05f), hl, cleH, 0.04f, n);
+            addBox("TSC_ClerestoryEnd_" + s, glassMat, s * (hl - 0.05f), cleY, 0f, 0.04f, cleH, hw - 0.1f, n);
+        }
+
+        // Covered walkways on steel columns (Daily Star): 10 m beyond each end, and a link to the auditorium
+        for (int s = -1; s <= 1; s += 2) {
+            float cx = s * (hl + 5f);
+            addBox("TSC_WalkCanopy_" + s, concreteMat, cx, 3.3f, -4.4f, 5f, 0.08f, 1.2f, n);
+            for (int i = 0; i < 3; i++) {
+                float x = s * (hl + 1.5f + i * 4f);
+                for (int z = 0; z < 2; z++) {
+                    float lz = -5.3f + z * 1.8f;
+                    addBox("TSC_WalkCol_" + s + "_" + i + "_" + z, steelMat, x, 1.65f, lz, 0.05f, 1.65f, 0.05f, n);
+                    float wx = tscFrame.worldX(x, lz), wz = tscFrame.worldZ(x, lz);
+                    addCollider(wx - 0.15f, 0f, wz - 0.15f, wx + 0.15f, 3.3f, wz + 0.15f);
+                }
+            }
+        }
+        addBox("TSC_LinkCanopy", concreteMat, -14f, 3.3f, 12.5f, 1.2f, 0.08f, 6.9f, n);
+        for (int i = 0; i < 3; i++) {
+            float lz = 8f + i * 4f;
+            for (int s = -1; s <= 1; s += 2) {
+                float lx = -14f + s * 0.9f;
+                addBox("TSC_LinkCol_" + i + "_" + s, steelMat, lx, 1.65f, lz, 0.05f, 1.65f, 0.05f, n);
+                float wx = tscFrame.worldX(lx, lz), wz = tscFrame.worldZ(lx, lz);
+                addCollider(wx - 0.15f, 0f, wz - 0.15f, wx + 0.15f, 3.3f, wz + 0.15f);
+            }
+        }
+    }
+
+    /** Perforated brick panel: a brick slab with a grid of dark recesses. */
+    private void addJaliPanel(String name, float cx, float bottomY, float cz, float hx, float hy, Node parent) {
+        addBox(name, brickDarkMat, cx, bottomY + hy, cz, hx, hy, 0.12f, parent);
+        int cols = Math.max(1, Math.round(hx * 2f / 0.45f));
+        int rows = Math.max(1, Math.round(hy * 2f / 0.45f));
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                float x = cx - hx + (c + 0.5f) * (hx * 2f / cols);
+                float y = bottomY + (r + 0.5f) * (hy * 2f / rows);
+                addBox(name + "_h" + r + "_" + c, steelMat, x, y, cz - 0.13f, 0.11f, 0.11f, 0.02f, parent);
+            }
+        }
+    }
+
+    /**
+     * Auditorium: 170 x 85 ft under a reinforced-concrete parabolic vault (Daily Star); OSM footprint
+     * centre about (-8, 101.4), long axis parallel to the union block. Width 24 m is a compromise between
+     * the two sources; the 14 m crown height is an estimate.
+     */
+    private void buildTSCAuditorium() {
+        Node n = tscNode;
+        float lx = tscFrame.localX(-8.0f, 101.4f), lz = tscFrame.localZ(-8.0f, 101.4f);
+        float hl = 25.9f, hw = 12.0f, wallTop = 8.0f, rise = 6.0f;
+
+        addBox("Aud_Walls", plasterMat, lx, wallTop * 0.5f, lz, hl, wallTop * 0.5f, hw, n);
+        addBox("Aud_BrickBase", brickMat, lx, 0.6f, lz, hl + 0.05f, 0.6f, hw + 0.05f, n);
+        for (int i = 0; i < 11; i++) {
+            float x = lx - 23f + i * 4.6f;
+            for (int s = -1; s <= 1; s += 2) {
+                addBox("Aud_Win_" + i + "_" + s, glassMat, x, 4.8f, lz + s * (hw + 0.03f), 0.5f, 2.0f, 0.04f, n);
+            }
+        }
+        // Entrance canopy on the north face (towards the union block)
+        float northZ = lz - hw;
+        addBox("Aud_Doors", glassMat, lx, 1.6f, northZ - 0.03f, 4.5f, 1.5f, 0.05f, n);
+        addBox("Aud_Canopy", concreteMat, lx, 3.5f, northZ - 2.5f, 6f, 0.12f, 2.5f, n);
+        for (int s = -1; s <= 1; s += 2) {
+            addBox("Aud_CanopyCol_" + s, concreteMat, lx + s * 5f, 1.75f, northZ - 4.6f, 0.18f, 1.75f, 0.18f, n);
+            float wx = tscFrame.worldX(lx + s * 5f, northZ - 4.6f), wz = tscFrame.worldZ(lx + s * 5f, northZ - 4.6f);
+            addCollider(wx - 0.3f, 0f, wz - 0.3f, wx + 0.3f, 3.5f, wz + 0.3f);
+        }
+        // Parabolic vault
+        Mesh vault = createVaultMesh(hl * 2f + 0.6f, hw * 2f + 0.3f, wallTop, rise, 24, tileOf.get(concreteMat));
+        Geometry vg = new Geometry("Aud_Vault", vault);
+        vg.setLocalTranslation(lx, 0f, lz);
+        finish(vg, concreteMat, n);
+        addFrameCollider(tscFrame, lx, lz, hl, hw, 0f, wallTop + rise);
+    }
+
+    /** Cafeteria: two single-storey wings around a green (Daily Star; OSM way 1560050747). */
+    private void buildTSCCafeteria() {
+        Node n = tscNode;
+        float lx = tscFrame.localX(57f, 131f), lz = tscFrame.localZ(57f, 131f);
+        for (int s = -1; s <= 1; s += 2) {
+            float z = lz + s * 9f;
+            addBox("Cafe_Wing_" + s, plasterWarmMat, lx, 1.8f, z, 30f, 1.8f, 4.5f, n);
+            addBox("Cafe_Roof_" + s, concreteMat, lx, 3.75f, z, 30.5f, 0.15f, 5.0f, n);
+            for (int i = 0; i < 10; i++) {
+                addBox("Cafe_Win_" + s + "_" + i, glassMat, lx - 27f + i * 6f, 1.9f, z - s * (4.5f + 0.03f), 1.6f, 0.7f, 0.04f, n);
+            }
+            addFrameCollider(tscFrame, lx, z, 30f, 4.5f, 0f, 4f);
+        }
+    }
+
+    // ---- Central Library ----------------------------------------------------------------------------
+
+    /**
+     * Muzharul Islam's library: two rectangular blocks raised on pilotis, a ramp to the first floor and a
+     * vaulted third block (Banglapedia). Footprints from OSM ways 295394032 and 1152628065; 3 levels.
+     * Storey heights, column grid and facade pattern are modelling choices.
+     */
+    private void buildCentralLibrary() {
+        // Building I: east-west block A and north-south wing B
+        buildLibraryBar("LibI_A", -79.5f, -158.5f, 18.5f, 10.5f, false, false);
+        buildLibraryBar("LibI_B", -87.5f, -120.25f, 9.5f, 27.75f, false, true);
+        // Building II: vaulted east-west bar C and north-south bar D (nearest the sculpture)
+        buildLibraryBar("LibII_C", -73f, -82.5f, 19.5f, 6.1f, true, false);
+        buildLibraryBar("LibII_D", -44.5f, -92f, 9.5f, 29f, false, true);
+
+        // External ramp to the first floor along the east face of bar D, rising northwards
+        float rx = -33.4f, zBottom = -66f, zTop = -96f, h = 4.0f;
+        float len = zBottom - zTop;
+        float slope = FastMath.atan(h / len);
+        Geometry ramp = new Geometry("Lib_Ramp", new Box(1.5f, 0.12f, len * 0.5f + 0.2f));
+        ramp.setLocalTranslation(rx, h * 0.5f, (zBottom + zTop) * 0.5f);
+        ramp.setLocalRotation(new Quaternion().fromAngleAxis(slope, Vector3f.UNIT_X));
+        finish(ramp, concreteMat, null);
+        Geometry parapet = new Geometry("Lib_RampParapet", new Box(0.08f, 0.5f, len * 0.5f + 0.2f));
+        parapet.setLocalTranslation(rx + 1.45f, h * 0.5f + 0.55f, (zBottom + zTop) * 0.5f);
+        parapet.setLocalRotation(new Quaternion().fromAngleAxis(slope, Vector3f.UNIT_X));
+        finish(parapet, concreteMat, null);
+        int slices = 6;
+        for (int i = 0; i < slices; i++) {
+            float z1 = zBottom - i * len / slices, z0 = z1 - len / slices;
+            float topY = h * (i + 1) / slices + 0.6f;
+            addCollider(rx - 1.5f, 0f, z0, rx + 1.5f, topY, z1);
+        }
+        // Landing posts at the ramp top
+        addBox("Lib_RampLanding", concreteMat, rx, 4.2f, zTop - 1.5f, 1.6f, 0.15f, 1.5f);
+        addBox("Lib_RampPost", concreteMat, rx + 1.2f, 2.1f, zTop - 2.5f, 0.2f, 2.1f, 0.2f);
+        addCollider(rx + 1.0f, 0f, zTop - 2.7f, rx + 1.4f, 4.2f, zTop - 2.3f);
+    }
+
+    private void buildLibraryBar(String name, float cx, float cz, float hx, float hz, boolean vaulted, boolean finsOnEast) {
+        float colTop = 4.0f, slab1 = 4.4f, floor1Top = 7.6f, slab2 = 8.0f, floor2Top = 11.2f;
+
+        // Pilotis: perimeter columns plus a centre row, open ground floor
+        int nx = Math.max(2, Math.round(hx * 2f / 6f)) + 1;
+        int nz = Math.max(2, Math.round(hz * 2f / 6f)) + 1;
+        List<float[]> cols = new ArrayList<>();
+        for (int i = 0; i < nx; i++) {
+            float x = cx - hx + 0.5f + (hx * 2f - 1f) * i / (nx - 1);
+            cols.add(new float[]{x, cz - hz + 0.5f});
+            cols.add(new float[]{x, cz + hz - 0.5f});
+            if (hz > 5f) cols.add(new float[]{x, cz});
+        }
+        for (int j = 1; j < nz - 1; j++) {
+            float z = cz - hz + 0.5f + (hz * 2f - 1f) * j / (nz - 1);
+            cols.add(new float[]{cx - hx + 0.5f, z});
+            cols.add(new float[]{cx + hx - 0.5f, z});
+        }
+        int k = 0;
+        for (float[] c : cols) {
+            addBox(name + "_Col" + (k++), concreteMat, c[0], colTop * 0.5f, c[1], 0.28f, colTop * 0.5f, 0.28f);
+            addCollider(c[0] - 0.4f, 0f, c[1] - 0.4f, c[0] + 0.4f, colTop, c[1] + 0.4f);
+        }
+        // Enclosed core on the ground floor (stairs, entrance hall), set back from the columns
+        float coreHx = Math.max(1.5f, hx - 3f), coreHz = Math.max(1.5f, hz - 3f);
+        addBox(name + "_Core", plasterMat, cx, colTop * 0.5f, cz, coreHx, colTop * 0.5f, coreHz);
+        addCollider(cx - coreHx, 0f, cz - coreHz, cx + coreHx, colTop, cz + coreHz);
+        addBox(name + "_CoreDoor", glassMat, cx, 1.4f, cz + coreHz + 0.03f, 1.2f, 1.4f, 0.04f);
+
+        // Slabs and two brick upper floors with strip windows on all faces
+        addBox(name + "_Slab1", concreteMat, cx, (colTop + slab1) * 0.5f, cz, hx + 0.4f, (slab1 - colTop) * 0.5f, hz + 0.4f);
+        addBox(name + "_Floor1", brickMat, cx, (slab1 + floor1Top) * 0.5f, cz, hx, (floor1Top - slab1) * 0.5f, hz);
+        addBox(name + "_Slab2", concreteMat, cx, (floor1Top + slab2) * 0.5f, cz, hx + 0.4f, (slab2 - floor1Top) * 0.5f, hz + 0.4f);
+        addBox(name + "_Floor2", brickMat, cx, (slab2 + floor2Top) * 0.5f, cz, hx, (floor2Top - slab2) * 0.5f, hz);
+        float[] floorY = {slab1 + 2.0f, slab2 + 2.0f};
+        for (int f = 0; f < 2; f++) {
+            for (int s = -1; s <= 1; s += 2) {
+                addBox(name + "_WinX" + f + s, glassMat, cx + s * (hx + 0.03f), floorY[f], cz, 0.04f, 0.8f, hz - 1.0f);
+                addBox(name + "_WinZ" + f + s, glassMat, cx, floorY[f], cz + s * (hz + 0.03f), hx - 1.0f, 0.8f, 0.04f);
+            }
+        }
+        if (vaulted) {
+            Mesh vault = createVaultMesh(hx * 2f + 0.8f, hz * 2f + 0.8f, floor2Top, 2.6f, 16, tileOf.get(concreteMat));
+            Geometry vg = new Geometry(name + "_Vault", vault);
+            vg.setLocalTranslation(cx, 0f, cz);
+            finish(vg, concreteMat, null);
+        } else {
+            addBox(name + "_Roof", concreteMat, cx, floor2Top + 0.35f, cz, hx + 0.4f, 0.35f, hz + 0.4f);
+        }
+        // Vertical concrete fins (brise-soleil) on the east face
+        if (finsOnEast) {
+            int count = (int) ((hz * 2f - 1f) / 1.5f);
+            for (int i = 0; i <= count; i++) {
+                float z = cz - hz + 0.75f + i * 1.5f;
+                addBox(name + "_Fin" + i, concreteMat, cx + hx + 0.5f, (slab1 + floor2Top) * 0.5f, z, 0.45f, (floor2Top - slab1) * 0.5f, 0.07f);
+            }
+        }
+    }
+
+    // ---- Hakim Chattar --------------------------------------------------------------------------
+
+    private void buildHakimChattar() {
+        float hx = HAKIM_X + 3f, hz = HAKIM_Z + 2f;
+        // Raised brick pavilion with a tea stall, benches and the banyan tree (tree and stall: scene choices)
+        addBox("HakimBase", brickMat, hx, 0.15f, hz, 6.0f, 0.15f, 5.0f);
+        addSurfaceRect(new Frame(0f, 0f, 0f), hx, hz, 6.0f, 5.0f, 0.30f);
+        addBox("HakimTeaStall", woodMat, hx - 2.0f, 0.3f + 1.0f, hz, 1.6f, 1.0f, 1.1f);
+        addCollider(hx - 3.6f, 0f, hz - 1.1f, hx - 0.4f, 2.4f, hz + 1.1f);
+        Geometry roof = new Geometry("HakimRoof", new Box(2.4f, 0.05f, 1.8f));
+        roof.setLocalTranslation(hx - 2.0f, 2.75f, hz);
+        roof.rotate(0.06f, 0f, -0.05f);
+        finish(roof, steelMat, null);
+        for (int s = -1; s <= 1; s += 2) {
+            addBox("HakimRoofPost" + s, woodMat, hx - 2.0f + s * 2.1f, 1.5f, hz + 1.5f, 0.05f, 1.2f, 0.05f);
+            addBox("HakimBench" + s, woodMat, hx + 2.5f, 0.3f + 0.42f, hz + s * 2.0f, 1.6f, 0.06f, 0.3f);
+            addBox("HakimBenchLegs" + s, concreteDarkMat, hx + 2.5f, 0.3f + 0.18f, hz + s * 2.0f, 1.4f, 0.18f, 0.2f);
+        }
+        buildBanyanTree(HAKIM_X - 4f, HAKIM_Z - 6f);
+    }
+
+    // ---- Vegetation -----------------------------------------------------------------------------
+
+    private void buildVegetation() {
+        float[][] krishnachura = {
+            {-22f, -22f}, {-38f, -21f}, {-54f, -21f}, {-70f, -22f},
+            {-30f, 6f}, {-48f, 6f}, {-66f, 7f},
+            {34f, 16f}, {-5f, 32f}, {22f, 40f}, {-48f, 44f}, {50f, 28f}
+        };
+        for (int i = 0; i < krishnachura.length; i++) {
+            createOrnamentalTree("Krishnachura_" + i, krishnachura[i][0], krishnachura[i][1], 4.6f, 3.0f, krishnachuraBloomMat);
+        }
+        float[][] jarul = {{-40f, -50f}, {-25f, -46f}, {-66f, -56f}, {-100f, -82f}, {-20f, -75f}, {-22f, -105f}};
+        for (int i = 0; i < jarul.length; i++) {
+            createOrnamentalTree("Jarul_" + i, jarul[i][0], jarul[i][1], 4.2f, 2.5f, jarulBloomMat);
+        }
+        float[][] radhachura = {{-10f, 46f}, {20f, 42f}, {-24f, 84f}, {40f, 92f}};
+        for (int i = 0; i < radhachura.length; i++) {
+            createOrnamentalTree("Radhachura_" + i, radhachura[i][0], radhachura[i][1], 4.4f, 2.6f, radhachuraBloomMat);
+        }
+        // Plain shade trees further out
+        float[][] shade = {{-120f, -30f}, {-140f, 10f}, {70f, -50f}, {80f, -20f}, {-80f, 100f}, {100f, 60f}, {-110f, -120f}, {0f, -70f}};
+        for (int i = 0; i < shade.length; i++) {
+            createOrnamentalTree("Shade_" + i, shade[i][0], shade[i][1], 6.0f, 4.0f, null);
+        }
+    }
+
+    private void createOrnamentalTree(String name, float tx, float tz, float height, float canopyRadius, Material bloomMat) {
+        Geometry trunk = new Geometry(name + "_Trunk", new Cylinder(2, 12, 0.3f, height, true));
+        trunk.rotate(FastMath.HALF_PI, 0f, 0f);
+        trunk.setLocalTranslation(tx, height * 0.5f, tz);
+        finish(trunk, treeTrunkMat, null);
+        addCollider(tx - 0.4f, 0f, tz - 0.4f, tx + 0.4f, height, tz + 0.4f);
+
+        Geometry canopy = new Geometry(name + "_Canopy", new Sphere(12, 12, canopyRadius));
+        canopy.setLocalTranslation(tx, height + canopyRadius * 0.4f, tz);
+        canopy.setLocalScale(1.35f, 0.70f, 1.35f);
+        finish(canopy, foliageMat, null);
+
+        if (bloomMat != null) {
+            Geometry bloom = new Geometry(name + "_Bloom", new Sphere(10, 10, canopyRadius * 0.75f));
+            bloom.setLocalTranslation(tx + 0.2f, height + canopyRadius * 0.65f, tz + 0.15f);
+            bloom.setLocalScale(1.10f, 0.45f, 1.10f);
+            finish(bloom, bloomMat, null);
+        }
+    }
+
+    private void buildBanyanTree(float bx, float bz) {
+        Geometry trunk = new Geometry("Banyan_Trunk", new Cylinder(2, 16, 0.95f, 5.2f, true));
+        trunk.rotate(FastMath.HALF_PI, 0f, 0f);
+        trunk.setLocalTranslation(bx, 2.6f, bz);
+        finish(trunk, treeTrunkMat, null);
+        addCollider(bx - 1.2f, 0f, bz - 1.2f, bx + 1.2f, 5.2f, bz + 1.2f);
+
+        Geometry canopy = new Geometry("Banyan_Canopy", new Sphere(16, 16, 5.0f));
+        canopy.setLocalTranslation(bx, 6.4f, bz);
+        canopy.setLocalScale(1.7f, 0.55f, 1.7f);
+        finish(canopy, foliageMat, null);
+
+        float[] rootOffsets = {-2.6f, 2.6f};
+        for (float rx : rootOffsets) {
+            for (float rz : rootOffsets) {
+                Geometry root = new Geometry("Banyan_Root_" + rx + "_" + rz, new Cylinder(2, 10, 0.16f, 4.8f, true));
+                root.rotate(FastMath.HALF_PI, 0f, 0f);
+                root.setLocalTranslation(bx + rx, 2.4f, bz + rz);
+                finish(root, treeTrunkMat, null);
+                addCollider(bx + rx - 0.25f, 0f, bz + rz - 0.25f, bx + rx + 0.25f, 4.8f, bz + rz + 0.25f);
+            }
+        }
+    }
+
+    // ---- Props ----------------------------------------------------------------------------------
+
+    private void buildCampusProps() {
+        List<float[]> lamps = new ArrayList<>();
+        // Around the roundabout, skipping the angles where road arms leave it
+        float[] ringAngles = {22.5f, 67.5f, 157.5f, 247.5f, 292.5f, 337.5f};
+        for (float deg : ringAngles) {
+            float a = deg * FastMath.DEG_TO_RAD;
+            lamps.add(new float[]{FastMath.cos(a) * 27.5f, FastMath.sin(a) * 27.5f});
+        }
+        float[][] fixed = {{-45f, -17f}, {-70f, -17f}, {-95f, -17f}, {-45f, 1.5f}, {-70f, 1.5f},
+            {-22.4f, 21.7f}, {-7.6f, 30.2f}, {-34.9f, 43.4f}, {-20.1f, 51.9f},
+            {14f, 30f}, {26f, 48f}, {-3f, 44f}, {36f, 46f}};
+        for (float[] f : fixed) lamps.add(f);
+
+        int i = 0;
+        for (float[] l : lamps) {
+            float lx = l[0], lz = l[1];
+            Geometry pole = new Geometry("LampPole_" + i, new Cylinder(2, 10, 0.07f, 4.2f, true));
+            pole.rotate(FastMath.HALF_PI, 0f, 0f);
+            pole.setLocalTranslation(lx, 2.1f, lz);
+            finish(pole, lampMat, null);
+            addBox("LampArm_" + i, lampMat, lx, 4.1f, lz, 0.45f, 0.03f, 0.03f);
+            for (int s = -1; s <= 1; s += 2) {
+                Geometry globe = new Geometry("LampGlobe_" + i + "_" + s, new Sphere(8, 8, 0.12f));
+                globe.setLocalTranslation(lx + s * 0.45f, 4.22f, lz);
+                finish(globe, memorialGoldMat, null);
+            }
+            addCollider(lx - 0.2f, 0f, lz - 0.2f, lx + 0.2f, 4.2f, lz + 0.2f);
+            i++;
+        }
+    }
+
+    // ---- Banners and road graffiti ----------------------------------------------------------------
 
     private void buildJulyMovementBannersAndMurals(AssetManager assetManager) {
         if (textRenderer == null || assetManager == null) return;
 
         try {
-            // 1. Road Graffiti: "কোটা না মেধা? মেধা! মেধা!" (Approaching Raju Sculpture)
+            // 1. Road graffiti on the roundabout carriageway, read when walking towards the sculpture
             Texture2D quotaTex = textRenderer.createTexture(
                 "কোটা না মেধা?  মেধা! মেধা!",
                 28f, true,
@@ -496,11 +1093,11 @@ public class CampusWorld {
                 20, 10
             );
             Geometry quotaDecal = createDecalQuad(assetManager, "Decal_Quota", quotaTex, 6.4f, 1.6f);
-            quotaDecal.setLocalTranslation(-3.2f, 0.02f, 6.2f);
+            quotaDecal.setLocalTranslation(-3.2f, 0.03f, 13.5f);
             quotaDecal.rotate(-FastMath.HALF_PI, 0, 0);
             rootNode.attachChild(quotaDecal);
 
-            // 2. Road Graffiti: "৩৬ জুলাই — ছাত্র-জনতার ঐতিহাসিক বিজয়"
+            // 2. Road graffiti behind the spawn point
             Texture2D july36Tex = textRenderer.createTexture(
                 "৩৬ জুলাই — ছাত্র-জনতার ঐতিহাসিক বিজয়",
                 28f, true,
@@ -509,11 +1106,11 @@ public class CampusWorld {
                 20, 10
             );
             Geometry july36Decal = createDecalQuad(assetManager, "Decal_July36", july36Tex, 7.2f, 1.6f);
-            july36Decal.setLocalTranslation(-3.6f, 0.02f, -4.5f);
+            july36Decal.setLocalTranslation(-3.6f, 0.03f, 23.5f);
             july36Decal.rotate(-FastMath.HALF_PI, 0, 0);
             rootNode.attachChild(july36Decal);
 
-            // 3. Central Library Wall Banner: "আমার ভাই মরলো কেন? জবাব চাই!"
+            // 3. Banner on the south face of Central Library Building II (faces the sculpture)
             Texture2D bannerTex1 = textRenderer.createTexture(
                 "আমার ভাই মরলো কেন?  জবাব চাই!",
                 32f, true,
@@ -522,10 +1119,10 @@ public class CampusWorld {
                 24, 12
             );
             Geometry libBanner = createDecalQuad(assetManager, "Banner_Library", bannerTex1, 8.5f, 1.8f);
-            libBanner.setLocalTranslation(-4.25f, 4.8f, -22.2f);
+            libBanner.setLocalTranslation(-44.5f - 4.25f, 5.0f, -63f + 0.08f);
             rootNode.attachChild(libBanner);
 
-            // 4. TSC Wall Banner: "স্বৈরাচার নিপাত যাক, গণতন্ত্র মুক্তি পাক"
+            // 4. Banner on the north face of the TSC union block, over the verandah
             Texture2D bannerTex2 = textRenderer.createTexture(
                 "স্বৈরাচার নিপাত যাক, গণতন্ত্র মুক্তি পাক",
                 30f, true,
@@ -534,11 +1131,11 @@ public class CampusWorld {
                 24, 12
             );
             Geometry tscBanner = createDecalQuad(assetManager, "Banner_TSC", bannerTex2, 8.0f, 1.8f);
-            tscBanner.setLocalTranslation(16.0f, 4.2f, 8.8f);
-            tscBanner.rotate(0f, -FastMath.HALF_PI, 0f);
-            rootNode.attachChild(tscBanner);
+            tscBanner.setLocalTranslation(4.0f, 5.2f, -5.65f - 0.45f);
+            tscBanner.rotate(0f, FastMath.PI, 0f);
+            tscDecalNode.attachChild(tscBanner);
 
-            System.out.println("[CampusWorld] Dynamic July Movement Bengali street murals & banners attached successfully.");
+            System.out.println("[CampusWorld] July Movement Bengali street murals and banners attached.");
         } catch (Throwable t) {
             System.err.println("[CampusWorld] Failed to generate text decals: " + t.getMessage());
         }
@@ -553,163 +1150,11 @@ public class CampusWorld {
         mat.getAdditionalRenderState().setDepthWrite(false);
         geom.setMaterial(mat);
         geom.setQueueBucket(RenderQueue.Bucket.Transparent);
+        geom.setShadowMode(RenderQueue.ShadowMode.Off);
         return geom;
     }
 
-    private void buildLushVegetation() {
-        // 1. Spreading Krishnachura Shade Trees (Scarlet orange-red summer blooms)
-        float[][] krishnachuraLocations = {
-            {-16f, 14f}, {-24f, 8f}, {-20f, -10f},
-            {18f, -16f}, {26f, -8f}, {14f, -24f},
-            {8f, 22f}, {-14f, 26f}
-        };
-
-        for (int i = 0; i < krishnachuraLocations.length; i++) {
-            createOrnamentalTree(
-                "Krishnachura_" + i,
-                krishnachuraLocations[i][0], krishnachuraLocations[i][1],
-                4.4f, 2.8f, krishnachuraBloomMat
-            );
-        }
-
-        // 2. Jarul Trees (Purple/Magenta blossoms near library lawns)
-        float[][] jarulLocations = {
-            {-8f, -22f}, {8f, -22f}, {-24f, -22f}
-        };
-        for (int i = 0; i < jarulLocations.length; i++) {
-            createOrnamentalTree(
-                "Jarul_" + i,
-                jarulLocations[i][0], jarulLocations[i][1],
-                4.0f, 2.4f, jarulBloomMat
-            );
-        }
-
-        // 3. Radhachura Trees (Golden yellow blossoms near TSC)
-        float[][] radhachuraLocations = {
-            {28f, 6f}, {32f, 18f}
-        };
-        for (int i = 0; i < radhachuraLocations.length; i++) {
-            createOrnamentalTree(
-                "Radhachura_" + i,
-                radhachuraLocations[i][0], radhachuraLocations[i][1],
-                4.2f, 2.5f, radhachuraBloomMat
-            );
-        }
-
-        // 4. Iconic Hakim Chattar Banyan Tree (Bot-tola) with hanging aerial prop roots
-        buildBanyanTree(-18f, -18f);
-    }
-
-    private void createOrnamentalTree(String name, float tx, float tz, float height, float canopyRadius, Material bloomMat) {
-        // Trunk
-        Cylinder trunkCyl = new Cylinder(16, 16, 0.35f, height, true);
-        Geometry trunk = new Geometry(name + "_Trunk", trunkCyl);
-        trunk.rotate(FastMath.HALF_PI, 0, 0);
-        trunk.setMaterial(treeTrunkMat);
-        trunk.setLocalTranslation(tx, height * 0.5f, tz);
-        rootNode.attachChild(trunk);
-        addCollider(tx - 0.45f, 0f, tz - 0.45f, tx + 0.45f, height, tz + 0.45f);
-
-        // Main Canopy (Lush Green Foliage)
-        Sphere canopySphere = new Sphere(16, 16, canopyRadius);
-        Geometry canopy = new Geometry(name + "_Canopy", canopySphere);
-        canopy.setMaterial(foliageMat);
-        canopy.setLocalTranslation(tx, height + canopyRadius * 0.4f, tz);
-        canopy.setLocalScale(1.35f, 0.70f, 1.35f);
-        rootNode.attachChild(canopy);
-
-        // Seasonal Summer Blooms
-        if (bloomMat != null) {
-            Sphere bloomSphere = new Sphere(14, 14, canopyRadius * 0.75f);
-            Geometry bloomGeom = new Geometry(name + "_Bloom", bloomSphere);
-            bloomGeom.setMaterial(bloomMat);
-            bloomGeom.setLocalTranslation(tx + 0.2f, height + canopyRadius * 0.65f, tz + 0.15f);
-            bloomGeom.setLocalScale(1.10f, 0.45f, 1.10f);
-            rootNode.attachChild(bloomGeom);
-        }
-    }
-
-    private void buildBanyanTree(float bx, float bz) {
-        // Massive Central Trunk
-        Cylinder mainTrunk = new Cylinder(18, 18, 0.95f, 5.2f, true);
-        Geometry mTrunkGeom = new Geometry("Banyan_Trunk", mainTrunk);
-        mTrunkGeom.rotate(FastMath.HALF_PI, 0, 0);
-        mTrunkGeom.setMaterial(treeTrunkMat);
-        mTrunkGeom.setLocalTranslation(bx, 2.6f, bz);
-        rootNode.attachChild(mTrunkGeom);
-        addCollider(bx - 1.2f, 0f, bz - 1.2f, bx + 1.2f, 5.2f, bz + 1.2f);
-
-        // Giant Spreading Canopy
-        Sphere bigCanopy = new Sphere(18, 18, 4.6f);
-        Geometry bCanopyGeom = new Geometry("Banyan_Canopy", bigCanopy);
-        bCanopyGeom.setMaterial(foliageMat);
-        bCanopyGeom.setLocalTranslation(bx, 6.2f, bz);
-        bCanopyGeom.setLocalScale(1.6f, 0.55f, 1.6f);
-        rootNode.attachChild(bCanopyGeom);
-
-        // Hanging Aerial Prop Roots
-        float[] rootOffsets = {-2.4f, 2.4f};
-        for (float rx : rootOffsets) {
-            for (float rz : rootOffsets) {
-                Cylinder propRoot = new Cylinder(12, 12, 0.16f, 4.8f, true);
-                Geometry prGeom = new Geometry("Banyan_Root_" + rx + "_" + rz, propRoot);
-                prGeom.rotate(FastMath.HALF_PI, 0, 0);
-                prGeom.setMaterial(treeTrunkMat);
-                prGeom.setLocalTranslation(bx + rx, 2.4f, bz + rz);
-                rootNode.attachChild(prGeom);
-                addCollider(bx + rx - 0.25f, 0f, bz + rz - 0.25f, bx + rx + 0.25f, 4.8f, bz + rz + 0.25f);
-            }
-        }
-    }
-
-    private void buildCampusProps() {
-        // Dhaka University Vintage Cast-Iron Street Lamps
-        float[][] lampLocations = {
-            {-9f, -8f}, {9f, -8f},
-            {-9f, -20f}, {9f, -20f},
-            {15f, 6f}, {22f, 6f},
-            {-6f, 12f}, {6f, 12f}
-        };
-
-        for (int i = 0; i < lampLocations.length; i++) {
-            float lx = lampLocations[i][0];
-            float lz = lampLocations[i][1];
-
-            // Lamp Post
-            Cylinder pole = new Cylinder(12, 12, 0.08f, 3.8f, true);
-            Geometry pGeom = new Geometry("LampPole_" + i, pole);
-            pGeom.rotate(FastMath.HALF_PI, 0, 0);
-            pGeom.setMaterial(lampMat);
-            pGeom.setLocalTranslation(lx, 1.9f, lz);
-            rootNode.attachChild(pGeom);
-
-            // Double Lantern Cross-Arm
-            Box arm = new Box(0.45f, 0.04f, 0.04f);
-            Geometry aGeom = new Geometry("LampArm_" + i, arm);
-            aGeom.setMaterial(lampMat);
-            aGeom.setLocalTranslation(lx, 3.7f, lz);
-            rootNode.attachChild(aGeom);
-
-            // Twin Glowing Lantern Globes
-            Sphere globeL = new Sphere(10, 10, 0.12f);
-            Geometry gGeomL = new Geometry("LampGlobeL_" + i, globeL);
-            gGeomL.setMaterial(memorialGoldMat);
-            gGeomL.setLocalTranslation(lx - 0.45f, 3.82f, lz);
-            rootNode.attachChild(gGeomL);
-
-            Sphere globeR = new Sphere(10, 10, 0.12f);
-            Geometry gGeomR = new Geometry("LampGlobeR_" + i, globeR);
-            gGeomR.setMaterial(memorialGoldMat);
-            gGeomR.setLocalTranslation(lx + 0.45f, 3.82f, lz);
-            rootNode.attachChild(gGeomR);
-
-            addCollider(lx - 0.2f, 0f, lz - 0.2f, lx + 0.2f, 3.8f, lz + 0.2f);
-        }
-    }
-
-    private void addCollider(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
-        colliders.add(new float[]{minX, minY, minZ, maxX, maxY, maxZ});
-    }
+    // ------------------------------------------------------------------------------------------
 
     public List<float[]> getColliders() {
         return colliders;
@@ -717,5 +1162,10 @@ public class CampusWorld {
 
     public Node getRootNode() {
         return rootNode;
+    }
+
+    /** World position of a point given in the TSC buildings' local frame (for placing NPCs and objectives). */
+    public Vector3f tscLocalToWorld(float lx, float lz) {
+        return new Vector3f(tscFrame.worldX(lx, lz), 0f, tscFrame.worldZ(lx, lz));
     }
 }

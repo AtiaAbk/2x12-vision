@@ -51,7 +51,10 @@ public class ProjectJulyHUD {
     }
 
     private void updateCompass(float cameraYaw, Vector3f playerPos, MissionTracker tracker) {
-        int yawInt = ((int) ((cameraYaw % 360f + 360f) % 360f)) / 5 * 5;
+        // Camera yaw 0 looks along +Z, which is south in the campus layout (north = -Z), so the
+        // geographic bearing shown is the yaw turned by 180 degrees.
+        float bearing = cameraYaw + 180f;
+        int yawInt = ((int) ((bearing % 360f + 360f) % 360f)) / 5 * 5;
         if (yawInt == lastCompassDeg) return;
         lastCompassDeg = yawInt;
 
