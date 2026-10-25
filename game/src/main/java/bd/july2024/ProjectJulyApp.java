@@ -205,6 +205,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
         // 2. Build 3D Campus Environment & Realistic Summer Lighting
         campusWorld = new CampusWorld(assetManager, rootNode, textRenderer);
+        campusWorld.setLodCamera(cam);
         lighting = new LightingManager(assetManager, rootNode, viewPort);
 
         // 3. Setup Screenshot Processor on GUI viewport (captures post-processed scene + HUD)

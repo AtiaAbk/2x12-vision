@@ -10,6 +10,7 @@ import com.jme3.math.FastMath;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
+import com.jme3.renderer.Camera;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
@@ -67,6 +68,11 @@ public class CampusWorld {
     private final Node rootNode;
     /** Everything that is opaque and never moves; batched per material at the end of construction. */
     private final Node staticNode;
+    /** Tree placements; kept out of the static batch so their level of detail can switch. */
+    private final Node treeNode;
+    private final TreeLibrary trees;
+    private int treeCount = 0;
+    private int fallbackTreeCount = 0;
     private final BengaliTextRenderer textRenderer;
     private final List<float[]> colliders = new ArrayList<>();
     private final List<Surface> surfaces = new ArrayList<>();
@@ -108,8 +114,11 @@ public class CampusWorld {
     public CampusWorld(AssetManager assetManager, Node sceneRoot, BengaliTextRenderer textRenderer) {
         this.rootNode = new Node("CampusWorld");
         this.staticNode = new Node("CampusStatic");
+        this.treeNode = new Node("CampusTrees");
+        this.trees = new TreeLibrary(assetManager);
         this.textRenderer = textRenderer;
         rootNode.attachChild(staticNode);
+        rootNode.attachChild(treeNode);
         rootNode.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
         initMaterials(assetManager);
         // Tangent generation logs one warning per degenerate cap triangle on cylinders; silence it.
@@ -256,6 +265,15 @@ public class CampusWorld {
             float lx = frame.localX(x, z), lz = frame.localZ(x, z);
             return Math.abs(lx) <= hx && Math.abs(lz) <= hz;
         }
+    }
+
+    /** Camera used to pick each tree's level of detail. */
+    public void setLodCamera(Camera camera) {
+        trees.setCamera(camera);
+    }
+
+    public int getTreeCount() {
+        return treeCount;
     }
 
     /** Walkable ground height at a horizontal position (0 on the base ground). */
@@ -518,7 +536,8 @@ public class CampusWorld {
                 GeometryBatchFactory.optimize(staticNode);
                 int after = countGeometries(staticNode);
                 System.out.println("[CampusWorld] Static geometry batched: " + before + " -> " + after
-                    + " geometries, " + colliders.size() + " colliders, " + surfaces.size() + " walkable surfaces.");
+                    + " geometries, " + colliders.size() + " colliders, " + surfaces.size() + " walkable surfaces, "
+                    + treeCount + " model trees (" + fallbackTreeCount + " procedural fallbacks).");
             } catch (Throwable t) {
                 System.err.println("[CampusWorld] Batching failed, rendering unbatched: " + t);
             }
@@ -978,29 +997,57 @@ public class CampusWorld {
     // ---- Vegetation -----------------------------------------------------------------------------
 
     private void buildVegetation() {
+        // Species are stand-ins (docs/REFERENCE_LEDGER.md, section 6): the "krishnachura", "radhachura"
+        // and "shade" variants are Poly Haven island_tree_02 (a 3.4 m scan) scaled to 9-12 m with a
+        // blossom tint on some leaves; "jarul" is Poly Haven jacaranda_tree (19.5 m scan) at about 0.6.
         float[][] krishnachura = {
             {-22f, -22f}, {-38f, -21f}, {-54f, -21f}, {-70f, -22f},
             {-30f, 6f}, {-48f, 6f}, {-66f, 7f},
             {34f, 16f}, {-5f, 32f}, {22f, 40f}, {-48f, 44f}, {50f, 28f}
         };
         for (int i = 0; i < krishnachura.length; i++) {
-            createOrnamentalTree("Krishnachura_" + i, krishnachura[i][0], krishnachura[i][1], 4.6f, 3.0f, krishnachuraBloomMat);
+            placeTree("Krishnachura_" + i, "island_tree_02", "krishnachura", krishnachura[i][0], krishnachura[i][1],
+                2.7f + (i % 3) * 0.25f, i * 137f, 0.32f, krishnachuraBloomMat);
         }
         float[][] jarul = {{-40f, -50f}, {-25f, -46f}, {-66f, -56f}, {-100f, -82f}, {-20f, -75f}, {-22f, -105f}};
         for (int i = 0; i < jarul.length; i++) {
-            createOrnamentalTree("Jarul_" + i, jarul[i][0], jarul[i][1], 4.2f, 2.5f, jarulBloomMat);
+            placeTree("Jarul_" + i, "jacaranda_tree", "jarul", jarul[i][0], jarul[i][1],
+                0.55f + (i % 2) * 0.08f, 40f + i * 97f, 1.1f, jarulBloomMat);
         }
         float[][] radhachura = {{-10f, 46f}, {20f, 42f}, {-24f, 84f}, {40f, 92f}};
         for (int i = 0; i < radhachura.length; i++) {
-            createOrnamentalTree("Radhachura_" + i, radhachura[i][0], radhachura[i][1], 4.4f, 2.6f, radhachuraBloomMat);
+            placeTree("Radhachura_" + i, "island_tree_02", "radhachura", radhachura[i][0], radhachura[i][1],
+                2.6f + (i % 2) * 0.3f, 20f + i * 151f, 0.32f, radhachuraBloomMat);
         }
         // Plain shade trees further out
         float[][] shade = {{-120f, -30f}, {-140f, 10f}, {70f, -50f}, {80f, -20f}, {-80f, 100f}, {100f, 60f}, {-110f, -120f}, {0f, -70f}};
         for (int i = 0; i < shade.length; i++) {
-            createOrnamentalTree("Shade_" + i, shade[i][0], shade[i][1], 6.0f, 4.0f, null);
+            placeTree("Shade_" + i, "island_tree_02", "shade", shade[i][0], shade[i][1],
+                3.2f + (i % 3) * 0.2f, 70f + i * 113f, 0.32f, null);
         }
     }
 
+    /**
+     * Places a tree model (see {@link TreeLibrary}) on the ground at (tx, tz) with a trunk collider;
+     * {@code trunkHalf} is the trunk half-width of the unscaled model. Falls back to the procedural
+     * sphere tree if the model is missing.
+     */
+    private void placeTree(String name, String folder, String variant, float tx, float tz, float scale, float yawDeg,
+                           float trunkHalf, Material fallbackBloomMat) {
+        float ground = groundHeightAt(tx, tz);
+        Node tree = trees.place(name, folder, variant, tx, ground, tz, scale, yawDeg);
+        if (tree == null) {
+            fallbackTreeCount++;
+            createOrnamentalTree(name, tx, tz, 4.6f, 3.0f, fallbackBloomMat);
+            return;
+        }
+        treeNode.attachChild(tree);
+        treeCount++;
+        float h = trunkHalf * scale;
+        addCollider(tx - h, ground, tz - h, tx + h, ground + 3f * scale, tz + h);
+    }
+
+    /** Procedural tree used only when a tree model fails to load. */
     private void createOrnamentalTree(String name, float tx, float tz, float height, float canopyRadius, Material bloomMat) {
         Geometry trunk = new Geometry(name + "_Trunk", new Cylinder(2, 12, 0.3f, height, true));
         trunk.rotate(FastMath.HALF_PI, 0f, 0f);
@@ -1021,28 +1068,26 @@ public class CampusWorld {
         }
     }
 
+    /** The banyan by Hakim Chattar: the large shade variant stands in for it (no banyan scan is available). */
     private void buildBanyanTree(float bx, float bz) {
+        float ground = groundHeightAt(bx, bz);
+        Node tree = trees.place("Banyan", "island_tree_02", "shade", bx, ground, bz, 4.4f, 215f);
+        if (tree != null) {
+            treeNode.attachChild(tree);
+            treeCount++;
+            addCollider(bx - 1.3f, ground, bz - 1.3f, bx + 1.3f, ground + 12f, bz + 1.3f);
+            return;
+        }
+        fallbackTreeCount++;
         Geometry trunk = new Geometry("Banyan_Trunk", new Cylinder(2, 16, 0.95f, 5.2f, true));
         trunk.rotate(FastMath.HALF_PI, 0f, 0f);
         trunk.setLocalTranslation(bx, 2.6f, bz);
         finish(trunk, treeTrunkMat, null);
         addCollider(bx - 1.2f, 0f, bz - 1.2f, bx + 1.2f, 5.2f, bz + 1.2f);
-
         Geometry canopy = new Geometry("Banyan_Canopy", new Sphere(16, 16, 5.0f));
         canopy.setLocalTranslation(bx, 6.4f, bz);
         canopy.setLocalScale(1.7f, 0.55f, 1.7f);
         finish(canopy, foliageMat, null);
-
-        float[] rootOffsets = {-2.6f, 2.6f};
-        for (float rx : rootOffsets) {
-            for (float rz : rootOffsets) {
-                Geometry root = new Geometry("Banyan_Root_" + rx + "_" + rz, new Cylinder(2, 10, 0.16f, 4.8f, true));
-                root.rotate(FastMath.HALF_PI, 0f, 0f);
-                root.setLocalTranslation(bx + rx, 2.4f, bz + rz);
-                finish(root, treeTrunkMat, null);
-                addCollider(bx + rx - 0.25f, 0f, bz + rz - 0.25f, bx + rx + 0.25f, 4.8f, bz + rz + 0.25f);
-            }
-        }
     }
 
     // ---- Props ----------------------------------------------------------------------------------
