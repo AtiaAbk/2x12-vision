@@ -191,14 +191,20 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
         // 0. Make the repository assets/ folder visible to the asset manager (models, audio, fonts).
         //    The Gradle run task sets workingDir to the repository root.
-        assetManager.registerLocator("assets", com.jme3.asset.plugins.FileLocator.class);
+        java.io.File assetsDir = AppPaths.assetsDir();
+        if (!assetsDir.isDirectory()) {
+            System.err.println("[ProjectJulyApp] Assets folder not found at " + assetsDir.getAbsolutePath()
+                + " (set -Dbd.july2024.assets=<path> or run from the repository root).");
+        }
+        assetManager.registerLocator(assetsDir.getPath(), com.jme3.asset.plugins.FileLocator.class);
+        System.out.println("[ProjectJulyApp] Assets: " + assetsDir.getAbsolutePath() + (AppPaths.isPackaged() ? " (packaged launcher)" : ""));
 
         // 1. Initialize Subsystems
         audio = new AudioController(assetManager, rootNode);
         textRenderer = new BengaliTextRenderer(assetManager);
         missionTracker = new MissionTracker();
         dialogueManager = new DialogueManager();
-        saveManager = new SaveManager();
+        saveManager = new SaveManager(AppPaths.saveDir());
         hud = new ProjectJulyHUD(guiNode, textRenderer, settings.getWidth(), settings.getHeight());
         pauseMenu = new PauseMenu(guiNode, textRenderer, settings.getWidth(), settings.getHeight());
         docModal = new HistoricalDocumentModal(guiNode, textRenderer, settings.getWidth(), settings.getHeight());

@@ -92,7 +92,7 @@ public class BengaliTextRenderer {
 
     private void loadFonts() {
         try {
-            File fontFile = new File("assets/fonts/NotoSansBengali-Variable.ttf");
+            File fontFile = bd.july2024.AppPaths.asset("fonts/NotoSansBengali-Variable.ttf");
             if (fontFile.exists()) {
                 Font baseFont = Font.createFont(Font.TRUETYPE_FONT, fontFile);
                 bengaliFontRegular = baseFont.deriveFont(Font.PLAIN, 24f);
@@ -107,8 +107,8 @@ public class BengaliTextRenderer {
         }
 
         try {
-            File regular = new File("assets/fonts/LiberationSans-Regular.ttf");
-            File bold = new File("assets/fonts/LiberationSans-Bold.ttf");
+            File regular = bd.july2024.AppPaths.asset("fonts/LiberationSans-Regular.ttf");
+            File bold = bd.july2024.AppPaths.asset("fonts/LiberationSans-Bold.ttf");
             latinFontRegular = regular.exists()
                 ? Font.createFont(Font.TRUETYPE_FONT, regular).deriveFont(Font.PLAIN, 24f)
                 : systemFontRegular;

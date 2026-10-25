@@ -84,3 +84,78 @@ run {
     }
     jvmArgs = runJvmArgs
 }
+
+// ---- Windows installer / app image (jpackage, JDK 17+) ------------------------------------------
+// `./gradlew :game:packageWindows` builds build/installer/ProjectJuly2024/ (an app image with a
+// bundled Java runtime and the assets/ folder under app/). `-PinstallerType=exe` or `msi` builds
+// an installer instead, which needs the free WiX Toolset 3.x on the PATH (jpackage requirement).
+def installerType = project.findProperty('installerType') ?: 'app-image'
+def jpackageInput = layout.buildDirectory.dir('jpackage-input')
+def installerDir = layout.buildDirectory.dir('installer')
+def appName = 'ProjectJuly2024'
+
+tasks.register('prepareJpackageInput', Sync) {
+    description = 'Collects the jars and the assets/ folder that jpackage bundles.'
+    dependsOn 'installDist'
+    from(layout.buildDirectory.dir("install/${project.name}/lib")) {
+        into 'lib'
+        // jme3-lwjgl3 drags in every platform's natives; the Windows package only needs the x64 ones.
+        exclude '*-natives-linux*.jar', '*-natives-macos*.jar', '*-natives-windows-x86.jar', '*-natives-windows-arm64.jar'
+    }
+    from(rootProject.file('assets')) { into 'assets' }
+    into jpackageInput
+}
+
+tasks.register('packageWindows', Exec) {
+    description = 'Builds a Windows app image (or installer with -PinstallerType=exe|msi) with jpackage.'
+    group = 'distribution'
+    dependsOn 'prepareJpackageInput'
+    onlyIf { osName.contains('windows') }
+    def javaHome = System.getProperty('java.home')
+    def jpackageExe = new File(javaHome, 'bin/jpackage.exe')
+    doFirst {
+        if (!jpackageExe.isFile()) {
+            throw new GradleException("jpackage not found at ${jpackageExe}; run Gradle with a JDK 17+ (JAVA_HOME=${javaHome}).")
+        }
+        // jpackage refuses to overwrite an existing app image.
+        project.delete(installerDir.get().dir(appName))
+        installerDir.get().asFile.mkdirs()
+    }
+    def args = [
+        jpackageExe.absolutePath,
+        '--type', installerType,
+        '--name', appName,
+        '--app-version', project.version.toString(),
+        '--vendor', 'Project July 2024',
+        '--description', 'Project July 2024 - a historically grounded 3D action-adventure (vertical slice)',
+        '--input', jpackageInput.get().asFile.absolutePath,
+        '--main-jar', "lib/${tasks.jar.archiveFileName.get()}",
+        '--main-class', application.mainClass.get(),
+        '--dest', installerDir.get().asFile.absolutePath,
+        '--java-options', '-Xms256M',
+        '--java-options', '-Xmx2G',
+        '--java-options', '-Djava.awt.headless=true',
+        // Bundle only the runtime modules the game needs (jME: AWT/ImageIO, logging; LWJGL: Unsafe).
+        '--add-modules', 'java.base,java.desktop,java.logging,java.xml,java.management,jdk.unsupported',
+        '--jlink-options', '--strip-debug --no-man-pages --no-header-files --compress=2',
+        // Second launcher with a console window, so the log is visible when something fails.
+        '--add-launcher', "${appName}-console=" + file('jpackage/debug-launcher.properties').absolutePath,
+    ]
+    if (installerType != 'app-image') {
+        args += ['--win-shortcut', '--win-menu', '--win-dir-chooser', '--win-per-user-install']
+    }
+    commandLine args
+    doLast {
+        println "[project-july-2024] jpackage output: ${installerDir.get().asFile}"
+    }
+}
+
+tasks.register('packageWindowsZip', Zip) {
+    description = 'Zips the jpackage app image for distribution without an installer.'
+    group = 'distribution'
+    dependsOn 'packageWindows'
+    onlyIf { installerType == 'app-image' }
+    from(installerDir.map { it.dir(appName) }) { into appName }
+    archiveFileName = "${appName}-${project.version}-windows-x64.zip"
+    destinationDirectory = installerDir
+}
