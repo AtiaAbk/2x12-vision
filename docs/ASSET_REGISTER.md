@@ -46,6 +46,22 @@ Last updated: 2026-10-25
 
 Not integrated but downloaded and checked on 2026-10-25: Quaternius *Universal Base Characters* (Standard tier, CC0). The free tier contains only "Superhero" male and female bodies with skin textures and dark briefs, no clothing, and an Unreal-named rig; it was rejected for this project and is not in the repository.
 
+## Textures
+
+| Field | Value |
+|---|---|
+| Asset | Six ambientCG PBR texture sets, 1K JPG tier: `Bricks059`, `Concrete030`, `Asphalt010`, `Grass004`, `PavingStones070`, `PaintedPlaster017` |
+| Files in repo | `assets/Textures/<id>/<id>_Color.jpg` and `<id>_NormalGL.jpg` for each set (12 files, 1024x1024 JPG), plus `assets/Textures/LICENSE.txt` |
+| Creator | ambientCG (Lennart Demes), https://ambientcg.com |
+| Official pages | https://ambientcg.com/a/Bricks059, https://ambientcg.com/a/Concrete030, https://ambientcg.com/a/Asphalt010, https://ambientcg.com/a/Grass004, https://ambientcg.com/a/PavingStones070, https://ambientcg.com/a/PaintedPlaster017 |
+| Obtained from | The `1K-JPG.zip` download of each page on 2026-10-25; only the Color and NormalGL maps were copied into the repo (roughness, displacement and AO maps discarded to keep the repo small) |
+| Licence | CC0 1.0 Universal, stated at https://ambientcg.com/content/license |
+| Attribution | Not required. Voluntary credit in `assets/Textures/LICENSE.txt`. |
+| Modification permitted | Yes |
+| Commercial use permitted | Yes |
+| Used for | Level 01 ground, roads, footpaths, brick and concrete surfaces (`world/CampusWorld.java`), tiled with repeat wrapping and OpenGL-convention normal maps |
+| Status | Integrated 2026-10-25 |
+
 ## Fonts
 
 | Asset | Files | Creator | Licence | Notes |
@@ -62,6 +78,6 @@ Not integrated but downloaded and checked on 2026-10-25: Quaternius *Universal B
 ## Not yet sourced
 
 - Dressed student character (shirt, trousers, backpack) compatible with the UAL rig.
-- Campus architecture models and PBR textures.
+- Campus architecture models (the landmarks are built from primitives in code; surface textures are sourced, see Textures).
 - Vegetation models or billboards.
 - Original music, ambience, voice.

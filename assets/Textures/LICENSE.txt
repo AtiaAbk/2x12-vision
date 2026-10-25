@@ -1,0 +1,13 @@
+Textures in this folder are from ambientCG (https://ambientcg.com), each released under the
+Creative Commons CC0 1.0 Universal licence (https://ambientcg.com/content/license).
+Downloaded 2026-10-25 as the 1K JPG sets; only the Color and NormalGL maps are kept here.
+
+Bricks059          https://ambientcg.com/a/Bricks059
+Concrete030        https://ambientcg.com/a/Concrete030
+Asphalt010         https://ambientcg.com/a/Asphalt010
+Grass004           https://ambientcg.com/a/Grass004
+PavingStones070    https://ambientcg.com/a/PavingStones070
+PaintedPlaster017  https://ambientcg.com/a/PaintedPlaster017
+
+Attribution is not required under CC0; voluntary credit: "Created using <asset name> from
+ambientCG.com, licensed under the Creative Commons CC0 1.0 Universal License."
