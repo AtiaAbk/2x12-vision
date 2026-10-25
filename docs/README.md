@@ -12,6 +12,7 @@ Last updated: 2026-10-25
 | `spec/04_MASTER_PROMPT_FOR_DEVELOPER.md` | Phase 0 to Phase 5 execution order for the developer or coding agent. |
 | `spec/PROJECT_JULY_2024_COMPLETE_PLAN_BN.md` | Consolidated owner plan in Bengali, including the "verify before trusting" list. |
 | `STATUS_MATRIX_2026-10-25.md` | Phase 0 audit: what builds, runs, passes, is placeholder, is missing, is unverified. |
+| `REFERENCE_LEDGER.md` | Every landmark dimension used by `CampusWorld`, with its source and status (verified, supported but incomplete, or a modelling choice); raw OpenStreetMap data under `reference/osm/`. |
 | `screenshots/baseline_windows_2026-10-25_before.png` | Automated 300-frame run on Windows before any change on the feature branch. |
 | `screenshots/after_text_fallback_2026-10-25.png` | Same run after the HUD font-fallback fix. |
 | `screenshots/project_july_jme_gameplay.png` | Committed image from `47c0a36`, kept for comparison. |
