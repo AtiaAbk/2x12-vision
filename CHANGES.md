@@ -1,3 +1,5 @@
+> **Legacy notice (2026-10-25):** This file describes the earlier LibGDX build ("Spark: Birth of 36 July") and does not match the current jMonkeyEngine code in `game/`. For the verified current state see `docs/STATUS_MATRIX_2026-10-25.md`; for the approved specification see `docs/spec/`.
+
 # Spark: Birth of 36 July — Master Fix & Overhaul Changelog
 **Project**: 2x12-Spark--Birth-of-36-july  
 **Date**: October 20, 2026  

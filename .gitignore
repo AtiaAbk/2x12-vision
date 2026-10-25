@@ -20,3 +20,7 @@ lwjgl3/bin/
 full_classpath.txt
 assets/screenshots/
 
+
+# Runtime artefacts
+save/
+.test_exit_frames
