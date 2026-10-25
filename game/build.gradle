@@ -11,6 +11,22 @@ java {
 def jmeVersion = '3.7.0-stable'
 def lwjglVersion = '3.3.3'
 
+// Select LWJGL natives for the machine running the build.
+// Primary target remains macOS Apple Silicon (MacBook Air M4); Windows and Linux
+// are supported so the project can be built, run and verified on development machines.
+def osName = System.getProperty('os.name').toLowerCase()
+def osArch = System.getProperty('os.arch').toLowerCase()
+def isArm = osArch.contains('aarch64') || osArch.contains('arm')
+def lwjglNatives
+if (osName.contains('mac')) {
+    lwjglNatives = isArm ? 'natives-macos-arm64' : 'natives-macos'
+} else if (osName.contains('windows')) {
+    lwjglNatives = isArm ? 'natives-windows-arm64' : 'natives-windows'
+} else {
+    lwjglNatives = isArm ? 'natives-linux-arm64' : 'natives-linux'
+}
+println "[project-july-2024] LWJGL natives: ${lwjglNatives} (os.name=${osName}, os.arch=${osArch})"
+
 repositories {
     mavenCentral()
 }
@@ -24,12 +40,12 @@ dependencies {
     implementation "org.jmonkeyengine:jme3-effects:$jmeVersion"
     implementation "org.jmonkeyengine:jme3-terrain:$jmeVersion"
 
-    // LWJGL 3 Natives for Apple Silicon macOS (arm64) and desktop fallbacks
-    runtimeOnly "org.lwjgl:lwjgl:$lwjglVersion:natives-macos-arm64"
-    runtimeOnly "org.lwjgl:lwjgl-glfw:$lwjglVersion:natives-macos-arm64"
-    runtimeOnly "org.lwjgl:lwjgl-jemalloc:$lwjglVersion:natives-macos-arm64"
-    runtimeOnly "org.lwjgl:lwjgl-openal:$lwjglVersion:natives-macos-arm64"
-    runtimeOnly "org.lwjgl:lwjgl-opengl:$lwjglVersion:natives-macos-arm64"
+    // LWJGL 3 natives for the current platform
+    runtimeOnly "org.lwjgl:lwjgl:$lwjglVersion:$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-glfw:$lwjglVersion:$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-jemalloc:$lwjglVersion:$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-openal:$lwjglVersion:$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-opengl:$lwjglVersion:$lwjglNatives"
 
     // Unit Testing
     testImplementation "org.junit.jupiter:junit-jupiter:5.10.0"
@@ -57,10 +73,14 @@ run {
         systemProperty "bd.july2024.testExitAfterFrames", exitProp
         args "--exit-frames=" + exitProp
     }
-    jvmArgs = [
-        "-XstartOnFirstThread",
+    def runJvmArgs = [
         "-Djava.awt.headless=true",
         "-Xms256M",
         "-Xmx2G"
     ]
+    if (osName.contains('mac')) {
+        // GLFW on macOS requires the window to be created on the first thread.
+        runJvmArgs.add(0, "-XstartOnFirstThread")
+    }
+    jvmArgs = runJvmArgs
 }
