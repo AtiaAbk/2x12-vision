@@ -1,0 +1,14 @@
+Tree models in this folder are derived from Poly Haven assets released under CC0 1.0 Universal
+(https://polyhaven.com/license).
+
+island_tree_02/  derived from "Island Tree 02"  https://polyhaven.com/a/island_tree_02
+                 authors: Rob Tuytel (scanning, processing), Rico Cilliers (cleanup, processing)
+jacaranda_tree/  derived from "Jacaranda Tree"  https://polyhaven.com/a/jacaranda_tree
+                 authors: Rico Cilliers (all), Rob Tuytel (guidance)
+
+Modifications (tools/tree_reduce.py, Project July 2024, 2026-10-25): each scanned leaf mesh was
+replaced by one textured quad, twig and trunk meshes were decimated by vertex clustering, three
+levels of detail were written per species variant, and a fraction of leaf quads carry a vertex-colour
+tint used as a stand-in for blossom. Only the 1k diffuse and normal textures are kept. The
+"krishnachura", "radhachura" and "shade" variants are the same island tree with different tints;
+"jarul" is the jacaranda. None of these is a botanically correct model of the named species.

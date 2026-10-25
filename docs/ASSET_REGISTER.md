@@ -46,6 +46,23 @@ Last updated: 2026-10-25
 
 Not integrated but downloaded and checked on 2026-10-25: Quaternius *Universal Base Characters* (Standard tier, CC0). The free tier contains only "Superhero" male and female bodies with skin textures and dark briefs, no clothing, and an Unreal-named rig; it was rejected for this project and is not in the repository.
 
+| Field | Value |
+|---|---|
+| Asset | "Island Tree 02" and "Jacaranda Tree", photogrammetry tree scans |
+| Files in repo | `assets/Models/Trees/island_tree_02/{krishnachura,radhachura,shade}_lod{0,1,2}.gltf` + `.bin`, `textures/island_tree_02{,_branches,_leaves}_{diff,nor_gl}_1k.jpg`; `assets/Models/Trees/jacaranda_tree/jarul_lod{0,1,2}.gltf` + `.bin`, `textures/jacaranda_tree_{trunk,branches,leaves}_{diff,nor_gl}_1k.jpg`; `assets/Models/Trees/LICENSE.txt`. About 39 MB in total. |
+| Creator | Island Tree 02: Rob Tuytel (scanning, processing), Rico Cilliers (cleanup, processing). Jacaranda Tree: Rico Cilliers (all), Rob Tuytel (guidance). Published by Poly Haven. |
+| Official pages | https://polyhaven.com/a/island_tree_02 and https://polyhaven.com/a/jacaranda_tree (author and licence fields read from the Poly Haven API `/info/<id>` on 2026-10-25) |
+| Obtained from | Poly Haven download API, glTF at 1K texture resolution (`dl.polyhaven.org/file/ph-assets/Models/gltf/1k/<id>/<id>_1k.gltf` with its `.bin` and `textures/`). |
+| Licence | CC0 1.0 Universal (https://polyhaven.com/license) |
+| Attribution | Not required. Credit given voluntarily: "Trees: Island Tree 02 and Jacaranda Tree by Poly Haven (CC0)". |
+| Modification permitted | Yes |
+| Commercial use permitted | Yes |
+| Restrictions | None under CC0 |
+| Modifications made | Heavy. The scans are 1.07 M and 3.86 M triangles. `tools/tree_reduce.py` (numpy, in repo) replaces every scanned leaf mesh with one textured quad fitted by principal-component plane and an affine UV fit, subsamples leaves per level of detail while enlarging the remaining ones, decimates twigs and trunk by vertex clustering, bakes the branches' `KHR_texture_transform` into the UVs, tints a fraction of leaf quads with a vertex colour as a blossom stand-in, and writes three glTF levels (island: 94 k / 31 k / 6 k triangles; jacaranda: 150 k / 40 k / 8 k). The `_arm` (roughness) textures are dropped; at runtime PBR materials are replaced by Phong materials with alpha discard for leaves (`world/TreeLibrary.java`). |
+| Used for | All campus trees in `CampusWorld.buildVegetation` and the Hakim Chattar tree (`buildBanyanTree`). |
+| Status | Integrated 2026-10-25. **Species stand-ins**: the island tree (an unidentified 3.4 m broadleaf scan) is scaled to 9-12 m for krishnachura, radhachura and plain shade trees and to 15 m for the banyan; the jacaranda stands in for jarul (both have purple blossom). None is a model of the named species; see `docs/REFERENCE_LEDGER.md` section 6. |
+| Placeholder | Partly: real licensed tree models, but not the right species. |
+
 ## Textures
 
 | Field | Value |
@@ -79,5 +96,5 @@ Not integrated but downloaded and checked on 2026-10-25: Quaternius *Universal B
 
 - Dressed student character (shirt, trousers, backpack) compatible with the UAL rig.
 - Campus architecture models (the landmarks are built from primitives in code; surface textures are sourced, see Textures).
-- Vegetation models or billboards.
+- Species-correct tree models (krishnachura, jarul, radhachura, banyan); the current trees are CC0 stand-ins (see 3D models).
 - Original music, ambience, voice.
