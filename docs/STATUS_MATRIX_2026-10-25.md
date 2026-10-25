@@ -48,7 +48,7 @@ This matrix records what was **directly inspected** on this date. Status values:
 | Adaptive difficulty | Not implemented. | missing | — |
 | Pause menu (ESC) | `ui/PauseMenu.java`; R restart, Q quit | unverified | Verify by hand. |
 | Main menu | `GameState` enum exists but `state` is always `CAMPAIGN`; no menu is rendered. | missing | — |
-| HUD | `ui/ProjectJulyHUD.java`: objective text (BN+EN), compass heading, distance, stamina, context prompt; visible in baseline screenshot | working | — |
+| HUD | `ui/ProjectJulyHUD.java`: objective text (BN+EN), compass heading, distance, stamina, context prompt; visible in baseline screenshot. **Restyled later on 2026-10-25** after the owner found the UI ugly: one panel language (`BengaliTextRenderer.renderPanel`: translucent dark cards, accent bar, per-line sizes, word wrap), objective card with counter, bearing + target pill, real stamina bar, dialogue and prompt cards, restyled pause menu and document modal. Screenshots `ui_2026-10-25_hud_v1.png`, `_dialogue_v1.png`, `_document_v1.png`, `_pause_v1.png`. | working | Key column in the pause menu is not aligned (proportional font). |
 | Map / markers | Only heading and distance text. `assets/maps/campus_map.png` exists but is unused by jME code. | partial | — |
 | Bengali text shaping and orientation | `ui/BengaliTextRenderer.java` rasterizes Noto Sans Bengali via Java2D. Baseline screenshot on this machine and the committed screenshot from `47c0a36` both show upright, readable conjuncts. The owner's "mirrored text" screenshot (`project_july_level01_scene.png`, 2880×1790) has the **entire frame** flipped, HUD and title included, which is a framebuffer-capture bug of an earlier build, not a text-shaping bug. | working | Inspect conjunct shaping at close range during manual play. |
 | Subtitles BN/EN | `dialogue/DialogueLine` carries both; HUD draws both | implemented | — |
@@ -130,3 +130,12 @@ This matrix records what was **directly inspected** on this date. Status values:
 - Nothing in this file has been run on the target MacBook Air M4.
 - Rows marked `unverified` have not been exercised by hand on this machine; the automated run has no input.
 - No claim of 60 FPS is made for any machine.
+
+## 9. Addendum, same day: owner's first local run
+
+The owner ran the game and reported an arrow on the screen and an ugly UI. Checked on the live window with a desktop capture (`docs/screenshots/ui_2026-10-25_desktop_cursor_hidden.png` is the after state):
+
+| Finding | Cause | Fix | Evidence |
+|---|---|---|---|
+| OS mouse arrow visible over the game | `flyCam.setEnabled(false)` re-shows the cursor and nothing hid it again; a hide call during `simpleInitApp` is dropped because the LWJGL3 window is not yet renderable | `inputManager.setCursorVisible(false)` after disabling flyCam and again on the first rendered frame | Win32 `GetCursorInfo` on the focused window: showing=True before, showing=False after; A/B runs show no frame-time cost (26.9 vs 27.6 ms steady) |
+| HUD looked ugly | Flat grey boxes, bold yellow text, decorative glyphs, text-only stamina | Panel restyle listed in §2 | Four UI captures |
