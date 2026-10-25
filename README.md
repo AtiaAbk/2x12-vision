@@ -49,6 +49,31 @@ On Windows PowerShell use `$env:TEST_EXIT_FRAMES=300; .\gradlew.bat :game:run`.
 The frame-time summary from this mode is a static scene with no input. It is not a gameplay
 benchmark and must not be quoted as one.
 
+## Build a Windows package (app image or installer)
+
+Requires a JDK 17 or newer on Windows (the Gradle JVM must be a JDK, since `jpackage` ships with it).
+
+```bash
+./gradlew :game:packageWindowsZip
+```
+
+This produces `game/build/installer/ProjectJuly2024/` (a self-contained folder with a trimmed Java
+runtime, the jars and the `assets/` folder; about 86 MB) and
+`game/build/installer/ProjectJuly2024-1.0.0-windows-x64.zip` for distribution. Start the game with
+`ProjectJuly2024.exe`; `ProjectJuly2024-console.exe` is the same game with a console window that
+shows the log. Checkpoint saves of the packaged game go to `%LOCALAPPDATA%\ProjectJuly2024\save`.
+
+A real installer (`.exe` or `.msi` with Start-menu entry and shortcut) is one more step:
+
+```bash
+./gradlew :game:packageWindows -PinstallerType=exe
+```
+
+It needs the free, open-source WiX Toolset 3.x (https://wixtoolset.org) on the `PATH`; without it
+`jpackage` stops with "Can not find WiX tools". No installer has been built or tested yet for that
+reason. The package is Windows x64 only; the project's primary target, the MacBook Air M4, is not
+covered by this task.
+
 Controls are listed in [`CONTROLS.md`](CONTROLS.md).
 
 ## Repository layout
