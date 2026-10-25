@@ -55,7 +55,7 @@ public class HistoricalDocumentModal {
         }
 
         String content = String.format(
-            "📜 %s\n%s  |  তারিখ: %s  |  স্থান: %s\n\n%s\n\n%s\n\n[E / SPACE / ENTER] নথিটি বন্ধ করুন (Close Document)",
+            "%s\n%s  |  তারিখ: %s  |  স্থান: %s\n\n%s\n\n%s\n\n[E / SPACE / ENTER] নথিটি বন্ধ করুন (Close Document)",
             doc.titleBengali,
             doc.titleEnglish,
             doc.date,

@@ -63,7 +63,7 @@ public class PauseMenu {
         }
 
         String statusLine = (statusMessage != null && !statusMessage.isEmpty())
-            ? "\n⚡ " + statusMessage + "\n"
+            ? "\n• " + statusMessage + "\n"
             : "";
 
         String content = String.format(
