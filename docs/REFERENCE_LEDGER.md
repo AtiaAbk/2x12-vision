@@ -80,3 +80,14 @@ Legacy LibGDX-era notes under `docs/research/` are not authoritative for this bu
 ## 5. Not modelled, by decision
 
 Dr. Milon memorial (OSM node 3006466329 at about (−30, −28)), the "Bird of Peace" artwork (node 3006309126 at (4, 44)), the Greek Memorial and the WWII memorial east of TSC are in the data but outside this milestone.
+
+## 6. Vegetation
+
+The tree positions in `CampusWorld.buildVegetation` are not surveyed; they are chosen to line the road arms and lawns. Species named in code are the ones commonly cited for the campus (krishnachura / Delonix regia, jarul / Lagerstroemia speciosa, radhachura / Peltophorum pterocarpum, and the banyan by Hakim Chattar), but no per-tree reference exists in this ledger.
+
+| Claim | Status | Source | In scene |
+|---|---|---|---|
+| Krishnachura, jarul and radhachura line the roads around the roundabout and TSC | Unverified / chosen | General knowledge of the campus, no reference image per tree | 12 + 6 + 4 placements |
+| Tree models | Stand-ins, documented | Poly Haven CC0 scans (`docs/ASSET_REGISTER.md`) | island_tree_02 scaled 2.6-3.6x for krishnachura, radhachura, shade; 4.4x for the banyan; jacaranda_tree at 0.55-0.63x for jarul |
+| Blossom in late July | Unverified / chosen | Krishnachura flowers mainly April-June, jarul May-July; late flowers are plausible but not sourced for 2024 | 10-15 % of leaf quads tinted scarlet (krishnachura), yellow (radhachura) or mauve (jarul) |
+| Banyan at Hakim Chattar | Supported, incomplete | Tree present in photographs of Hakim Chattar; size unmeasured | One large shade-variant tree at (-87, -52); no aerial roots |
