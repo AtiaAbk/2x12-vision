@@ -57,7 +57,7 @@ This matrix records what was **directly inspected** on this date. Status values:
 
 | Gate item | Evidence | Status | Next action |
 |---|---|---|---|
-| Character is not primitive geometry | `character/PlayerMesh.java`: boxes, cylinders, sphere head. Screenshot confirms box humanoid. | placeholder — FAILS gate | Licensed rigged humanoid with animation (multi-day). |
+| Character is not primitive geometry | **Updated later on 2026-10-25.** `character/PlayerMesh.java` now loads `assets/Models/Characters/UAL/AnimationLibrary_Godot_Standard.gltf` (Quaternius Universal Animation Library, CC0, see `docs/ASSET_REGISTER.md`): skinned mesh, 46 clips, scaled to 1.72 m, idle/walk/jog/sprint/crouch/jump driven from `PlayerControl`. Screenshots `character_2026-10-25_spawn_v1.png` (idle, Arif and Rafi) and `_v2.png` (jog mid-stride). Run log: `Character: model loaded=true, clip=Jog_Fwd_Loop, clip time=0.30 s`. The mesh is a faceless, unclothed mannequin. | partial — no longer primitive; still fails "clothing/materials" | Source a dressed student model on the same rig; add talking idle during dialogue. |
 | Campus recognizable | `world/CampusWorld.java`: all landmarks are `Box`/`Cylinder` primitives with flat colours. No Curzon Hall at all. No texture maps. | placeholder — FAILS gate | Reference-based modelling per landmark (multi-day). |
 | Lighting / background correct | Sky: unshaded 280 m sphere plus viewport colour; baseline screenshot shows light blue sky, not black. Sun + fill + ambient, PSSM shadows 2048×3, SSAO, tone map, FXAA. | working | — |
 | Vegetation suits monsoon | Sphere canopies on cylinder trunks, flat green. | placeholder — FAILS gate | Tree models or billboards with licences. |
@@ -107,7 +107,7 @@ This matrix records what was **directly inspected** on this date. Status values:
 |---|---|---|
 | Black sky / background | Current code sets viewport colour and a sky sphere; baseline run on this machine shows blue sky. | fixed before this branch; re-verified 2026-10-25 |
 | Mirrored / upside-down Bengali text | The affected screenshot is flipped as a whole (title, HUD and scene). Text rasterization path is upright in the baseline run. | capture bug of an earlier build; not present now |
-| Primitive box character | Confirmed in code and screenshot. | open — largest remaining gap |
+| Primitive box character | Replaced the same day by a CC0 rigged, animated mannequin (see §4). Clothing, face and hair still missing. | reduced — dressed model still needed |
 | Generic block buildings | Confirmed in code and screenshot. | open |
 | Sparse stylized trees | Confirmed in code and screenshot. | open |
 
@@ -115,6 +115,8 @@ This matrix records what was **directly inspected** on this date. Status values:
 
 - `docs/screenshots/baseline_windows_2026-10-25_before.png` — automated 300-frame run on this branch before any visual change (Windows, 1280×720).
 - `docs/screenshots/project_july_jme_gameplay.png` — unchanged committed image from `47c0a36`, kept for comparison.
+- `docs/screenshots/character_2026-10-25_spawn_v1.png` — first run with the rigged mannequin: Arif (blue) idle at spawn facing the camera, Rafi (red) idle by the plinth.
+- `docs/screenshots/character_2026-10-25_spawn_v2.png` — second run; input reached the window during the automated run (camera yaw 280°, character moved), which shows the jog clip mid-stride.
 - Build and run logs are quoted above; they were not committed.
 
 ## 11. What this matrix does not claim
