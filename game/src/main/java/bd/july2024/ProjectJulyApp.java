@@ -531,7 +531,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
                 System.out.println("Heap Memory: Used " + usedMem + " MB / Total " + totalMem + " MB (Max: " + maxMem + " MB)");
                 System.out.println("Resolution: " + settings.getWidth() + "x" + settings.getHeight());
                 System.out.println("Renderer: " + renderer.getClass().getSimpleName());
-                System.out.println("Target: 1920x1080 @ 60 FPS verified on MacBook Air M4");
+                System.out.println("Note: automated static run with no input; not a gameplay benchmark and not a 60 FPS claim. Spec target 1920x1080 @ 60 FPS on MacBook Air M4 remains unmeasured.");
                 System.out.println("=============================================================");
 
                 stop(true);
