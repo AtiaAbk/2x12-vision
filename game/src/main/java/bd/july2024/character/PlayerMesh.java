@@ -1,322 +1,254 @@
 package bd.july2024.character;
 
+import com.jme3.anim.AnimComposer;
+import com.jme3.anim.SkinningControl;
+import com.jme3.anim.tween.action.Action;
 import com.jme3.asset.AssetManager;
+import com.jme3.bounding.BoundingBox;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
-import com.jme3.math.FastMath;
-import com.jme3.math.Quaternion;
-import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.scene.shape.Box;
+import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Cylinder;
-import com.jme3.scene.shape.Sphere;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Articulated Procedural Humanoid Student Character Mesh for Arif and Companions.
+ * Rigged, skinned humanoid character for Arif and the companions.
  *
- * Implements refined anatomical student proportions:
- * - Tapered athletic torso (broad shoulders, tapered waist, leather belt)
- * - Defined neck cylinder connecting shirt collar to chin
- * - Ovaloid head with styled student hair, facial eyes, and Bangladesh flag protest headband
- * - Articulated arms with rolled-up sleeves, forearms, and hands
- * - Articulated legs with denim thighs, defined knee joints, calves, and campus sneakers
- * - Authentic canvas student backpack with zipper flap, side bottle, and shoulder straps
- * - Kinematic stride animation with velocity lean, lateral roll, and natural limb swings.
+ * Model: Quaternius "Universal Animation Library" (Standard, free tier), CC0 1.0.
+ * Source and licence are recorded in assets/Models/Characters/UAL/ and docs/ASSET_REGISTER.md.
+ * The mesh is a neutral mannequin: human proportions and a full locomotion animation set,
+ * but no face, hair or clothing. It replaces the earlier box-and-sphere placeholder and is
+ * itself an interim character until a dressed student model on the same rig is sourced.
+ *
+ * Public surface is unchanged from the procedural version so PlayerControl, CompanionNPC and
+ * ProjectJulyApp keep working: constructor(assetManager, shirtColor, pantsColor),
+ * animate(speed, stridePhase, idleTime, isCrouching), getRootNode().
  */
 public class PlayerMesh {
 
+    public static final String MODEL_PATH = "Models/Characters/UAL/AnimationLibrary_Godot_Standard.gltf";
+
+    /** Standing height the model is scaled to, in metres. */
+    public static final float TARGET_HEIGHT = 1.72f;
+
+    // Clip names as exported in the glTF
+    public static final String CLIP_IDLE = "Idle_Loop";
+    public static final String CLIP_IDLE_TALK = "Idle_Talking_Loop";
+    public static final String CLIP_WALK = "Walk_Loop";
+    public static final String CLIP_JOG = "Jog_Fwd_Loop";
+    public static final String CLIP_SPRINT = "Sprint_Loop";
+    public static final String CLIP_CROUCH_IDLE = "Crouch_Idle_Loop";
+    public static final String CLIP_CROUCH_MOVE = "Crouch_Fwd_Loop";
+    public static final String CLIP_JUMP = "Jump_Loop";
+
+    /**
+     * Approximate forward speed (m/s) each locomotion clip was authored for. Used to scale clip
+     * playback so feet do not visibly slide at the game's movement speeds. Estimated by eye from
+     * the clips; not a value published by the author.
+     */
+    private static final float WALK_CLIP_SPEED = 1.6f;
+    private static final float JOG_CLIP_SPEED = 3.4f;
+    private static final float SPRINT_CLIP_SPEED = 6.5f;
+    private static final float CROUCH_CLIP_SPEED = 1.3f;
+
     private final Node rootNode;
-    private Node headNode;
-    private Node torsoNode;
-    private Node leftArmNode;
-    private Node rightArmNode;
-    private Node leftLegNode;
-    private Node rightLegNode;
+    private AnimComposer composer;
+    private final Map<String, Action> actions = new HashMap<>();
+    private String currentClip = null;
+    private boolean airborne = false;
+    private boolean talking = false;
+    private boolean modelLoaded = false;
 
     public PlayerMesh(AssetManager assetManager, ColorRGBA shirtColor, ColorRGBA pantsColor) {
         rootNode = new Node("StudentMeshRoot");
-        buildArticulatedMesh(assetManager, shirtColor, pantsColor);
+        ColorRGBA shirt = shirtColor != null ? shirtColor : new ColorRGBA(0.18f, 0.42f, 0.68f, 1f);
+        ColorRGBA pants = pantsColor != null ? pantsColor : new ColorRGBA(0.12f, 0.18f, 0.28f, 1f);
+
+        Spatial model = null;
+        if (assetManager != null) {
+            // The glTF loader logs one warning per cubic-spline sampler ("JME only supports linear
+            // interpolation"), which is 3,400 lines for this file. The clips still load; silence it.
+            java.util.logging.Logger gltfLog = java.util.logging.Logger.getLogger("com.jme3.scene.plugins.gltf");
+            java.util.logging.Level previous = gltfLog.getLevel();
+            gltfLog.setLevel(java.util.logging.Level.SEVERE);
+            try {
+                model = assetManager.loadModel(MODEL_PATH);
+            } catch (Throwable t) {
+                System.err.println("[PlayerMesh] Could not load " + MODEL_PATH + ": " + t);
+            } finally {
+                gltfLog.setLevel(previous);
+            }
+        }
+
+        if (model != null) {
+            setupModel(model, assetManager, shirt, pants);
+            modelLoaded = true;
+        } else {
+            buildFallback(assetManager, shirt);
+            System.err.println("[PlayerMesh] Using fallback capsule; the character model is missing.");
+        }
     }
 
-    private void buildArticulatedMesh(AssetManager assetManager, ColorRGBA shirtColor, ColorRGBA pantsColor) {
-        Material skinMat = createLitMaterial(assetManager, new ColorRGBA(0.82f, 0.62f, 0.46f, 1f), 14f);
-        Material hairMat = createLitMaterial(assetManager, new ColorRGBA(0.06f, 0.05f, 0.04f, 1f), 28f);
-        Material eyeMat = createLitMaterial(assetManager, new ColorRGBA(0.08f, 0.07f, 0.06f, 1f), 45f);
-        Material shirtMat = createLitMaterial(assetManager, shirtColor != null ? shirtColor : new ColorRGBA(0.18f, 0.42f, 0.68f, 1f), 10f);
-        Material pantsMat = createLitMaterial(assetManager, pantsColor != null ? pantsColor : new ColorRGBA(0.12f, 0.18f, 0.28f, 1f), 8f);
-        Material beltMat = createLitMaterial(assetManager, new ColorRGBA(0.18f, 0.12f, 0.08f, 1f), 20f);
-        Material buckleMat = createLitMaterial(assetManager, new ColorRGBA(0.85f, 0.85f, 0.85f, 1f), 60f);
-        Material shoeMat = createLitMaterial(assetManager, new ColorRGBA(0.12f, 0.12f, 0.14f, 1f), 18f);
-        Material shoeSoleMat = createLitMaterial(assetManager, new ColorRGBA(0.92f, 0.92f, 0.90f, 1f), 24f);
-        Material badgeMat = createLitMaterial(assetManager, new ColorRGBA(0.88f, 0.22f, 0.20f, 1f), 30f);
-        Material backpackMat = createLitMaterial(assetManager, new ColorRGBA(0.20f, 0.24f, 0.28f, 1f), 12f);
-        Material bottleMat = createLitMaterial(assetManager, new ColorRGBA(0.25f, 0.55f, 0.70f, 1f), 45f);
-        Material headbandGreenMat = createLitMaterial(assetManager, new ColorRGBA(0.02f, 0.44f, 0.24f, 1f), 10f);
-        Material headbandRedMat = createLitMaterial(assetManager, new ColorRGBA(0.88f, 0.18f, 0.16f, 1f), 10f);
+    private void setupModel(Spatial model, AssetManager assetManager, ColorRGBA shirt, ColorRGBA pants) {
+        model.setName("UAL_Mannequin");
 
-        // 1. Torso Root (positioned at waist pivot ~0.95m from ground)
-        torsoNode = new Node("Torso");
-        torsoNode.setLocalTranslation(0f, 0.95f, 0f);
+        // Locate the animation composer and skinning control anywhere in the loaded tree
+        model.depthFirstTraversal(sp -> {
+            AnimComposer c = sp.getControl(AnimComposer.class);
+            if (c != null) composer = c;
+            SkinningControl sc = sp.getControl(SkinningControl.class);
+            if (sc != null) sc.setHardwareSkinningPreferred(true);
+        });
 
-        // Lower Torso / Waist
-        Box waistBox = new Box(0.16f, 0.12f, 0.10f);
-        Geometry waistGeom = new Geometry("Waist", waistBox);
-        waistGeom.setMaterial(shirtMat);
-        waistGeom.setLocalTranslation(0f, 0.12f, 0f);
-        torsoNode.attachChild(waistGeom);
+        // Replace the glTF PBR materials with the scene's Phong materials so the character is lit
+        // like the rest of the campus (no light probe exists yet). M_Joints is the darker accent
+        // material on the mannequin; everything else is the main body.
+        Material bodyMat = createLitMaterial(assetManager, shirt, 12f);
+        Material jointMat = createLitMaterial(assetManager, pants, 10f);
+        model.depthFirstTraversal(sp -> {
+            if (sp instanceof Geometry) {
+                Geometry g = (Geometry) sp;
+                Material old = g.getMaterial();
+                String name = old != null && old.getName() != null ? old.getName() : "";
+                g.setMaterial(name.contains("Joint") ? jointMat : bodyMat);
+                g.setShadowMode(com.jme3.renderer.queue.RenderQueue.ShadowMode.CastAndReceive);
+            }
+        });
 
-        // Leather Belt
-        Box beltBox = new Box(0.165f, 0.025f, 0.105f);
-        Geometry beltGeom = new Geometry("Belt", beltBox);
-        beltGeom.setMaterial(beltMat);
-        beltGeom.setLocalTranslation(0f, 0.025f, 0f);
-        torsoNode.attachChild(beltGeom);
+        // Normalise height to TARGET_HEIGHT and put the feet on y = 0
+        model.updateModelBound();
+        model.updateGeometricState();
+        if (model.getWorldBound() instanceof BoundingBox) {
+            BoundingBox bb = (BoundingBox) model.getWorldBound();
+            float height = bb.getYExtent() * 2f;
+            if (height > 0.01f) {
+                float scale = TARGET_HEIGHT / height;
+                model.setLocalScale(scale);
+                float minY = (bb.getCenter().y - bb.getYExtent()) * scale;
+                model.setLocalTranslation(0f, -minY, 0f);
+                System.out.println("[PlayerMesh] Model height " + String.format("%.3f", height)
+                    + " units, scale " + String.format("%.3f", scale) + ", foot offset " + String.format("%.3f", -minY));
+            }
+        }
 
-        // Silver Belt Buckle
-        Box buckleBox = new Box(0.035f, 0.022f, 0.005f);
-        Geometry buckleGeom = new Geometry("Buckle", buckleBox);
-        buckleGeom.setMaterial(buckleMat);
-        buckleGeom.setLocalTranslation(0f, 0.025f, -0.108f);
-        torsoNode.attachChild(buckleGeom);
+        rootNode.attachChild(model);
 
-        // Upper Chest & Shoulders (athletic student taper)
-        Box chestBox = new Box(0.19f, 0.18f, 0.12f);
-        Geometry chestGeom = new Geometry("Chest", chestBox);
-        chestGeom.setMaterial(shirtMat);
-        chestGeom.setLocalTranslation(0f, 0.40f, 0f);
-        torsoNode.attachChild(chestGeom);
-
-        // DU Student ID Card Badge (on chest)
-        Box badgeBox = new Box(0.045f, 0.060f, 0.005f);
-        Geometry badgeGeom = new Geometry("Badge", badgeBox);
-        badgeGeom.setMaterial(badgeMat);
-        badgeGeom.setLocalTranslation(0.09f, 0.44f, -0.125f);
-        torsoNode.attachChild(badgeGeom);
-
-        // Student Canvas Backpack (on back of chest)
-        Box packBox = new Box(0.15f, 0.22f, 0.08f);
-        Geometry packGeom = new Geometry("Backpack", packBox);
-        packGeom.setMaterial(backpackMat);
-        packGeom.setLocalTranslation(0f, 0.38f, 0.20f);
-        torsoNode.attachChild(packGeom);
-
-        // Backpack Top Flap
-        Box flapBox = new Box(0.155f, 0.045f, 0.085f);
-        Geometry flapGeom = new Geometry("BackpackFlap", flapBox);
-        flapGeom.setMaterial(backpackMat);
-        flapGeom.setLocalTranslation(0f, 0.56f, 0.20f);
-        torsoNode.attachChild(flapGeom);
-
-        // Side Water Bottle
-        Cylinder bottleCyl = new Cylinder(12, 12, 0.035f, 0.16f, true);
-        Geometry bottleGeom = new Geometry("WaterBottle", bottleCyl);
-        bottleGeom.rotate(FastMath.HALF_PI, 0, 0);
-        bottleGeom.setMaterial(bottleMat);
-        bottleGeom.setLocalTranslation(0.17f, 0.38f, 0.20f);
-        torsoNode.attachChild(bottleGeom);
-
-        // Dual Shoulder Straps
-        Box strapL = new Box(0.025f, 0.22f, 0.005f);
-        Geometry strapGeomL = new Geometry("StrapL", strapL);
-        strapGeomL.setMaterial(backpackMat);
-        strapGeomL.setLocalTranslation(-0.12f, 0.40f, -0.122f);
-        torsoNode.attachChild(strapGeomL);
-
-        Box strapR = new Box(0.025f, 0.22f, 0.005f);
-        Geometry strapGeomR = new Geometry("StrapR", strapR);
-        strapGeomR.setMaterial(backpackMat);
-        strapGeomR.setLocalTranslation(0.12f, 0.40f, -0.122f);
-        torsoNode.attachChild(strapGeomR);
-
-        rootNode.attachChild(torsoNode);
-
-        // 2. Head & Neck
-        headNode = new Node("Head");
-        headNode.setLocalTranslation(0f, 0.58f, 0f);
-
-        // Defined Neck Cylinder
-        Cylinder neckCyl = new Cylinder(14, 14, 0.055f, 0.10f, true);
-        Geometry neckGeom = new Geometry("Neck", neckCyl);
-        neckGeom.rotate(FastMath.HALF_PI, 0, 0);
-        neckGeom.setMaterial(skinMat);
-        neckGeom.setLocalTranslation(0f, 0.05f, 0f);
-        headNode.attachChild(neckGeom);
-
-        // Head Ovaloid
-        Sphere headSphere = new Sphere(18, 18, 0.13f);
-        Geometry headGeom = new Geometry("HeadGeom", headSphere);
-        headGeom.setMaterial(skinMat);
-        headGeom.setLocalTranslation(0f, 0.18f, 0f);
-        headGeom.setLocalScale(0.92f, 1.05f, 0.95f);
-        headNode.attachChild(headGeom);
-
-        // Styled Student Hair Cap
-        Sphere hairSphere = new Sphere(16, 16, 0.135f);
-        Geometry hairGeom = new Geometry("HairGeom", hairSphere);
-        hairGeom.setMaterial(hairMat);
-        hairGeom.setLocalTranslation(0f, 0.21f, 0.02f);
-        hairGeom.setLocalScale(0.95f, 1.0f, 1.02f);
-        headNode.attachChild(hairGeom);
-
-        // Eyes
-        Sphere eyeL = new Sphere(8, 8, 0.018f);
-        Geometry eyeGeomL = new Geometry("EyeL", eyeL);
-        eyeGeomL.setMaterial(eyeMat);
-        eyeGeomL.setLocalTranslation(-0.045f, 0.19f, -0.120f);
-        headNode.attachChild(eyeGeomL);
-
-        Sphere eyeR = new Sphere(8, 8, 0.018f);
-        Geometry eyeGeomR = new Geometry("EyeR", eyeR);
-        eyeGeomR.setMaterial(eyeMat);
-        eyeGeomR.setLocalTranslation(0.045f, 0.19f, -0.120f);
-        headNode.attachChild(eyeGeomR);
-
-        // Bangladesh National Flag Headband (July 2024 Movement Symbol)
-        Box headbandBox = new Box(0.135f, 0.022f, 0.135f);
-        Geometry headbandGeom = new Geometry("Headband", headbandBox);
-        headbandGeom.setMaterial(headbandGreenMat);
-        headbandGeom.setLocalTranslation(0f, 0.21f, 0f);
-        headNode.attachChild(headbandGeom);
-
-        // Red Disc on Forehead Center of Headband
-        Cylinder redDisc = new Cylinder(14, 14, 0.030f, 0.006f, true);
-        Geometry redDiscGeom = new Geometry("HeadbandRedDisc", redDisc);
-        redDiscGeom.setMaterial(headbandRedMat);
-        redDiscGeom.setLocalTranslation(0f, 0.21f, -0.138f);
-        headNode.attachChild(redDiscGeom);
-
-        torsoNode.attachChild(headNode);
-
-        // 3. Left & Right Arms (cylindrical with rolled shirt sleeves)
-        leftArmNode = createArm(skinMat, shirtMat, true);
-        leftArmNode.setLocalTranslation(-0.25f, 0.52f, 0f);
-        torsoNode.attachChild(leftArmNode);
-
-        rightArmNode = createArm(skinMat, shirtMat, false);
-        rightArmNode.setLocalTranslation(0.25f, 0.52f, 0f);
-        torsoNode.attachChild(rightArmNode);
-
-        // 4. Left & Right Legs (cylindrical denim trousers & sneakers)
-        leftLegNode = createLeg(pantsMat, shoeMat, shoeSoleMat);
-        leftLegNode.setLocalTranslation(-0.11f, 0.95f, 0f);
-        rootNode.attachChild(leftLegNode);
-
-        rightLegNode = createLeg(pantsMat, shoeMat, shoeSoleMat);
-        rightLegNode.setLocalTranslation(0.11f, 0.95f, 0f);
-        rootNode.attachChild(rightLegNode);
+        if (composer != null) {
+            System.out.println("[PlayerMesh] Animation clips: " + composer.getAnimClipsNames());
+            prepareAction(CLIP_IDLE, 1f);
+            prepareAction(CLIP_IDLE_TALK, 1f);
+            prepareAction(CLIP_WALK, 1f);
+            prepareAction(CLIP_JOG, 1f);
+            prepareAction(CLIP_SPRINT, 1f);
+            prepareAction(CLIP_CROUCH_IDLE, 1f);
+            prepareAction(CLIP_CROUCH_MOVE, 1f);
+            prepareAction(CLIP_JUMP, 1f);
+            play(CLIP_IDLE);
+        } else {
+            System.err.println("[PlayerMesh] No AnimComposer found in " + MODEL_PATH + "; character will not animate.");
+        }
     }
 
-    private Node createArm(Material skinMat, Material shirtMat, boolean isLeft) {
-        Node arm = new Node("Arm");
-
-        // Upper arm with rolled shirt sleeve (cylindrical)
-        Cylinder sleeveCyl = new Cylinder(14, 14, 0.052f, 0.18f, true);
-        Geometry sleeve = new Geometry("Sleeve", sleeveCyl);
-        sleeve.rotate(FastMath.HALF_PI, 0, 0);
-        sleeve.setMaterial(shirtMat);
-        sleeve.setLocalTranslation(0f, -0.09f, 0f);
-        arm.attachChild(sleeve);
-
-        // Forearm (skin tone, slightly tapered)
-        Cylinder forearmCyl = new Cylinder(12, 12, 0.042f, 0.18f, true);
-        Geometry forearm = new Geometry("Forearm", forearmCyl);
-        forearm.rotate(FastMath.HALF_PI, 0, 0);
-        forearm.setMaterial(skinMat);
-        forearm.setLocalTranslation(0f, -0.27f, 0f);
-        arm.attachChild(forearm);
-
-        // Hand
-        Box handBox = new Box(0.035f, 0.055f, 0.025f);
-        Geometry hand = new Geometry("Hand", handBox);
-        hand.setMaterial(skinMat);
-        hand.setLocalTranslation(0f, -0.41f, 0f);
-        arm.attachChild(hand);
-
-        return arm;
+    private void prepareAction(String clip, float speed) {
+        if (composer == null || !composer.hasAnimClip(clip)) return;
+        Action a = composer.action(clip);
+        a.setSpeed(speed);
+        actions.put(clip, a);
     }
 
-    private Node createLeg(Material pantsMat, Material shoeMat, Material shoeSoleMat) {
-        Node leg = new Node("Leg");
+    private void play(String clip) {
+        if (composer == null) return;
+        if (!actions.containsKey(clip)) {
+            clip = CLIP_IDLE;
+            if (!actions.containsKey(clip)) return;
+        }
+        if (clip.equals(currentClip)) return;
+        composer.setCurrentAction(clip);
+        currentClip = clip;
+    }
 
-        // Thigh (denim trouser cylinder)
-        Cylinder thighCyl = new Cylinder(14, 14, 0.072f, 0.40f, true);
-        Geometry thighGeom = new Geometry("Thigh", thighCyl);
-        thighGeom.rotate(FastMath.HALF_PI, 0, 0);
-        thighGeom.setMaterial(pantsMat);
-        thighGeom.setLocalTranslation(0f, -0.20f, 0f);
-        leg.attachChild(thighGeom);
+    private void setClipSpeed(String clip, float speed) {
+        Action a = actions.get(clip);
+        if (a != null) a.setSpeed(Math.max(0.6f, Math.min(1.6f, speed)));
+    }
 
-        // Knee Joint
-        Sphere kneeSphere = new Sphere(10, 10, 0.068f);
-        Geometry kneeGeom = new Geometry("Knee", kneeSphere);
-        kneeGeom.setMaterial(pantsMat);
-        kneeGeom.setLocalTranslation(0f, -0.40f, 0f);
-        leg.attachChild(kneeGeom);
-
-        // Calf (denim lower leg cylinder)
-        Cylinder calfCyl = new Cylinder(14, 14, 0.062f, 0.38f, true);
-        Geometry calfGeom = new Geometry("Calf", calfCyl);
-        calfGeom.rotate(FastMath.HALF_PI, 0, 0);
-        calfGeom.setMaterial(pantsMat);
-        calfGeom.setLocalTranslation(0f, -0.59f, 0f);
-        leg.attachChild(calfGeom);
-
-        // Sneaker Upper (Dark canvas campus shoe)
-        Box shoeUpper = new Box(0.068f, 0.040f, 0.115f);
-        Geometry shoeGeom = new Geometry("ShoeUpper", shoeUpper);
-        shoeGeom.setMaterial(shoeMat);
-        shoeGeom.setLocalTranslation(0f, -0.83f, 0.025f);
-        leg.attachChild(shoeGeom);
-
-        // Sneaker White Rubber Outsole Rim
-        Box shoeSole = new Box(0.072f, 0.014f, 0.120f);
-        Geometry soleGeom = new Geometry("ShoeSole", shoeSole);
-        soleGeom.setMaterial(shoeSoleMat);
-        soleGeom.setLocalTranslation(0f, -0.875f, 0.025f);
-        leg.attachChild(soleGeom);
-
-        return leg;
+    private void buildFallback(AssetManager assetManager, ColorRGBA color) {
+        Cylinder body = new Cylinder(12, 16, 0.22f, 1.6f, true);
+        Geometry g = new Geometry("FallbackBody", body);
+        g.setMaterial(createLitMaterial(assetManager, color, 10f));
+        g.rotate(com.jme3.math.FastMath.HALF_PI, 0f, 0f);
+        g.setLocalTranslation(0f, 0.8f, 0f);
+        rootNode.attachChild(g);
     }
 
     private Material createLitMaterial(AssetManager assetManager, ColorRGBA color, float shininess) {
         Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
         mat.setBoolean("UseMaterialColors", true);
-        mat.setColor("Ambient", color.mult(0.65f));
+        mat.setColor("Ambient", color.mult(0.9f));
         mat.setColor("Diffuse", color);
         mat.setColor("Specular", ColorRGBA.White.mult(0.15f));
         mat.setFloat("Shininess", shininess);
         return mat;
     }
 
+    /**
+     * Selects the locomotion clip from the controller state.
+     *
+     * @param speed        horizontal speed in m/s (0 when standing)
+     * @param stridePhase  procedural stride phase, kept for API compatibility (unused with skinned clips)
+     * @param idleTime     seconds since spawn, kept for API compatibility
+     * @param isCrouching  crouch state
+     */
     public void animate(float speed, float stridePhase, float idleTime, boolean isCrouching) {
-        // Natural idle breathing
-        float breath = FastMath.sin(idleTime * 2.2f) * 0.015f;
-        torsoNode.setLocalTranslation(0f, (isCrouching ? 0.65f : 0.95f) + breath, 0f);
+        if (composer == null) return;
 
-        // Locomotion lean & subtle lateral spine roll
-        float lean = isCrouching ? 0.22f : (speed > 5f ? 0.14f : (speed > 0.2f ? 0.06f : 0f));
-        float roll = (speed > 0.2f) ? FastMath.sin(stridePhase) * 0.02f : 0f;
-        torsoNode.setLocalRotation(new Quaternion().fromAngles(lean, 0f, roll));
-
-        if (speed > 0.2f) {
-            float swingMax = (speed > 5f) ? 0.78f : 0.46f;
-            float legSwing = FastMath.sin(stridePhase) * swingMax;
-            float armSwing = -legSwing * 0.88f;
-
-            // Pitch rotation for legs and arms with natural slight outward arm splay
-            leftLegNode.setLocalRotation(new Quaternion().fromAngleAxis(legSwing, Vector3f.UNIT_X));
-            rightLegNode.setLocalRotation(new Quaternion().fromAngleAxis(-legSwing, Vector3f.UNIT_X));
-
-            leftArmNode.setLocalRotation(new Quaternion().fromAngles(armSwing, 0f, -0.05f));
-            rightArmNode.setLocalRotation(new Quaternion().fromAngles(-armSwing, 0f, 0.05f));
+        boolean moving = speed > 0.2f;
+        String clip;
+        if (airborne) {
+            clip = CLIP_JUMP;
+        } else if (isCrouching) {
+            clip = moving ? CLIP_CROUCH_MOVE : CLIP_CROUCH_IDLE;
+            if (moving) setClipSpeed(CLIP_CROUCH_MOVE, speed / CROUCH_CLIP_SPEED);
+        } else if (speed > 6f) {
+            clip = CLIP_SPRINT;
+            setClipSpeed(CLIP_SPRINT, speed / SPRINT_CLIP_SPEED);
+        } else if (speed > 2.6f) {
+            clip = CLIP_JOG;
+            setClipSpeed(CLIP_JOG, speed / JOG_CLIP_SPEED);
+        } else if (moving) {
+            clip = CLIP_WALK;
+            setClipSpeed(CLIP_WALK, speed / WALK_CLIP_SPEED);
         } else {
-            // Smoothly return to neutral idle stance
-            leftLegNode.setLocalRotation(Quaternion.IDENTITY);
-            rightLegNode.setLocalRotation(Quaternion.IDENTITY);
-            leftArmNode.setLocalRotation(Quaternion.IDENTITY);
-            rightArmNode.setLocalRotation(Quaternion.IDENTITY);
+            clip = talking ? CLIP_IDLE_TALK : CLIP_IDLE;
         }
+        play(clip);
+    }
+
+    /** Set by the controller while the character is off the ground. */
+    public void setAirborne(boolean airborne) {
+        this.airborne = airborne;
+    }
+
+    /** When true and standing still, the talking idle is used instead of the plain idle. */
+    public void setTalking(boolean talking) {
+        this.talking = talking;
+    }
+
+    public boolean isModelLoaded() {
+        return modelLoaded;
+    }
+
+    public String getCurrentClip() {
+        return currentClip;
+    }
+
+    /** Current playback time of the active clip in seconds, or -1 when no composer is present. */
+    public double getAnimationTime() {
+        return composer != null ? composer.getTime() : -1.0;
     }
 
     public Node getRootNode() {

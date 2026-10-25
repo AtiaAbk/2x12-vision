@@ -153,8 +153,9 @@ public class PlayerControl {
         characterNode.setLocalTranslation(position);
         characterNode.setLocalRotation(new com.jme3.math.Quaternion().fromAngleAxis(headingDegrees * FastMath.DEG_TO_RAD, Vector3f.UNIT_Y));
 
-        // Animate procedural mesh limbs
+        // Drive the character animation from the locomotion state
         if (mesh != null) {
+            mesh.setAirborne(!isGrounded);
             mesh.animate(currentSpeed, stridePhase, idleTime, isCrouching);
         }
     }

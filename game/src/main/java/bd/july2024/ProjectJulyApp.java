@@ -175,6 +175,10 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         renderManager.setPreferredLightMode(com.jme3.material.TechniqueDef.LightMode.SinglePass);
         renderManager.setSinglePassLightBatchSize(4);
 
+        // 0. Make the repository assets/ folder visible to the asset manager (models, audio, fonts).
+        //    The Gradle run task sets workingDir to the repository root.
+        assetManager.registerLocator("assets", com.jme3.asset.plugins.FileLocator.class);
+
         // 1. Initialize Subsystems
         audio = new AudioController(assetManager, rootNode);
         textRenderer = new BengaliTextRenderer(assetManager);
@@ -201,7 +205,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
         playerControl = new PlayerControl(playerNode, playerMesh, audio);
         playerControl.setPosition(0f, 0f, 8f);
-        playerControl.setHeadingDegrees(0f);
+        playerControl.setHeadingDegrees(180f); // face the Raju sculpture (north, -Z), back to the camera
         playerControl.setColliders(campusWorld.getColliders());
 
         // Restore checkpoint if saved
@@ -442,7 +446,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         saveManager.clearCheckpoint();
         missionTracker.reset();
         playerControl.setPosition(0f, 0f, 8f);
-        playerControl.setHeadingDegrees(0f);
+        playerControl.setHeadingDegrees(180f); // face the Raju sculpture (north, -Z), back to the camera
         playerControl.setStamina(100f);
         if (dialogueManager.isActive()) dialogueManager.endDialogue();
         if (docModal.isOpen()) docModal.close();
@@ -531,6 +535,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
                 System.out.println("Heap Memory: Used " + usedMem + " MB / Total " + totalMem + " MB (Max: " + maxMem + " MB)");
                 System.out.println("Resolution: " + settings.getWidth() + "x" + settings.getHeight());
                 System.out.println("Renderer: " + renderer.getClass().getSimpleName());
+                System.out.println("Character: model loaded=" + playerMesh.isModelLoaded() + ", clip=" + playerMesh.getCurrentClip() + ", clip time=" + String.format("%.2f", playerMesh.getAnimationTime()) + " s");
                 System.out.println("Note: automated static run with no input; not a gameplay benchmark and not a 60 FPS claim. Spec target 1920x1080 @ 60 FPS on MacBook Air M4 remains unmeasured.");
                 System.out.println("=============================================================");
 
