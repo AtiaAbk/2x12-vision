@@ -5,57 +5,36 @@ import com.jme3.anim.SkinningControl;
 import com.jme3.anim.tween.action.Action;
 import com.jme3.asset.AssetManager;
 import com.jme3.bounding.BoundingBox;
+import com.jme3.material.MatParam;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
+import com.jme3.scene.VertexBuffer;
 import com.jme3.scene.shape.Cylinder;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Rigged, skinned humanoid character for Arif and the companions.
+ * Rigged, skinned humanoid character for Arif and the companions, loaded from a glTF described by a
+ * {@link CharacterSpec}. All current presets are CC0 models by Quaternius (see docs/ASSET_REGISTER.md).
  *
- * Model: Quaternius "Universal Animation Library" (Standard, free tier), CC0 1.0.
- * Source and licence are recorded in assets/Models/Characters/UAL/ and docs/ASSET_REGISTER.md.
- * The mesh is a neutral mannequin: human proportions and a full locomotion animation set,
- * but no face, hair or clothing. It replaces the earlier box-and-sphere placeholder and is
- * itself an interim character until a dressed student model on the same rig is sourced.
+ * The glTF PBR materials are replaced with the scene's Phong materials, keeping each material's
+ * authored base colour (and vertex colours where present) so the character is lit like the rest of
+ * the campus. Optionally the spec's shirt and trouser materials are tinted per character.
  *
- * Public surface is unchanged from the procedural version so PlayerControl, CompanionNPC and
- * ProjectJulyApp keep working: constructor(assetManager, shirtColor, pantsColor),
- * animate(speed, stridePhase, idleTime, isCrouching), getRootNode().
+ * Public surface kept from the earlier procedural version: constructor(assetManager, shirtColor,
+ * pantsColor), animate(speed, stridePhase, idleTime, isCrouching), getRootNode().
  */
 public class PlayerMesh {
-
-    public static final String MODEL_PATH = "Models/Characters/UAL/AnimationLibrary_Godot_Standard.gltf";
 
     /** Standing height the model is scaled to, in metres. */
     public static final float TARGET_HEIGHT = 1.72f;
 
-    // Clip names as exported in the glTF
-    public static final String CLIP_IDLE = "Idle_Loop";
-    public static final String CLIP_IDLE_TALK = "Idle_Talking_Loop";
-    public static final String CLIP_WALK = "Walk_Loop";
-    public static final String CLIP_JOG = "Jog_Fwd_Loop";
-    public static final String CLIP_SPRINT = "Sprint_Loop";
-    public static final String CLIP_CROUCH_IDLE = "Crouch_Idle_Loop";
-    public static final String CLIP_CROUCH_MOVE = "Crouch_Fwd_Loop";
-    public static final String CLIP_JUMP = "Jump_Loop";
-
-    /**
-     * Approximate forward speed (m/s) each locomotion clip was authored for. Used to scale clip
-     * playback so feet do not visibly slide at the game's movement speeds. Estimated by eye from
-     * the clips; not a value published by the author.
-     */
-    private static final float WALK_CLIP_SPEED = 1.6f;
-    private static final float JOG_CLIP_SPEED = 3.4f;
-    private static final float SPRINT_CLIP_SPEED = 6.5f;
-    private static final float CROUCH_CLIP_SPEED = 1.3f;
-
     private final Node rootNode;
+    private final CharacterSpec spec;
     private AnimComposer composer;
     private final Map<String, Action> actions = new HashMap<>();
     private String currentClip = null;
@@ -63,38 +42,46 @@ public class PlayerMesh {
     private boolean talking = false;
     private boolean modelLoaded = false;
 
+    /** Loads the default character (Arif) tinted with the given colours. */
     public PlayerMesh(AssetManager assetManager, ColorRGBA shirtColor, ColorRGBA pantsColor) {
-        rootNode = new Node("StudentMeshRoot");
-        ColorRGBA shirt = shirtColor != null ? shirtColor : new ColorRGBA(0.18f, 0.42f, 0.68f, 1f);
-        ColorRGBA pants = pantsColor != null ? pantsColor : new ColorRGBA(0.12f, 0.18f, 0.28f, 1f);
+        this(assetManager, CharacterSpec.ARIF, shirtColor, pantsColor);
+    }
+
+    /**
+     * @param shirtColor tint for the spec's shirt material, or null to keep the authored colour
+     * @param pantsColor tint for the spec's trouser material, or null to keep the authored colour
+     */
+    public PlayerMesh(AssetManager assetManager, CharacterSpec spec, ColorRGBA shirtColor, ColorRGBA pantsColor) {
+        this.rootNode = new Node("CharacterRoot_" + spec.id);
+        this.spec = spec;
 
         Spatial model = null;
         if (assetManager != null) {
             // The glTF loader logs one warning per cubic-spline sampler ("JME only supports linear
-            // interpolation"), which is 3,400 lines for this file. The clips still load; silence it.
+            // interpolation"), thousands of lines for some files. The clips still load; silence it.
             java.util.logging.Logger gltfLog = java.util.logging.Logger.getLogger("com.jme3.scene.plugins.gltf");
             java.util.logging.Level previous = gltfLog.getLevel();
             gltfLog.setLevel(java.util.logging.Level.SEVERE);
             try {
-                model = assetManager.loadModel(MODEL_PATH);
+                model = assetManager.loadModel(spec.modelPath);
             } catch (Throwable t) {
-                System.err.println("[PlayerMesh] Could not load " + MODEL_PATH + ": " + t);
+                System.err.println("[PlayerMesh] Could not load " + spec.modelPath + ": " + t);
             } finally {
                 gltfLog.setLevel(previous);
             }
         }
 
         if (model != null) {
-            setupModel(model, assetManager, shirt, pants);
+            setupModel(model, assetManager, shirtColor, pantsColor);
             modelLoaded = true;
         } else {
-            buildFallback(assetManager, shirt);
+            buildFallback(assetManager, shirtColor != null ? shirtColor : new ColorRGBA(0.18f, 0.42f, 0.68f, 1f));
             System.err.println("[PlayerMesh] Using fallback capsule; the character model is missing.");
         }
     }
 
-    private void setupModel(Spatial model, AssetManager assetManager, ColorRGBA shirt, ColorRGBA pants) {
-        model.setName("UAL_Mannequin");
+    private void setupModel(Spatial model, AssetManager assetManager, ColorRGBA shirtColor, ColorRGBA pantsColor) {
+        model.setName("Character_" + spec.id);
 
         // Locate the animation composer and skinning control anywhere in the loaded tree
         model.depthFirstTraversal(sp -> {
@@ -104,19 +91,29 @@ public class PlayerMesh {
             if (sc != null) sc.setHardwareSkinningPreferred(true);
         });
 
-        // Replace the glTF PBR materials with the scene's Phong materials so the character is lit
-        // like the rest of the campus (no light probe exists yet). M_Joints is the darker accent
-        // material on the mannequin; everything else is the main body.
-        Material bodyMat = createLitMaterial(assetManager, shirt, 12f);
-        Material jointMat = createLitMaterial(assetManager, pants, 10f);
+        // Replace PBR materials with Phong, one Phong material per source material so shared
+        // materials stay shared.
+        Map<Material, Material> converted = new HashMap<>();
         model.depthFirstTraversal(sp -> {
-            if (sp instanceof Geometry) {
-                Geometry g = (Geometry) sp;
-                Material old = g.getMaterial();
+            if (!(sp instanceof Geometry)) return;
+            Geometry g = (Geometry) sp;
+            Material old = g.getMaterial();
+            Material phong = converted.get(old);
+            if (phong == null) {
                 String name = old != null && old.getName() != null ? old.getName() : "";
-                g.setMaterial(name.contains("Joint") ? jointMat : bodyMat);
-                g.setShadowMode(com.jme3.renderer.queue.RenderQueue.ShadowMode.CastAndReceive);
+                ColorRGBA base = readBaseColor(old);
+                if (spec.shirtMaterial != null && shirtColor != null && name.equals(spec.shirtMaterial)) {
+                    base = shirtColor;
+                } else if (spec.pantsMaterial != null && pantsColor != null && name.equals(spec.pantsMaterial)) {
+                    base = pantsColor;
+                }
+                boolean vertexColors = g.getMesh().getBuffer(VertexBuffer.Type.Color) != null;
+                phong = createLitMaterial(assetManager, base, 10f, vertexColors);
+                phong.setName(name);
+                converted.put(old, phong);
             }
+            g.setMaterial(phong);
+            g.setShadowMode(com.jme3.renderer.queue.RenderQueue.ShadowMode.CastAndReceive);
         });
 
         // Normalise height to TARGET_HEIGHT and put the feet on y = 0
@@ -130,41 +127,57 @@ public class PlayerMesh {
                 model.setLocalScale(scale);
                 float minY = (bb.getCenter().y - bb.getYExtent()) * scale;
                 model.setLocalTranslation(0f, -minY, 0f);
-                System.out.println("[PlayerMesh] Model height " + String.format("%.3f", height)
-                    + " units, scale " + String.format("%.3f", scale) + ", foot offset " + String.format("%.3f", -minY));
+                System.out.println("[PlayerMesh] " + spec.id + ": model height " + String.format("%.3f", height)
+                    + " units, scale " + String.format("%.3f", scale) + ", foot offset " + String.format("%.3f", -minY)
+                    + ", materials " + converted.size());
             }
         }
 
         rootNode.attachChild(model);
 
         if (composer != null) {
-            System.out.println("[PlayerMesh] Animation clips: " + composer.getAnimClipsNames());
-            prepareAction(CLIP_IDLE, 1f);
-            prepareAction(CLIP_IDLE_TALK, 1f);
-            prepareAction(CLIP_WALK, 1f);
-            prepareAction(CLIP_JOG, 1f);
-            prepareAction(CLIP_SPRINT, 1f);
-            prepareAction(CLIP_CROUCH_IDLE, 1f);
-            prepareAction(CLIP_CROUCH_MOVE, 1f);
-            prepareAction(CLIP_JUMP, 1f);
-            play(CLIP_IDLE);
+            prepareAction(spec.clipIdle);
+            prepareAction(spec.clipIdleTalk);
+            prepareAction(spec.clipWalk);
+            prepareAction(spec.clipJog);
+            prepareAction(spec.clipSprint);
+            prepareAction(spec.clipCrouchIdle);
+            prepareAction(spec.clipCrouchMove);
+            prepareAction(spec.clipJump);
+            System.out.println("[PlayerMesh] " + spec.id + ": clips available " + composer.getAnimClipsNames().size()
+                + ", mapped " + actions.keySet());
+            play(spec.clipIdle);
         } else {
-            System.err.println("[PlayerMesh] No AnimComposer found in " + MODEL_PATH + "; character will not animate.");
+            System.err.println("[PlayerMesh] No AnimComposer found in " + spec.modelPath + "; character will not animate.");
         }
     }
 
-    private void prepareAction(String clip, float speed) {
-        if (composer == null || !composer.hasAnimClip(clip)) return;
+    private static ColorRGBA readBaseColor(Material m) {
+        if (m != null) {
+            MatParam p = m.getParam("BaseColor");
+            if (p != null && p.getValue() instanceof ColorRGBA) {
+                return ((ColorRGBA) p.getValue()).clone();
+            }
+            p = m.getParam("Diffuse");
+            if (p != null && p.getValue() instanceof ColorRGBA) {
+                return ((ColorRGBA) p.getValue()).clone();
+            }
+        }
+        return new ColorRGBA(0.7f, 0.7f, 0.7f, 1f);
+    }
+
+    private void prepareAction(String clip) {
+        if (clip == null || composer == null || !composer.hasAnimClip(clip) || actions.containsKey(clip)) return;
         Action a = composer.action(clip);
-        a.setSpeed(speed);
+        a.setSpeed(1f);
         actions.put(clip, a);
     }
 
     private void play(String clip) {
         if (composer == null) return;
-        if (!actions.containsKey(clip)) {
-            clip = CLIP_IDLE;
-            if (!actions.containsKey(clip)) return;
+        if (clip == null || !actions.containsKey(clip)) {
+            clip = spec.clipIdle;
+            if (clip == null || !actions.containsKey(clip)) return;
         }
         if (clip.equals(currentClip)) return;
         composer.setCurrentAction(clip);
@@ -172,26 +185,29 @@ public class PlayerMesh {
     }
 
     private void setClipSpeed(String clip, float speed) {
-        Action a = actions.get(clip);
-        if (a != null) a.setSpeed(Math.max(0.6f, Math.min(1.6f, speed)));
+        Action a = clip != null ? actions.get(clip) : null;
+        if (a != null) a.setSpeed(Math.max(0.6f, Math.min(1.9f, speed)));
     }
 
     private void buildFallback(AssetManager assetManager, ColorRGBA color) {
         Cylinder body = new Cylinder(12, 16, 0.22f, 1.6f, true);
         Geometry g = new Geometry("FallbackBody", body);
-        g.setMaterial(createLitMaterial(assetManager, color, 10f));
+        g.setMaterial(createLitMaterial(assetManager, color, 10f, false));
         g.rotate(com.jme3.math.FastMath.HALF_PI, 0f, 0f);
         g.setLocalTranslation(0f, 0.8f, 0f);
         rootNode.attachChild(g);
     }
 
-    private Material createLitMaterial(AssetManager assetManager, ColorRGBA color, float shininess) {
+    private Material createLitMaterial(AssetManager assetManager, ColorRGBA color, float shininess, boolean vertexColors) {
         Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
         mat.setBoolean("UseMaterialColors", true);
         mat.setColor("Ambient", color.mult(0.9f));
         mat.setColor("Diffuse", color);
-        mat.setColor("Specular", ColorRGBA.White.mult(0.15f));
+        mat.setColor("Specular", ColorRGBA.White.mult(0.12f));
         mat.setFloat("Shininess", shininess);
+        if (vertexColors) {
+            mat.setBoolean("UseVertexColor", true);
+        }
         return mat;
     }
 
@@ -208,22 +224,24 @@ public class PlayerMesh {
 
         boolean moving = speed > 0.2f;
         String clip;
-        if (airborne) {
-            clip = CLIP_JUMP;
+        if (airborne && spec.clipJump != null && actions.containsKey(spec.clipJump)) {
+            clip = spec.clipJump;
+        } else if (airborne && currentClip != null) {
+            return; // no jump clip for this model: keep the clip that was playing at take-off
         } else if (isCrouching) {
-            clip = moving ? CLIP_CROUCH_MOVE : CLIP_CROUCH_IDLE;
-            if (moving) setClipSpeed(CLIP_CROUCH_MOVE, speed / CROUCH_CLIP_SPEED);
+            clip = moving ? spec.clipCrouchMove : spec.clipCrouchIdle;
+            if (moving) setClipSpeed(spec.clipCrouchMove, speed / spec.crouchClipSpeed);
         } else if (speed > 6f) {
-            clip = CLIP_SPRINT;
-            setClipSpeed(CLIP_SPRINT, speed / SPRINT_CLIP_SPEED);
+            clip = spec.clipSprint;
+            setClipSpeed(spec.clipSprint, speed / spec.sprintClipSpeed);
         } else if (speed > 2.6f) {
-            clip = CLIP_JOG;
-            setClipSpeed(CLIP_JOG, speed / JOG_CLIP_SPEED);
+            clip = spec.clipJog;
+            setClipSpeed(spec.clipJog, speed / spec.jogClipSpeed);
         } else if (moving) {
-            clip = CLIP_WALK;
-            setClipSpeed(CLIP_WALK, speed / WALK_CLIP_SPEED);
+            clip = spec.clipWalk;
+            setClipSpeed(spec.clipWalk, speed / spec.walkClipSpeed);
         } else {
-            clip = talking ? CLIP_IDLE_TALK : CLIP_IDLE;
+            clip = talking ? spec.clipIdleTalk : spec.clipIdle;
         }
         play(clip);
     }
@@ -240,6 +258,10 @@ public class PlayerMesh {
 
     public boolean isModelLoaded() {
         return modelLoaded;
+    }
+
+    public CharacterSpec getSpec() {
+        return spec;
     }
 
     public String getCurrentClip() {

@@ -2,6 +2,7 @@ package bd.july2024;
 
 import bd.july2024.audio.AudioController;
 import bd.july2024.camera.CinematicOrbitCamera;
+import bd.july2024.character.CharacterSpec;
 import bd.july2024.character.CompanionNPC;
 import bd.july2024.character.PlayerControl;
 import bd.july2024.character.PlayerMesh;
@@ -199,7 +200,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
         // 3. Spawn Student Protagonist (Arif)
         playerNode = new Node("Arif_Player");
-        playerMesh = new PlayerMesh(assetManager, new ColorRGBA(0.18f, 0.42f, 0.68f, 1f), new ColorRGBA(0.14f, 0.18f, 0.28f, 1f));
+        playerMesh = new PlayerMesh(assetManager, CharacterSpec.ARIF, new ColorRGBA(0.20f, 0.40f, 0.62f, 1f), new ColorRGBA(0.10f, 0.13f, 0.20f, 1f)); // blue shirt, dark jeans
         playerNode.attachChild(playerMesh.getRootNode());
         rootNode.attachChild(playerNode);
 
@@ -237,7 +238,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     private void spawnCompanions() {
         // 1. Rafi at Raju Memorial Sculpture
         CompanionNPC rafi = new CompanionNPC(
-            assetManager, "RAFI", "রাফি (Rafi)", "Classmate & Organizer",
+            assetManager, CharacterSpec.RAFI, "RAFI", "রাফি (Rafi)", "Classmate & Organizer",
             new Vector3f(2.4f, 0.35f, 3.2f),
             new ColorRGBA(0.72f, 0.25f, 0.22f, 1f), // Red cotton shirt
             new ColorRGBA(0.15f, 0.18f, 0.22f, 1f)
@@ -247,9 +248,9 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
         // 2. Tanvir at Hakim Chattar / Central Library
         CompanionNPC tanvir = new CompanionNPC(
-            assetManager, "TANVIR", "তানভীর (Tanvir)", "Leaflet Distribution",
+            assetManager, CharacterSpec.TANVIR, "TANVIR", "তানভীর (Tanvir)", "Leaflet Distribution",
             new Vector3f(-12f, 0.15f, -22f),
-            new ColorRGBA(0.22f, 0.52f, 0.32f, 1f), // Green kurti
+            new ColorRGBA(0.16f, 0.20f, 0.30f, 1f), // Navy jacket and trousers
             new ColorRGBA(0.18f, 0.18f, 0.20f, 1f)
         );
         companions.add(tanvir);
@@ -257,9 +258,9 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
         // 3. Nusrat at TSC Auditorium Entrance
         CompanionNPC nusrat = new CompanionNPC(
-            assetManager, "NUSRAT", "নুসরাত (Nusrat)", "Student Liaison",
+            assetManager, CharacterSpec.NUSRAT, "NUSRAT", "নুসরাত (Nusrat)", "Student Liaison",
             new Vector3f(18f, 0f, 15f),
-            new ColorRGBA(0.85f, 0.62f, 0.18f, 1f), // Yellow/gold salwar
+            new ColorRGBA(0.80f, 0.58f, 0.16f, 1f), // Gold top
             new ColorRGBA(0.68f, 0.22f, 0.25f, 1f)
         );
         companions.add(nusrat);

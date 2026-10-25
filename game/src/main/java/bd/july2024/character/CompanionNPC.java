@@ -25,13 +25,17 @@ public class CompanionNPC {
     private float animTime = 0f;
 
     public CompanionNPC(AssetManager assetManager, String id, String nameBengali, String roleEnglish, Vector3f position, ColorRGBA shirtColor, ColorRGBA pantsColor) {
+        this(assetManager, CharacterSpec.ARIF, id, nameBengali, roleEnglish, position, shirtColor, pantsColor);
+    }
+
+    public CompanionNPC(AssetManager assetManager, CharacterSpec spec, String id, String nameBengali, String roleEnglish, Vector3f position, ColorRGBA shirtColor, ColorRGBA pantsColor) {
         this.id = id;
         this.nameBengali = nameBengali;
         this.roleEnglish = roleEnglish;
         this.position = position.clone();
 
         npcNode = new Node("NPC_" + id);
-        mesh = new PlayerMesh(assetManager, shirtColor, pantsColor);
+        mesh = new PlayerMesh(assetManager, spec, shirtColor, pantsColor);
         npcNode.attachChild(mesh.getRootNode());
         npcNode.setLocalTranslation(position);
 
