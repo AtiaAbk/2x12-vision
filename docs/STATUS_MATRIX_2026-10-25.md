@@ -57,7 +57,7 @@ This matrix records what was **directly inspected** on this date. Status values:
 
 | Gate item | Evidence | Status | Next action |
 |---|---|---|---|
-| Character is not primitive geometry | **Updated later on 2026-10-25.** `character/PlayerMesh.java` now loads `assets/Models/Characters/UAL/AnimationLibrary_Godot_Standard.gltf` (Quaternius Universal Animation Library, CC0, see `docs/ASSET_REGISTER.md`): skinned mesh, 46 clips, scaled to 1.72 m, idle/walk/jog/sprint/crouch/jump driven from `PlayerControl`. Screenshots `character_2026-10-25_spawn_v1.png` (idle, Arif and Rafi) and `_v2.png` (jog mid-stride). Run log: `Character: model loaded=true, clip=Jog_Fwd_Loop, clip time=0.30 s`. The mesh is a faceless, unclothed mannequin. | partial — no longer primitive; still fails "clothing/materials" | Source a dressed student model on the same rig; add talking idle during dialogue. |
+| Character is not primitive geometry | **Updated later on 2026-10-25.** `character/PlayerMesh.java` now loads `assets/Models/Characters/UAL/AnimationLibrary_Godot_Standard.gltf` (Quaternius Universal Animation Library, CC0, see `docs/ASSET_REGISTER.md`): skinned mesh, 46 clips, scaled to 1.72 m, idle/walk/jog/sprint/crouch/jump driven from `PlayerControl`. Screenshots `character_2026-10-25_spawn_v1.png` (idle, Arif and Rafi) and `_v2.png` (jog mid-stride). Run log: `Character: model loaded=true, clip=Jog_Fwd_Loop, clip time=0.30 s`. The mesh is a faceless, unclothed mannequin. **Updated again the same day:** `character/CharacterSpec.java` now selects Quaternius *Ultimate Modular Men / Women* models (CC0): Arif `Men/Casual_2` (shirt tinted blue, jeans), Rafi `Men/Casual_Hoodie` (red), Tanvir `Men/Suit` (navy), Nusrat `Women/Casual` (gold top). Each has a face, hair, clothing and its own Idle/Walk/Run clips. Screenshots `character_2026-10-25_clothed_v1.png` (authored colours) and `_v2.png` (tinted). Log: `Character: model loaded=true, clip=Idle, clip time=0.79 s`. Style is stylized low-poly, not realistic; no crouch or jump clip in these packs. | passes "not primitive" and "clothing"; "realistic" remains open | Realistic character is a later milestone; talking idle during dialogue still unwired. |
 | Campus recognizable | `world/CampusWorld.java`: all landmarks are `Box`/`Cylinder` primitives with flat colours. No Curzon Hall at all. No texture maps. | placeholder — FAILS gate | Reference-based modelling per landmark (multi-day). |
 | Lighting / background correct | Sky: unshaded 280 m sphere plus viewport colour; baseline screenshot shows light blue sky, not black. Sun + fill + ambient, PSSM shadows 2048×3, SSAO, tone map, FXAA. | working | — |
 | Vegetation suits monsoon | Sphere canopies on cylinder trunks, flat green. | placeholder — FAILS gate | Tree models or billboards with licences. |
@@ -107,7 +107,7 @@ This matrix records what was **directly inspected** on this date. Status values:
 |---|---|---|
 | Black sky / background | Current code sets viewport colour and a sky sphere; baseline run on this machine shows blue sky. | fixed before this branch; re-verified 2026-10-25 |
 | Mirrored / upside-down Bengali text | The affected screenshot is flipped as a whole (title, HUD and scene). Text rasterization path is upright in the baseline run. | capture bug of an earlier build; not present now |
-| Primitive box character | Replaced the same day by a CC0 rigged, animated mannequin (see §4). Clothing, face and hair still missing. | reduced — dressed model still needed |
+| Primitive box character | Replaced the same day, first by a CC0 rigged mannequin and then by CC0 clothed, animated characters with faces and hair (see §4). | closed as "primitive"; realism still open |
 | Generic block buildings | Confirmed in code and screenshot. | open |
 | Sparse stylized trees | Confirmed in code and screenshot. | open |
 
@@ -117,6 +117,8 @@ This matrix records what was **directly inspected** on this date. Status values:
 - `docs/screenshots/project_july_jme_gameplay.png` — unchanged committed image from `47c0a36`, kept for comparison.
 - `docs/screenshots/character_2026-10-25_spawn_v1.png` — first run with the rigged mannequin: Arif (blue) idle at spawn facing the camera, Rafi (red) idle by the plinth.
 - `docs/screenshots/character_2026-10-25_spawn_v2.png` — second run; input reached the window during the automated run (camera yaw 280°, character moved), which shows the jog clip mid-stride.
+- `docs/screenshots/character_2026-10-25_clothed_v1.png` — clothed Quaternius characters with authored colours; Arif faces the sculpture at spawn (verifies the heading change).
+- `docs/screenshots/character_2026-10-25_clothed_v2.png` — same with per-character shirt and trouser tints.
 - Build and run logs are quoted above; they were not committed.
 
 ## 11. What this matrix does not claim
