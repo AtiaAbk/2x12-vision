@@ -23,11 +23,19 @@ public class SaveManager {
         public float posZ = 8f;
         public float heading = 0f;
         public float stamina = 100f;
+        public int water = 2;
+        public int food = 1;
+        public int leaflets = 0;
+        public int firstAid = 1;
         public long timestamp = System.currentTimeMillis();
 
         public SaveData() {}
 
         public SaveData(int objectiveIndex, Vector3f pos, float heading, float stamina) {
+            this(objectiveIndex, pos, heading, stamina, null);
+        }
+
+        public SaveData(int objectiveIndex, Vector3f pos, float heading, float stamina, PlayerInventory inv) {
             this.objectiveIndex = objectiveIndex;
             if (pos != null) {
                 this.posX = pos.x;
@@ -36,6 +44,12 @@ public class SaveManager {
             }
             this.heading = heading;
             this.stamina = stamina;
+            if (inv != null) {
+                this.water = inv.getWaterCount();
+                this.food = inv.getFoodCount();
+                this.leaflets = inv.getLeafletCount();
+                this.firstAid = inv.getFirstAidCount();
+            }
             this.timestamp = System.currentTimeMillis();
         }
     }
@@ -50,11 +64,15 @@ public class SaveManager {
     }
 
     public boolean saveCheckpoint(int objectiveIndex, Vector3f pos, float heading, float stamina) {
+        return saveCheckpoint(objectiveIndex, pos, heading, stamina, null);
+    }
+
+    public boolean saveCheckpoint(int objectiveIndex, Vector3f pos, float heading, float stamina, PlayerInventory inv) {
         try {
             if (!saveDir.exists()) {
                 saveDir.mkdirs();
             }
-            SaveData data = new SaveData(objectiveIndex, pos, heading, stamina);
+            SaveData data = new SaveData(objectiveIndex, pos, heading, stamina, inv);
             String json = toJson(data);
             Files.writeString(saveFile.toPath(), json, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             return true;
@@ -89,8 +107,8 @@ public class SaveManager {
 
     public String toJson(SaveData d) {
         return String.format(
-            "{\n  \"objectiveIndex\": %d,\n  \"posX\": %.3f,\n  \"posY\": %.3f,\n  \"posZ\": %.3f,\n  \"heading\": %.2f,\n  \"stamina\": %.1f,\n  \"timestamp\": %d\n}",
-            d.objectiveIndex, d.posX, d.posY, d.posZ, d.heading, d.stamina, d.timestamp
+            "{\n  \"objectiveIndex\": %d,\n  \"posX\": %.3f,\n  \"posY\": %.3f,\n  \"posZ\": %.3f,\n  \"heading\": %.2f,\n  \"stamina\": %.1f,\n  \"water\": %d,\n  \"food\": %d,\n  \"leaflets\": %d,\n  \"firstAid\": %d,\n  \"timestamp\": %d\n}",
+            d.objectiveIndex, d.posX, d.posY, d.posZ, d.heading, d.stamina, d.water, d.food, d.leaflets, d.firstAid, d.timestamp
         );
     }
 
@@ -110,6 +128,14 @@ public class SaveManager {
                 d.heading = extractFloat(trimmed);
             } else if (trimmed.startsWith("\"stamina\"")) {
                 d.stamina = extractFloat(trimmed);
+            } else if (trimmed.startsWith("\"water\"")) {
+                d.water = extractInt(trimmed);
+            } else if (trimmed.startsWith("\"food\"")) {
+                d.food = extractInt(trimmed);
+            } else if (trimmed.startsWith("\"leaflets\"")) {
+                d.leaflets = extractInt(trimmed);
+            } else if (trimmed.startsWith("\"firstAid\"")) {
+                d.firstAid = extractInt(trimmed);
             } else if (trimmed.startsWith("\"timestamp\"")) {
                 d.timestamp = extractLong(trimmed);
             }

@@ -146,14 +146,20 @@ public class ProjectJulyHUD {
         return cachedMapImage;
     }
 
+    private String lastStaminaKey = "";
+
     public void update(Vector3f playerPos, float cameraYawDegrees, MissionTracker tracker, DialogueManager dialogueManager, String contextPrompt, float stamina) {
+        update(playerPos, cameraYawDegrees, tracker, dialogueManager, contextPrompt, stamina, null);
+    }
+
+    public void update(Vector3f playerPos, float cameraYawDegrees, MissionTracker tracker, DialogueManager dialogueManager, String contextPrompt, float stamina, bd.july2024.level.PlayerInventory inventory) {
         float dist = 0f;
         if (tracker != null && playerPos != null) {
             dist = playerPos.distance(tracker.getCurrentObjective().getTargetPosition());
         }
         updateCompass(cameraYawDegrees, dist);
         updateObjective(tracker);
-        updateStamina(stamina);
+        updateStamina(stamina, inventory);
         updatePrompt(contextPrompt, dialogueManager != null && dialogueManager.isActive());
         updateDialogue(dialogueManager);
     }
@@ -244,10 +250,14 @@ public class ProjectJulyHUD {
         return title.replaceFirst("^[0-9০-৯]+\\.\\s*", "");
     }
 
-    private void updateStamina(float stamina) {
+    private void updateStamina(float stamina, bd.july2024.level.PlayerInventory inventory) {
         int stInt = (int) stamina;
-        if (stInt == lastStaminaInt) return;
-        lastStaminaInt = stInt;
+        int w = inventory != null ? inventory.getWaterCount() : 0;
+        int f = inventory != null ? inventory.getFoodCount() : 0;
+        int l = inventory != null ? inventory.getLeafletCount() : 0;
+        String key = stInt + "_" + w + "_" + f + "_" + l;
+        if (key.equals(lastStaminaKey)) return;
+        lastStaminaKey = key;
 
         if (staminaPicture != null) guiNode.detachChild(staminaPicture);
 
@@ -255,9 +265,13 @@ public class ProjectJulyHUD {
         final Color fill = pct > 0.5f ? new Color(116, 214, 128) : (pct > 0.25f ? AMBER : new Color(236, 92, 78));
         List<Line> lines = new ArrayList<>();
         lines.add(new Line("শক্তি  ·  STAMINA", 11.5f, true, MUTED));
+        if (inventory != null) {
+            String invText = String.format("[1] পানি: %d  ·  [2] খাবার: %d", w, f) + (l > 0 ? "  ·  লিফলেট: " + l : "");
+            lines.add(new Line(invText, 11f, false, AMBER, 14));
+        }
         PanelStyle style = panelStyle(null);
-        style.minWidth = 232;
-        style.extraHeight = 14;
+        style.minWidth = 270;
+        style.extraHeight = inventory != null ? 8 : 14;
         staminaPicture = textRenderer.createPanelPicture("Stamina", lines, style, (Graphics2D g, int x, int y, int w, int h) -> {
             int barH = 6;
             int barY = y + 4;
