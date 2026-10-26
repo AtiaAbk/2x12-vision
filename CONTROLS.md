@@ -13,7 +13,7 @@ combos, wall climb, map, gender switch) that do not exist in the current code.
 | Sprint | `Left Shift`, `Right Shift` | Drains stamina; sprint stops below 5 % and recovers when not sprinting. |
 | Jump | `Space`, `J` | |
 | Crouch | `C` (hold) | |
-| Interact | `E`, `Enter` | Talk to a companion within 3.8 m, read the memorial plaque within 3.2 m, address the rally within 4.5 m, advance dialogue. |
+| Interact | `E`, `Enter` | Talk to a companion within 3.8 m, read a document within 3.2 m (Raju plaque on the island lawn, notice boards at the Central Library and TSC), address the rally within 4.5 m, advance dialogue. |
 | Camera orbit | Mouse movement | Mouse left looks left (fixed 2026-10-26). Pitch is clamped between −55° and +25°. |
 | Screenshot | `F12`, `Print Screen` | Writes `docs/screenshots/project_july_jme_gameplay.png`. |
 | Pause | `Esc`, `P` | Opens or closes the pause menu; also closes an open document. |

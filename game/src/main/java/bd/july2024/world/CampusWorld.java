@@ -109,6 +109,8 @@ public class CampusWorld {
     private Material lampMat;
     private Material memorialGoldMat;
     private Material woodMat;
+    private Vector3f libraryBoardPos;
+    private Vector3f tscBoardPos;
 
     public CampusWorld(AssetManager assetManager, Node sceneRoot) {
         this(assetManager, sceneRoot, null);
@@ -541,6 +543,7 @@ public class CampusWorld {
         buildTSC();
         buildCentralLibrary();
         buildHakimChattar();
+        buildNoticeBoards();
         buildVegetation();
         buildCampusProps();
         buildJulyMovementBannersAndMurals(assetManager);
@@ -708,7 +711,8 @@ public class CampusWorld {
     }
 
     private void buildMemorialPlaque() {
-        // Fictional commemorative plaque used by the Level 01 objectives; sits on the island lawn.
+        // Information board for the Raju Memorial Sculpture on the island lawn; opens the Raju document
+        // card. The stand itself is a modelling choice (the real inscription was not photographed).
         float y0 = ISLAND_HEIGHT;
         addBox("PlaqueBase", concreteMat, 2f, y0 + 0.85f, -6f, 0.7f, 0.85f, 0.4f);
         addCollider(1.3f, 0f, -6.4f, 2.7f, y0 + 1.7f, -5.6f);
@@ -718,6 +722,46 @@ public class CampusWorld {
         Geometry beacon = new Geometry("PlaqueBeacon", new Sphere(16, 16, 0.18f));
         beacon.setLocalTranslation(2f, y0 + 1.95f, -6f);
         finish(beacon, memorialGoldMat, rootNode);
+    }
+
+    // ---- Notice boards ---------------------------------------------------------------------------
+
+    /**
+     * Two freestanding notice boards that open the Central Library and TSC document cards in play: one
+     * under the library banner in front of the open ground floor of Building II, one on the TSC entrance
+     * plaza east of the verandah. The boards are a modelling choice (no reference for boards at either
+     * spot); they stand well clear of the companions so the interaction prompt is unambiguous.
+     */
+    private void buildNoticeBoards() {
+        float lx = -48.75f, lz = -61.5f;
+        float ly = groundHeightAt(lx, lz);
+        buildBoardStand("LibBoard", lx, ly, lz, null);
+        addCollider(lx - 0.95f, 0f, lz - 0.2f, lx + 0.95f, ly + 2.1f, lz + 0.2f);
+        libraryBoardPos = new Vector3f(lx, ly + 0.8f, lz);
+
+        float tlx = 6f, tlz = -7f;
+        Vector3f tw = tscLocalToWorld(tlx, tlz);
+        float ty = groundHeightAt(tw.x, tw.z);
+        buildBoardStand("TscBoard", tlx, ty, tlz, tscNode);
+        addCollider(tw.x - 1.05f, 0f, tw.z - 0.4f, tw.x + 1.05f, ty + 2.1f, tw.z + 0.4f);
+        tscBoardPos = new Vector3f(tw.x, ty + 0.8f, tw.z);
+    }
+
+    private void buildBoardStand(String name, float cx, float y0, float cz, Node parent) {
+        addBox(name + "_PostL", woodMat, cx - 0.75f, y0 + 0.95f, cz, 0.05f, 0.95f, 0.05f, parent);
+        addBox(name + "_PostR", woodMat, cx + 0.75f, y0 + 0.95f, cz, 0.05f, 0.95f, 0.05f, parent);
+        addBox(name + "_Board", concreteDarkMat, cx, y0 + 1.45f, cz, 0.85f, 0.55f, 0.04f, parent);
+        addBox(name + "_Roof", woodMat, cx, y0 + 2.04f, cz, 0.95f, 0.04f, 0.14f, parent);
+    }
+
+    /** World position (at prompt height) of the Central Library notice board, or null before the world is built. */
+    public Vector3f getLibraryBoardPosition() {
+        return libraryBoardPos;
+    }
+
+    /** World position (at prompt height) of the TSC notice board, or null before the world is built. */
+    public Vector3f getTscBoardPosition() {
+        return tscBoardPos;
     }
 
     // ---- Teacher-Student Centre -------------------------------------------------------------------
@@ -1202,6 +1246,22 @@ public class CampusWorld {
             tscBanner.setLocalTranslation(4.0f, 5.2f, -5.65f - 0.45f);
             tscBanner.rotate(0f, FastMath.PI, 0f);
             tscDecalNode.attachChild(tscBanner);
+
+            // 6. Labels on the two notice boards that open the library and TSC document cards
+            if (libraryBoardPos != null && tscBoardPos != null) {
+                Color boardInk = new Color(245, 238, 220);
+                Color boardBg = new Color(38, 30, 26, 240);
+                Texture2D libBoardTex = textRenderer.createTexture("তথ্যফলক · কেন্দ্রীয় লাইব্রেরি", 26f, true, boardInk, boardBg, 20, 12);
+                Geometry libBoard = createDecalQuad(assetManager, "Label_LibBoard", libBoardTex, 1.6f, 0.9f);
+                libBoard.setLocalTranslation(libraryBoardPos.x - 0.8f, libraryBoardPos.y + 0.2f, libraryBoardPos.z + 0.05f);
+                rootNode.attachChild(libBoard);
+
+                Texture2D tscBoardTex = textRenderer.createTexture("তথ্যফলক · টিএসসি", 26f, true, boardInk, boardBg, 20, 12);
+                Geometry tscBoard = createDecalQuad(assetManager, "Label_TscBoard", tscBoardTex, 1.6f, 0.9f);
+                tscBoard.setLocalTranslation(6f + 0.8f, tscBoardPos.y + 0.2f, -7f - 0.05f);
+                tscBoard.rotate(0f, FastMath.PI, 0f);
+                tscDecalNode.attachChild(tscBoard);
+            }
 
             // 5. Road graffiti on the west arm (Nilkhet road), read when walking towards the library
             Texture2D westTex = textRenderer.createTexture(

@@ -34,8 +34,8 @@ public class HistoricalDialogues {
 
     public static List<DialogueLine> getMemorialPlaqueDialogue() {
         List<DialogueLine> lines = new ArrayList<>();
-        lines.add(new DialogueLine("ঐতিহাসিক তথ্যফলক (Memorial Plaque)", "জুলাই ২০২৪: বৈষম্যবিরোধী ছাত্র আন্দোলনের ঐতিহাসিক সূচনা।", "July 2024: The historic beginning of the Anti-Discrimination Student Movement."));
-        lines.add(new DialogueLine("ঐতিহাসিক তথ্যফলক (Memorial Plaque)", "শহীদদের আত্মত্যাগ ও সাধারণ ছাত্র-জনতার ঐতিহাসিক একতা অন্যায়ের বিরুদ্ধে চিরন্তন প্রেরণা।", "The sacrifice of the martyrs and the unity of students remains an eternal inspiration against oppression."));
+        lines.add(new DialogueLine("ঐতিহাসিক তথ্যফলক (Memorial Plaque)", "সন্ত্রাসবিরোধী রাজু স্মারক ভাস্কর্য। ভাস্কর শ্যামল চৌধুরী ও গোপাল পাল; উদ্বোধন ১৭ সেপ্টেম্বর ১৯৯৭।", "Anti-Terrorism Raju Memorial Sculpture. Sculptors Shaymol Chowdhury and Gopal Paul; inaugurated 17 September 1997."));
+        lines.add(new DialogueLine("ঐতিহাসিক তথ্যফলক (Memorial Plaque)", "১৯৯২ সালের ১৩ মার্চ ক্যাম্পাসে সন্ত্রাসবিরোধী মিছিলে নিহত মঈন হোসেন রাজুর স্মরণে।", "In memory of Moin Hossain Raju, killed in the anti-terrorism march on campus on 13 March 1992."));
         return lines;
     }
 

@@ -43,6 +43,10 @@ public class ProjectJulyJmeTest {
         assertTrue(tracker.advanceObjective());
         assertEquals(3, tracker.getCurrentObjectiveIndex());
         assertEquals("OBJ_04_PLAQUE", tracker.getCurrentObjective().getId());
+        // The plaque belongs to the Raju sculpture, which stood there in July 2024; no commemorative
+        // "July Movement" plaque existed in the first days of the movement.
+        assertTrue(tracker.getCurrentObjective().getTitleEnglish().contains("Raju"));
+        assertFalse(tracker.getCurrentObjective().getTitleEnglish().contains("July Movement"));
 
         // Advance 4 -> 5
         assertTrue(tracker.advanceObjective());

@@ -44,6 +44,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * PROJECT JULY 2024 — Primary Game Application (jMonkeyEngine Architecture).
@@ -91,6 +92,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     private Node playerNode;
     private PlayerMesh playerMesh;
     private final List<CompanionNPC> companions = new ArrayList<>();
+    private final List<DocumentHotspot> hotspots = new ArrayList<>();
 
     // Input state
     private boolean moveForward = false;
@@ -248,6 +250,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
         // 5. Spawn Companion NPCs
         spawnCompanions();
+        setupDocumentHotspots();
 
         // 6. Setup Controls & Input Handlers
         initInputs();
@@ -522,6 +525,38 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         if ("CamDown".equals(name)) orbitCam.rotate(0f, value * sens * inv);
     }
 
+    /** A spot where E opens a document card; it may also complete the objective with the given index. */
+    private static final class DocumentHotspot {
+        final Vector3f position;
+        final float radius;
+        final String prompt;
+        final Supplier<HistoricalDocumentModal.DocumentRecord> document;
+        final int completesObjective;
+
+        DocumentHotspot(Vector3f position, float radius, String prompt,
+                        Supplier<HistoricalDocumentModal.DocumentRecord> document, int completesObjective) {
+            this.position = position;
+            this.radius = radius;
+            this.prompt = prompt;
+            this.document = document;
+            this.completesObjective = completesObjective;
+        }
+    }
+
+    private void setupDocumentHotspots() {
+        hotspots.clear();
+        hotspots.add(new DocumentHotspot(new Vector3f(2f, 0.8f, -6f), 3.2f,
+            "[E] রাজু ভাস্কর্যের ফলক পড়ুন (Read Plaque)", HistoricalDialogues::getRajuMemorialDocument, 3));
+        hotspots.add(new DocumentHotspot(campusWorld.getLibraryBoardPosition(), 3.2f,
+            "[E] লাইব্রেরির তথ্যফলক পড়ুন (Read Board)", HistoricalDialogues::getLibraryDocument, -1));
+        hotspots.add(new DocumentHotspot(campusWorld.getTscBoardPosition(), 3.2f,
+            "[E] টিএসসির তথ্যফলক পড়ুন (Read Board)", HistoricalDialogues::getTscDocument, -1));
+        for (DocumentHotspot h : hotspots) {
+            System.out.printf("[ProjectJulyApp] Document hotspot '%s' at (%.2f, %.2f), radius %.1f m%n",
+                h.document.get().titleEnglish, h.position.x, h.position.z, h.radius);
+        }
+    }
+
     private void handleInteraction() {
         if (docModal.isOpen()) {
             docModal.close();
@@ -570,15 +605,17 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             }
         }
 
-        // Priority 3: Check Memorial Plaque (opens archival document modal)
-        if (pPos.distance(new Vector3f(2f, 0.8f, -6f)) <= 3.2f) {
-            audio.playClick();
-            docModal.open(HistoricalDialogues.getRajuMemorialDocument());
-            if (missionTracker.getCurrentObjectiveIndex() == 3) {
-                missionTracker.advanceObjective();
-                audio.playBell();
+        // Priority 3: Document hotspots (Raju plaque, library and TSC boards) open the archival modal
+        for (DocumentHotspot h : hotspots) {
+            if (pPos.distance(h.position) <= h.radius) {
+                audio.playClick();
+                docModal.open(h.document.get());
+                if (h.completesObjective >= 0 && missionTracker.getCurrentObjectiveIndex() == h.completesObjective) {
+                    missionTracker.advanceObjective();
+                    audio.playBell();
+                }
+                return;
             }
-            return;
         }
 
         // Priority 4: Rally assembly at roundabout
@@ -632,8 +669,10 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             }
         }
 
-        if (pPos.distance(new Vector3f(2f, 0.8f, -6f)) <= 3.2f) {
-            return "[E] জুলাই স্মারক তথ্যফলক পাঠ করুন (Read Plaque)";
+        for (DocumentHotspot h : hotspots) {
+            if (pPos.distance(h.position) <= h.radius) {
+                return h.prompt;
+            }
         }
 
         if (missionTracker.getCurrentObjectiveIndex() == 4 && pPos.distance(new Vector3f(0f, 0f, 0f)) <= 4.5f) {

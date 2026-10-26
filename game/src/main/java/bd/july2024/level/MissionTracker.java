@@ -46,9 +46,9 @@ public class MissionTracker {
 
         objectives.add(new MissionObjective(
             "OBJ_04_PLAQUE",
-            "৪. জুলাই অভ্যুত্থানের ঐতিহাসিক তথ্যফলক পরিদর্শন করুন",
-            "4. Inspect the July Movement Commemorative Memorial Plaque",
-            "চত্বরের স্মারক স্তম্ভের সামনে দাঁড়িয়ে [E] চাপুন",
+            "৪. সন্ত্রাসবিরোধী রাজু স্মারক ভাস্কর্যের ফলক পড়ুন",
+            "4. Read the plaque at the Anti-Terrorism Raju Memorial Sculpture",
+            "ভাস্কর্যের পাশের ফলকের সামনে দাঁড়িয়ে [E] চাপুন",
             new Vector3f(2f, 0f, -6f),
             3.0f
         ));

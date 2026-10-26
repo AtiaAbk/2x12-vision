@@ -33,7 +33,7 @@ This matrix records what was **directly inspected** on this date. Status values:
 | Sprint / jump / crouch | `character/PlayerControl.java`: walk 4.2 m/s, sprint 7.6 m/s, jump, crouch, gravity | unverified | Verify by hand. |
 | Stamina soft limit | `PlayerControl`: drain 28/s, recover 20/s, sprint blocked below 5 | implemented | — |
 | Water / food restore, inventory | No inventory class, no items in world. | missing | Design and implement after the visual gate. |
-| Interaction key E | `handleInteraction()`: companions (3.8 m), plaque (3.2 m), rally (4.5 m) | unverified | Verify by hand. |
+| Interaction key E | `handleInteraction()`: companions (3.8 m), three document hotspots (3.2 m: Raju plaque, Central Library board, TSC board), rally (4.5 m). **2026-10-26:** the library and TSC cards were unreachable before; two notice boards now open them (`docs_2026-10-26_{library,tsc}_{board,card}_v1.png`, `docs_2026-10-26_library_prompt_v1.png`). Objective 4 renamed from an anachronistic "July Movement commemorative plaque" to the plaque of the Raju sculpture. | implemented, captures inspected; by-hand check pending | Owner to try. |
 | Collision | AABB list from `CampusWorld.getColliders()` used by player and camera | unverified | Verify by hand. |
 | Controls doc | `CONTROLS.md` describes the LibGDX build (dodge, combos, double jump) that does not exist in the jME code. | stale | Rewrite from `initInputs`. |
 
@@ -132,6 +132,7 @@ This matrix records what was **directly inspected** on this date. Status values:
 - `docs/screenshots/controls_2026-10-26_mouse_left_v1.png` — after mouse-left for 120 frames: view turned to NW 310°, sculpture on the right.
 - `docs/screenshots/slogans_2026-10-26_{west_road,tsc,library}_v1.png` — Level 01 quota-reform slogans on the west road, the TSC banner and the library banner.
 - `docs/screenshots/frontend_2026-10-26_{title,menu,settings,chapter,pause}_v1.png` — title screen, main menu, settings, chapter card and pause menu (`TEST_UI=title|menu|settings|chapter|pause`).
+- `docs/screenshots/docs_2026-10-26_{library,tsc}_board_v1.png`, `docs_2026-10-26_library_prompt_v1.png`, `docs_2026-10-26_{library,tsc}_card_v1.png` — the two notice boards, the interaction prompt within 3.2 m, and the opened library and TSC document cards (`TEST_SPAWN` at the board, `TEST_UI=interact`).
 - Build and run logs are quoted above; they were not committed.
 
 ## 11. What this matrix does not claim
