@@ -10,6 +10,7 @@ import bd.july2024.dialogue.DialogueManager;
 import bd.july2024.dialogue.HistoricalDialogues;
 import bd.july2024.level.MissionTracker;
 import bd.july2024.level.ObjectiveMarker;
+import bd.july2024.level.PlayerInventory;
 import bd.july2024.level.SaveManager;
 import bd.july2024.performance.AdaptivePerformanceController;
 import bd.july2024.performance.HardwareProfile;
@@ -77,6 +78,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     private MissionTracker missionTracker;
     private DialogueManager dialogueManager;
     private SaveManager saveManager;
+    private PlayerInventory playerInventory;
     private GameSettings gameSettings;
     private MenuSystem menu;
     private HistoricalDocumentModal docModal;
@@ -234,6 +236,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         missionTracker = new MissionTracker();
         dialogueManager = new DialogueManager();
         saveManager = new SaveManager(AppPaths.saveDir());
+        playerInventory = new PlayerInventory();
         hud = new ProjectJulyHUD(guiNode, textRenderer, settings.getWidth(), settings.getHeight(), assetManager);
         menu = new MenuSystem(guiNode, textRenderer, settings.getWidth(), settings.getHeight(), gameSettings, menuActions());
         docModal = new HistoricalDocumentModal(guiNode, textRenderer, settings.getWidth(), settings.getHeight());
@@ -312,9 +315,18 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             playerControl.setPosition(saved.posX, saved.posY, saved.posZ);
             playerControl.setHeadingDegrees(saved.heading);
             playerControl.setStamina(saved.stamina);
+            if (playerInventory != null) {
+                playerInventory.setWaterCount(saved.water);
+                playerInventory.setFoodCount(saved.food);
+                playerInventory.setLeafletCount(saved.leaflets);
+                playerInventory.setFirstAidCount(saved.firstAid);
+            }
             System.out.println("[ProjectJulyApp] Loaded saved checkpoint (Objective " + saved.objectiveIndex + ")");
         } else {
             missionTracker.reset();
+            if (playerInventory != null) {
+                playerInventory.reset();
+            }
             playerControl.setPosition(spawnX, campusWorld.groundHeightAt(spawnX, spawnZ), spawnZ);
             playerControl.setHeadingDegrees(spawnHeading);
             playerControl.setStamina(100f);
@@ -514,13 +526,15 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         inputManager.addMapping("MouseClick", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
         inputManager.addMapping("Screenshot", new KeyTrigger(KeyInput.KEY_F12), new KeyTrigger(KeyInput.KEY_SYSRQ));
         inputManager.addMapping("Pause", new KeyTrigger(KeyInput.KEY_ESCAPE), new KeyTrigger(KeyInput.KEY_P));
+        inputManager.addMapping("UseWater", new KeyTrigger(KeyInput.KEY_1), new KeyTrigger(KeyInput.KEY_NUMPAD1));
+        inputManager.addMapping("UseFood", new KeyTrigger(KeyInput.KEY_2), new KeyTrigger(KeyInput.KEY_NUMPAD2));
 
         inputManager.addMapping("CamLeft", new MouseAxisTrigger(MouseInput.AXIS_X, true));
         inputManager.addMapping("CamRight", new MouseAxisTrigger(MouseInput.AXIS_X, false));
         inputManager.addMapping("CamUp", new MouseAxisTrigger(MouseInput.AXIS_Y, true));
         inputManager.addMapping("CamDown", new MouseAxisTrigger(MouseInput.AXIS_Y, false));
 
-        inputManager.addListener(this, "Forward", "Backward", "Left", "Right", "Sprint", "Jump", "Crouch", "Interact", "ResetCamera", "ToggleMap", "ToggleFullscreen", "MouseClick", "Screenshot", "Pause");
+        inputManager.addListener(this, "Forward", "Backward", "Left", "Right", "Sprint", "Jump", "Crouch", "Interact", "ResetCamera", "ToggleMap", "ToggleFullscreen", "MouseClick", "Screenshot", "Pause", "UseWater", "UseFood");
         inputManager.addListener(this, "CamLeft", "CamRight", "CamUp", "CamDown");
     }
 
@@ -608,6 +622,28 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
         if ("Interact".equals(name) && isPressed) {
             handleInteraction();
+        }
+
+        if ("UseWater".equals(name) && isPressed && inGame && !menu.isOpen() && !docModal.isOpen()) {
+            if (playerInventory != null && playerInventory.useWater()) {
+                playerControl.setStamina(Math.min(100f, playerControl.getStamina() + 35f));
+                audio.playNotify();
+                System.out.println("[ProjectJulyApp] Consumed drinking water (stamina recovered).");
+            } else {
+                audio.playWarning();
+            }
+            return;
+        }
+
+        if ("UseFood".equals(name) && isPressed && inGame && !menu.isOpen() && !docModal.isOpen()) {
+            if (playerInventory != null && playerInventory.useFood()) {
+                playerControl.setStamina(Math.min(100f, playerControl.getStamina() + 45f));
+                audio.playNotify();
+                System.out.println("[ProjectJulyApp] Consumed food supplies (stamina recovered).");
+            } else {
+                audio.playWarning();
+            }
+            return;
         }
 
         if ("ToggleMap".equals(name) && isPressed && inGame && !menu.isOpen() && !docModal.isOpen()) {
@@ -713,12 +749,14 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
                     dialogueManager.startDialogue(HistoricalDialogues.getTanvirDialogue(), () -> {
                         if (missionTracker.getCurrentObjectiveIndex() == 1) {
                             missionTracker.advanceObjective();
+                            if (playerInventory != null) playerInventory.setLeafletCount(50);
                             audio.playBell();
                         }
                     });
                 } else if ("NUSRAT".equals(c.getId())) {
                     dialogueManager.startDialogue(HistoricalDialogues.getNusratDialogue(), () -> {
                         if (missionTracker.getCurrentObjectiveIndex() == 2) {
+                            if (playerInventory != null) playerInventory.setLeafletCount(0);
                             missionTracker.advanceObjective();
                             audio.playBell();
                         }
@@ -759,7 +797,8 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             missionTracker.getCurrentObjectiveIndex(),
             playerControl.getPosition(),
             playerControl.getHeadingDegrees(),
-            playerControl.getStamina()
+            playerControl.getStamina(),
+            playerInventory
         );
         if (ok) {
             audio.playNotify();
@@ -774,6 +813,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     public void restartLevel() {
         saveManager.clearCheckpoint();
         missionTracker.reset();
+        if (playerInventory != null) playerInventory.reset();
         playerControl.setPosition(spawnX, campusWorld.groundHeightAt(spawnX, spawnZ), spawnZ);
         playerControl.setHeadingDegrees(spawnHeading);
         playerControl.setStamina(100f);
@@ -898,7 +938,8 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
                 missionTracker,
                 dialogueManager,
                 getContextPrompt(),
-                playerControl.getStamina()
+                playerControl.getStamina(),
+                playerInventory
             );
         }
 

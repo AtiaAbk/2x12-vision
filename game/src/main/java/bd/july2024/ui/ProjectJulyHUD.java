@@ -252,10 +252,10 @@ public class ProjectJulyHUD {
 
     private void updateStamina(float stamina, bd.july2024.level.PlayerInventory inventory) {
         int stInt = (int) stamina;
-        int w = inventory != null ? inventory.getWaterCount() : 0;
-        int f = inventory != null ? inventory.getFoodCount() : 0;
-        int l = inventory != null ? inventory.getLeafletCount() : 0;
-        String key = stInt + "_" + w + "_" + f + "_" + l;
+        int waterCount = inventory != null ? inventory.getWaterCount() : 0;
+        int foodCount = inventory != null ? inventory.getFoodCount() : 0;
+        int leafletCount = inventory != null ? inventory.getLeafletCount() : 0;
+        String key = stInt + "_" + waterCount + "_" + foodCount + "_" + leafletCount;
         if (key.equals(lastStaminaKey)) return;
         lastStaminaKey = key;
 
@@ -266,7 +266,7 @@ public class ProjectJulyHUD {
         List<Line> lines = new ArrayList<>();
         lines.add(new Line("শক্তি  ·  STAMINA", 11.5f, true, MUTED));
         if (inventory != null) {
-            String invText = String.format("[1] পানি: %d  ·  [2] খাবার: %d", w, f) + (l > 0 ? "  ·  লিফলেট: " + l : "");
+            String invText = String.format("[1] পানি: %d  ·  [2] খাবার: %d", waterCount, foodCount) + (leafletCount > 0 ? "  ·  লিফলেট: " + leafletCount : "");
             lines.add(new Line(invText, 11f, false, AMBER, 14));
         }
         PanelStyle style = panelStyle(null);

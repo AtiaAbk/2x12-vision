@@ -1,6 +1,10 @@
 package bd.july2024;
 
+import bd.july2024.level.MissionTracker;
+import bd.july2024.level.PlayerInventory;
+import bd.july2024.level.SaveManager;
 import bd.july2024.level.Slogans;
+import com.jme3.math.Vector3f;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -162,5 +166,69 @@ public class FrontEndTest {
         }
 
         assertTrue(controller.getCurrentAdaptationLevel() < steppedDownLevel, "Adaptive controller should step back up when headroom is available");
+    }
+
+    @Test
+    public void testPlayerInventoryConsumptionAndSaveRestoration() {
+        bd.july2024.level.PlayerInventory inv = new bd.july2024.level.PlayerInventory();
+        assertEquals(2, inv.getWaterCount());
+        assertEquals(1, inv.getFoodCount());
+        assertEquals(0, inv.getLeafletCount());
+        assertFalse(inv.hasLeaflets());
+
+        assertTrue(inv.useWater());
+        assertEquals(1, inv.getWaterCount());
+
+        assertTrue(inv.useFood());
+        assertEquals(0, inv.getFoodCount());
+        assertFalse(inv.useFood()); // empty
+
+        inv.setLeafletCount(50);
+        assertTrue(inv.hasLeaflets());
+        assertEquals(50, inv.getLeafletCount());
+
+        SaveManager sm = new SaveManager();
+        SaveManager.SaveData d = new SaveManager.SaveData(2, new Vector3f(12f, 0f, 34f), 90f, 75f, inv);
+        String json = sm.toJson(d);
+        SaveManager.SaveData loaded = sm.parseJson(json);
+
+        assertEquals(2, loaded.objectiveIndex);
+        assertEquals(1, loaded.water);
+        assertEquals(0, loaded.food);
+        assertEquals(50, loaded.leaflets);
+        assertEquals(1, loaded.firstAid);
+        assertEquals(75f, loaded.stamina, 0.01f);
+    }
+
+    @Test
+    public void testMissionTrackerSequentialObjectives() {
+        MissionTracker tracker = new MissionTracker();
+        assertEquals(6, tracker.getObjectiveCount());
+        assertEquals(0, tracker.getCurrentObjectiveIndex());
+        assertFalse(tracker.isAllCompleted());
+
+        assertEquals("OBJ_01_RAFI", tracker.getCurrentObjective().getId());
+        assertTrue(tracker.advanceObjective());
+        assertEquals(1, tracker.getCurrentObjectiveIndex());
+        assertEquals("OBJ_02_LIBRARY", tracker.getCurrentObjective().getId());
+
+        assertTrue(tracker.advanceObjective());
+        assertEquals(2, tracker.getCurrentObjectiveIndex());
+        assertEquals("OBJ_03_TSC", tracker.getCurrentObjective().getId());
+
+        assertTrue(tracker.advanceObjective());
+        assertEquals(3, tracker.getCurrentObjectiveIndex());
+        assertEquals("OBJ_04_PLAQUE", tracker.getCurrentObjective().getId());
+
+        assertTrue(tracker.advanceObjective());
+        assertEquals(4, tracker.getCurrentObjectiveIndex());
+        assertEquals("OBJ_05_RALLY", tracker.getCurrentObjective().getId());
+
+        assertTrue(tracker.advanceObjective());
+        assertEquals(5, tracker.getCurrentObjectiveIndex());
+        assertEquals("OBJ_06_COMPLETE", tracker.getCurrentObjective().getId());
+
+        assertFalse(tracker.advanceObjective()); // already at end
+        assertTrue(tracker.isAllCompleted());
     }
 }
