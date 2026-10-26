@@ -60,13 +60,11 @@ public class HistoricalDocumentModal {
         }
 
         List<Line> lines = new ArrayList<>();
-        lines.add(new Line("ঐতিহাসিক নথি  ·  HISTORICAL DOCUMENT", 12f, true, ProjectJulyHUD.MUTED));
-        lines.add(new Line(doc.titleBengali, 22f, true, ProjectJulyHUD.TEXT, 4));
-        lines.add(new Line(doc.titleEnglish, 15f, false, ProjectJulyHUD.MUTED, 2));
-        lines.add(new Line(String.format("তারিখ  %s   ·   স্থান  %s", doc.date, doc.location), 13f, false, ProjectJulyHUD.AMBER, 6));
-        lines.add(new Line(doc.textBengali, 16f, false, ProjectJulyHUD.TEXT, 16));
-        lines.add(new Line(doc.textEnglish, 14.5f, false, ProjectJulyHUD.MUTED, 10));
-        lines.add(new Line("E / Space / Enter  ·  নথিটি বন্ধ করুন (close)", 12f, false, ProjectJulyHUD.MUTED, 16));
+        lines.add(new Line("HISTORICAL ARCHIVAL RECORD", 12f, true, ProjectJulyHUD.MUTED));
+        lines.add(new Line(doc.titleEnglish, 22f, true, ProjectJulyHUD.TEXT, 6));
+        lines.add(new Line(String.format("Date: %s   ·   Location: %s", doc.date, doc.location), 13f, false, ProjectJulyHUD.AMBER, 12));
+        lines.add(new Line(doc.textEnglish, 15f, false, ProjectJulyHUD.TEXT, 20));
+        lines.add(new Line("Press E, Space, or Enter to Close", 12f, false, ProjectJulyHUD.MUTED, 16));
 
         PanelStyle style = new PanelStyle();
         style.background = new Color(10, 12, 16, 232);

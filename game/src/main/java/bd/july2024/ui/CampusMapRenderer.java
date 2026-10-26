@@ -126,8 +126,8 @@ public class CampusMapRenderer {
         g.fillRoundRect((int) (pondX - 28), (int) (pondY - 18), 56, 36, 12, 12);
         g.setColor(POND_BLUE);
         g.fillRoundRect((int) (pondX - 25), (int) (pondY - 15), 50, 30, 8, 8);
-        g.setColor(new Color(255, 255, 255, 80));
-        g.drawString("পুকুর (Pukur)", pondX - 18, pondY + 4);
+        g.setColor(new Color(255, 255, 255, 140));
+        g.drawString("Curzon Pond", pondX - 32, pondY + 4);
 
         // TSC Green Court / Field
         float tscX = mx + worldToMapX(10f, w);
@@ -238,27 +238,25 @@ public class CampusMapRenderer {
     private static void drawLandmarkLabels(Graphics2D g, int mx, int my, int w, int h) {
         g.setFont(new Font("SansSerif", Font.BOLD, 11));
 
-        drawBadge(g, mx + worldToMapX(0f, w), my + worldToMapY(0f, h) - 24, "১. রাজু স্মারক ভাস্কর্য", "Raju Memorial");
-        drawBadge(g, mx + worldToMapX(10f, w), my + worldToMapY(67f, h) - 18, "২. টিএসসি প্রাঙ্গণ", "TSC Centre");
-        drawBadge(g, mx + worldToMapX(-62f, w), my + worldToMapY(-55f, h), "৩. হাকিম চত্বর ও লাইব্রেরি", "Hakim Chattar & Library");
-        drawBadge(g, mx + worldToMapX(64f, w), my + worldToMapY(64f, h) - 24, "৪. কার্জন হল", "Curzon Hall");
+        drawBadge(g, mx + worldToMapX(0f, w), my + worldToMapY(0f, h) - 20, "1. Raju Memorial Sculpture");
+        drawBadge(g, mx + worldToMapX(10f, w), my + worldToMapY(67f, h) - 18, "2. Teacher-Student Centre (TSC)");
+        drawBadge(g, mx + worldToMapX(-62f, w), my + worldToMapY(-55f, h), "3. Central Library & Hakim Chattar");
+        drawBadge(g, mx + worldToMapX(64f, w), my + worldToMapY(64f, h) - 20, "4. Curzon Hall (Faculty of Science)");
     }
 
-    private static void drawBadge(Graphics2D g, float bx, float by, String bn, String en) {
-        int pad = 5;
+    private static void drawBadge(Graphics2D g, float bx, float by, String label) {
+        int pad = 8;
         FontMetrics fm = g.getFontMetrics();
-        int bw = Math.max(fm.stringWidth(bn), fm.stringWidth(en)) + pad * 2;
-        int bh = 28;
+        int bw = fm.stringWidth(label) + pad * 2;
+        int bh = 20;
 
-        g.setColor(new Color(12, 16, 22, 210));
+        g.setColor(new Color(12, 16, 22, 220));
         g.fillRoundRect((int) (bx - bw * 0.5f), (int) by, bw, bh, 6, 6);
-        g.setColor(new Color(255, 255, 255, 60));
+        g.setColor(new Color(255, 255, 255, 70));
         g.drawRoundRect((int) (bx - bw * 0.5f), (int) by, bw, bh, 6, 6);
 
         g.setColor(GOLD);
-        g.drawString(bn, bx - bw * 0.5f + pad, by + 12);
-        g.setColor(TEXT_MUTED);
-        g.drawString(en, bx - bw * 0.5f + pad, by + 24);
+        g.drawString(label, bx - bw * 0.5f + pad, by + 14);
     }
 
     private static void drawPlayerMarker(Graphics2D g, float px, float py, float headingDeg) {
@@ -309,7 +307,7 @@ public class CampusMapRenderer {
         g.fill(new Ellipse2D.Float(tx - 4, ty - 4, 8, 8));
 
         // Active Target Banner Tag
-        String targetText = "★ সক্রিয় লক্ষ্য (TARGET)";
+        String targetText = "★ ACTIVE OBJECTIVE";
         g.setFont(new Font("SansSerif", Font.BOLD, 10));
         FontMetrics fm = g.getFontMetrics();
         int tw = fm.stringWidth(targetText) + 8;
@@ -379,14 +377,14 @@ public class CampusMapRenderer {
         g.setColor(GOLD);
         g.fillOval(tx, ly + 6, 8, 8);
         g.setColor(TEXT_WHITE);
-        g.drawString("আপনি (You)", tx + 12, ly + 14);
+        g.drawString("You (Arif)", tx + 12, ly + 14);
 
         // Target dot
         tx += 90;
         g.setColor(CYAN);
         g.fillOval(tx, ly + 6, 8, 8);
         g.setColor(TEXT_WHITE);
-        g.drawString("লক্ষ্য (Target)", tx + 12, ly + 14);
+        g.drawString("Objective", tx + 12, ly + 14);
 
         // Historic Landmark
         tx += 95;
@@ -395,11 +393,11 @@ public class CampusMapRenderer {
         g.setColor(BLDG_BORDER);
         g.drawRect(tx, ly + 6, 8, 8);
         g.setColor(TEXT_WHITE);
-        g.drawString("স্থাপনা (Landmark)", tx + 12, ly + 14);
+        g.drawString("Landmark", tx + 12, ly + 14);
 
         // Controls
         tx += 115;
         g.setColor(TEXT_MUTED);
-        g.drawString("M / Esc: বন্ধ (Close)", tx, ly + 14);
+        g.drawString("M / Esc: Close Map", tx, ly + 14);
     }
 }

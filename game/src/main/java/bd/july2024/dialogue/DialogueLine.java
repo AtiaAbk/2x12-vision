@@ -16,6 +16,15 @@ public class DialogueLine {
     }
 
     public String getSpeaker() { return speaker; }
+    public String getSpeakerEnglish() {
+        if (speaker == null) return "";
+        if (speaker.contains("(") && speaker.contains(")")) {
+            int start = speaker.indexOf('(') + 1;
+            int end = speaker.indexOf(')');
+            if (end > start) return speaker.substring(start, end).trim();
+        }
+        return speaker;
+    }
     public String getTextBengali() { return textBengali; }
     public String getTextEnglish() { return textEnglish; }
 }

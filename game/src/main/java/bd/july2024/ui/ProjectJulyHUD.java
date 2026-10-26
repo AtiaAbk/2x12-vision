@@ -109,9 +109,9 @@ public class ProjectJulyHUD {
         int mapH = (int) (mapW * 0.62f);
 
         List<Line> lines = new ArrayList<>();
-        lines.add(new Line("ঢাকা বিশ্ববিদ্যালয় ক্যাম্পাস মানচিত্র  ·  DHAKA UNIVERSITY CAMPUS MAP", 15f, true, AMBER));
-        lines.add(new Line("১. রাজু ভাস্কর্য  ·  ২. টিএসসি  ·  ৩. হাকিম চত্বর ও কেন্দ্রীয় লাইব্রেরি  ·  ৪. কার্জন হল", 12f, false, TEXT, 3));
-        lines.add(new Line("M / Esc / Click  ·  মানচিত্র বন্ধ করুন (Close Map)", 11.5f, false, MUTED, 2));
+        lines.add(new Line("DHAKA UNIVERSITY CAMPUS MAP", 15f, true, AMBER));
+        lines.add(new Line("1. Raju Memorial  ·  2. TSC  ·  3. Central Library  ·  4. Curzon Hall", 12f, false, TEXT, 3));
+        lines.add(new Line("M / Esc / Click  ·  Close Map", 11.5f, false, MUTED, 2));
 
         PanelStyle style = new PanelStyle();
         style.background = new Color(8, 11, 16, 245);
@@ -215,7 +215,7 @@ public class ProjectJulyHUD {
 
         List<Line> lines = new ArrayList<>();
         lines.add(new Line(String.format("%s   %d°", getCardinal(deg), deg), 16f, true, TEXT));
-        lines.add(new Line(String.format("লক্ষ্য  %d মি   ·   target  %d m", distInt, distInt), 12.5f, false, AMBER, 2));
+        lines.add(new Line(String.format("Distance: %d m", distInt), 12.5f, false, AMBER, 2));
         PanelStyle style = panelStyle(null);
         style.minWidth = 200;
         compassPicture = textRenderer.createPanelPicture("Compass", lines, style, null);
@@ -224,14 +224,14 @@ public class ProjectJulyHUD {
     }
 
     private String getCardinal(int deg) {
-        if (deg >= 338 || deg < 23) return "উত্তর  N";
-        if (deg < 68) return "উত্তর-পূর্ব  NE";
-        if (deg < 113) return "পূর্ব  E";
-        if (deg < 158) return "দক্ষিণ-পূর্ব  SE";
-        if (deg < 203) return "দক্ষিণ  S";
-        if (deg < 248) return "দক্ষিণ-পশ্চিম  SW";
-        if (deg < 293) return "পশ্চিম  W";
-        return "উত্তর-পশ্চিম  NW";
+        if (deg >= 338 || deg < 23) return "N";
+        if (deg < 68) return "NE";
+        if (deg < 113) return "E";
+        if (deg < 158) return "SE";
+        if (deg < 203) return "S";
+        if (deg < 248) return "SW";
+        if (deg < 293) return "W";
+        return "NW";
     }
 
     private void updateObjective(MissionTracker tracker) {
@@ -246,9 +246,8 @@ public class ProjectJulyHUD {
         int index = tracker.getCurrentObjectiveIndex() + 1;
         int total = tracker.getObjectiveCount();
         List<Line> lines = new ArrayList<>();
-        lines.add(new Line(String.format("লক্ষ্য %d / %d   ·   OBJECTIVE", index, total), 11.5f, true, MUTED));
-        lines.add(new Line(stripNumber(obj.getTitleBengali()), 19f, true, TEXT, 4));
-        lines.add(new Line(stripNumber(obj.getTitleEnglish()), 14f, false, MUTED, 2));
+        lines.add(new Line(String.format("OBJECTIVE %d OF %d", index, total), 11.5f, true, MUTED));
+        lines.add(new Line(stripNumber(obj.getTitleEnglish()), 17f, true, TEXT, 4));
         PanelStyle style = panelStyle(ACCENT);
         style.maxWidth = 560;
         objectivePicture = textRenderer.createPanelPicture("Objective", lines, style, null);
@@ -256,7 +255,7 @@ public class ProjectJulyHUD {
         guiNode.attachChild(objectivePicture);
     }
 
-    /** Objective titles start with "১. " / "1. "; the card shows the number separately. */
+    /** Objective titles start with "1. "; the card shows the number separately. */
     private static String stripNumber(String title) {
         if (title == null) return "";
         return title.replaceFirst("^[0-9০-৯]+\\.\\s*", "");
@@ -276,9 +275,9 @@ public class ProjectJulyHUD {
         final float pct = Math.max(0f, Math.min(1f, stamina / 100f));
         final Color fill = pct > 0.5f ? new Color(116, 214, 128) : (pct > 0.25f ? AMBER : new Color(236, 92, 78));
         List<Line> lines = new ArrayList<>();
-        lines.add(new Line("শক্তি  ·  STAMINA", 11.5f, true, MUTED));
+        lines.add(new Line(String.format("STAMINA   %d%%", stInt), 11.5f, true, MUTED));
         if (inventory != null) {
-            String invText = String.format("[1] পানি: %d  ·  [2] খাবার: %d", waterCount, foodCount) + (leafletCount > 0 ? "  ·  লিফলেট: " + leafletCount : "");
+            String invText = String.format("[1] Water: %d  ·  [2] Food: %d", waterCount, foodCount) + (leafletCount > 0 ? "  ·  Leaflets: " + leafletCount : "");
             lines.add(new Line(invText, 11f, false, AMBER, 14));
         }
         PanelStyle style = panelStyle(null);
@@ -340,11 +339,10 @@ public class ProjectJulyHUD {
         if (dialoguePicture != null) guiNode.detachChild(dialoguePicture);
 
         List<Line> lines = new ArrayList<>();
-        lines.add(new Line(line.getSpeaker(), 13f, true, AMBER));
-        boolean bn = gs.showBengaliSubtitles();
-        if (bn) lines.add(new Line(line.getTextBengali(), 18f, true, TEXT, 4));
-        if (gs.showEnglishSubtitles()) lines.add(new Line(line.getTextEnglish(), bn ? 15f : 17f, !bn, bn ? MUTED : TEXT, bn ? 3 : 4));
-        lines.add(new Line("E / Enter  ·  পরবর্তী (next)", 11.5f, false, MUTED, 10));
+        String speakerName = line.getSpeakerEnglish();
+        lines.add(new Line(speakerName, 13f, true, AMBER));
+        lines.add(new Line(line.getTextEnglish(), 16.5f, true, TEXT, 6));
+        lines.add(new Line("E / Enter  ·  Continue", 11.5f, false, MUTED, 10));
         PanelStyle style = panelStyle(ACCENT);
         style.paddingX = 22;
         style.paddingY = 14;

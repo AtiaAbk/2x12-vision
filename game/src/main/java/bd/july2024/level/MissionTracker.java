@@ -76,6 +76,14 @@ public class MissionTracker {
         return objectives.size();
     }
 
+    public int getTotalObjectives() {
+        return objectives.size();
+    }
+
+    public List<MissionObjective> getObjectives() {
+        return objectives;
+    }
+
     public MissionObjective getCurrentObjective() {
         if (currentObjectiveIndex < objectives.size()) {
             return objectives.get(currentObjectiveIndex);

@@ -70,6 +70,17 @@ public class CompanionNPC {
 
     public String getId() { return id; }
     public String getNameBengali() { return nameBengali; }
+    public String getNameEnglish() {
+        if (nameBengali != null && nameBengali.contains("(") && nameBengali.contains(")")) {
+            int start = nameBengali.indexOf('(') + 1;
+            int end = nameBengali.indexOf(')');
+            if (end > start) return nameBengali.substring(start, end).trim();
+        }
+        if ("RAFI".equals(id)) return "Rafi";
+        if ("TANVIR".equals(id)) return "Tanvir";
+        if ("NUSRAT".equals(id)) return "Nusrat";
+        return id != null ? id : "Companion";
+    }
     public String getRoleEnglish() { return roleEnglish; }
     public Vector3f getPosition() { return position; }
     public Node getNode() { return npcNode; }

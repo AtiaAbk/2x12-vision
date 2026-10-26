@@ -1384,8 +1384,8 @@ public class CampusWorld {
 
             // 1. Road graffiti on the roundabout carriageway, read when walking towards the sculpture
             Texture2D quotaTex = textRenderer.createTexture(
-                slogans.get(0).bengali,
-                28f, true,
+                slogans.get(0).english,
+                24f, true,
                 new Color(255, 255, 255),
                 new Color(20, 20, 22, 230),
                 20, 10
@@ -1397,8 +1397,8 @@ public class CampusWorld {
 
             // 2. Road graffiti behind the spawn point
             Texture2D july36Tex = textRenderer.createTexture(
-                slogans.get(2).bengali,
-                28f, true,
+                slogans.get(2).english,
+                22f, true,
                 new Color(255, 230, 80),
                 new Color(20, 20, 22, 230),
                 20, 10
@@ -1410,8 +1410,8 @@ public class CampusWorld {
 
             // 3. Banner on the south face of Central Library Building II (faces the sculpture)
             Texture2D bannerTex1 = textRenderer.createTexture(
-                slogans.get(1).bengali,
-                32f, true,
+                slogans.get(1).english,
+                22f, true,
                 new Color(255, 255, 255),
                 new Color(180, 25, 20, 240),
                 24, 12
@@ -1422,8 +1422,8 @@ public class CampusWorld {
 
             // 4. Banner on the north face of the TSC union block, over the verandah
             Texture2D bannerTex2 = textRenderer.createTexture(
-                slogans.get(3).bengali,
-                30f, true,
+                slogans.get(3).english,
+                22f, true,
                 new Color(255, 245, 120),
                 new Color(15, 30, 25, 240),
                 24, 12
@@ -1437,19 +1437,19 @@ public class CampusWorld {
             if (libraryBoardPos != null && tscBoardPos != null) {
                 Color boardInk = new Color(245, 238, 220);
                 Color boardBg = new Color(38, 30, 26, 240);
-                Texture2D libBoardTex = textRenderer.createTexture("তথ্যফলক · কেন্দ্রীয় লাইব্রেরি", 26f, true, boardInk, boardBg, 20, 12);
+                Texture2D libBoardTex = textRenderer.createTexture("HISTORICAL NOTICE · CENTRAL LIBRARY", 22f, true, boardInk, boardBg, 20, 12);
                 Geometry libBoard = createDecalQuad(assetManager, "Label_LibBoard", libBoardTex, 1.6f, 0.9f);
                 libBoard.setLocalTranslation(libraryBoardPos.x - 0.8f, libraryBoardPos.y + 0.2f, libraryBoardPos.z + 0.05f);
                 rootNode.attachChild(libBoard);
 
-                Texture2D tscBoardTex = textRenderer.createTexture("তথ্যফলক · টিএসসি", 26f, true, boardInk, boardBg, 20, 12);
+                Texture2D tscBoardTex = textRenderer.createTexture("HISTORICAL NOTICE · TSC COMPLEX", 22f, true, boardInk, boardBg, 20, 12);
                 Geometry tscBoard = createDecalQuad(assetManager, "Label_TscBoard", tscBoardTex, 1.6f, 0.9f);
                 tscBoard.setLocalTranslation(6f + 0.8f, tscBoardPos.y + 0.2f, -7f - 0.05f);
                 tscBoard.rotate(0f, FastMath.PI, 0f);
                 tscDecalNode.attachChild(tscBoard);
 
                 if (curzonBoardPos != null) {
-                    Texture2D curzonBoardTex = textRenderer.createTexture("তথ্যফলক · কার্জন হল", 26f, true, boardInk, boardBg, 20, 12);
+                    Texture2D curzonBoardTex = textRenderer.createTexture("HISTORICAL NOTICE · CURZON HALL", 22f, true, boardInk, boardBg, 20, 12);
                     Geometry curzonBoard = createDecalQuad(assetManager, "Label_CurzonBoard", curzonBoardTex, 1.6f, 0.9f);
                     curzonBoard.setLocalTranslation(curzonBoardPos.x - 0.8f, curzonBoardPos.y + 0.2f, curzonBoardPos.z + 0.05f);
                     rootNode.attachChild(curzonBoard);
@@ -1458,8 +1458,8 @@ public class CampusWorld {
 
             // 5. Road graffiti on the west arm (Nilkhet road), read when walking towards the library
             Texture2D westTex = textRenderer.createTexture(
-                slogans.get(4).bengali,
-                28f, true,
+                slogans.get(4).english,
+                24f, true,
                 new Color(255, 255, 255),
                 new Color(20, 20, 22, 230),
                 20, 10
@@ -1476,7 +1476,7 @@ public class CampusWorld {
             Color signBlue = new Color(18, 36, 52, 235);
 
             Texture2D curzonSignTex = textRenderer.createTexture(
-                "দোয়েল চত্বর ও কার্জন হল সড়ক  ·  Road to Curzon Hall",
+                "Road to Doyel Chattar & Curzon Hall",
                 20f, true, signWhite, signGreen, 16, 8
             );
             Geometry curzonSign = createDecalQuad(assetManager, "Sign_Curzon", curzonSignTex, 3.8f, 0.95f);
@@ -1486,7 +1486,7 @@ public class CampusWorld {
             addBox("SignPost_Curzon", steelMat, 22f, 0.9f, 20f, 0.04f, 0.9f, 0.04f);
 
             Texture2D nilkhetSignTex = textRenderer.createTexture(
-                "নীলক্ষেত ও কেন্দ্রীয় লাইব্রেরি  ·  To Central Library",
+                "To Nilkhet & Central Library",
                 20f, true, signWhite, signBlue, 16, 8
             );
             Geometry nilkhetSign = createDecalQuad(assetManager, "Sign_Nilkhet", nilkhetSignTex, 3.8f, 0.95f);
@@ -1496,7 +1496,7 @@ public class CampusWorld {
             addBox("SignPost_Nilkhet", steelMat, -26f, 0.9f, 6f, 0.04f, 0.9f, 0.04f);
 
             Texture2D shahbaghSignTex = textRenderer.createTexture(
-                "শাহবাগ ও জাতীয় জাদুঘর  ·  To Shahbagh",
+                "To Shahbagh & National Museum",
                 20f, true, signWhite, signBlue, 16, 8
             );
             Geometry shahbaghSign = createDecalQuad(assetManager, "Sign_Shahbagh", shahbaghSignTex, 3.4f, 0.95f);
@@ -1505,7 +1505,7 @@ public class CampusWorld {
             rootNode.attachChild(shahbaghSign);
             addBox("SignPost_Shahbagh", steelMat, 16f, 0.9f, -22f, 0.04f, 0.9f, 0.04f);
 
-            System.out.println("[CampusWorld] July Movement Bengali street murals and banners attached: " + slogans.size() + " Level 01 slogans.");
+            System.out.println("[CampusWorld] July Movement authentic English street murals and banners attached: " + slogans.size() + " Level 01 slogans.");
         } catch (Throwable t) {
             System.err.println("[CampusWorld] Failed to generate text decals: " + t.getMessage());
         }

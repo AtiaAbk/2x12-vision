@@ -8,6 +8,7 @@ import bd.july2024.character.PlayerControl;
 import bd.july2024.character.PlayerMesh;
 import bd.july2024.dialogue.DialogueManager;
 import bd.july2024.dialogue.HistoricalDialogues;
+import bd.july2024.level.MissionObjective;
 import bd.july2024.level.MissionTracker;
 import bd.july2024.level.ObjectiveMarker;
 import bd.july2024.level.PlayerInventory;
@@ -283,7 +284,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
         // 7. Front end, unless this is an automated run that wants to measure gameplay directly
         String testUi = System.getenv("TEST_UI");
-        boolean frontEndTest = testUi != null && (testUi.equals("title") || testUi.equals("menu") || testUi.equals("settings"));
+        boolean frontEndTest = testUi != null && (testUi.equals("title") || testUi.equals("menu") || testUi.equals("settings") || testUi.equals("credits") || testUi.equals("load"));
         if (autoExitFrames != null && !frontEndTest) {
             beginGameplay(false, false);
         } else {
@@ -421,6 +422,23 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             @Override public void quit() { quitGame(); }
             @Override public void settingsChanged() { applySettings(); }
             @Override public boolean hasCheckpoint() { return saveManager.hasCheckpoint(); }
+            @Override public String getCheckpointSummary() {
+                SaveManager.SaveData d = saveManager.loadCheckpoint();
+                if (d == null) return null;
+                int obj = Math.min(d.objectiveIndex + 1, missionTracker.getTotalObjectives());
+                return String.format("Objective %d of %d · Health/Stamina %.0f%% · Pos (%.0f, %.0f)",
+                    obj, missionTracker.getTotalObjectives(), d.stamina, d.posX, d.posZ);
+            }
+            @Override public List<String> getJournalEntries() {
+                List<String> entries = new ArrayList<>();
+                int current = missionTracker.getCurrentObjectiveIndex();
+                for (int i = 0; i < missionTracker.getObjectives().size(); i++) {
+                    MissionObjective obj = missionTracker.getObjectives().get(i);
+                    String state = (i < current) ? "[COMPLETED]" : (i == current) ? "[ACTIVE]" : "[PENDING]";
+                    entries.add(String.format("%s %d. %s - %s", state, i + 1, obj.getTitleEnglish(), obj.getHintEnglish()));
+                }
+                return entries;
+            }
             @Override public void playClick() { audio.playClick(); }
             @Override public void playConfirm() { audio.playConfirm(); }
             @Override public void playBack() { audio.playBack(); }
@@ -485,7 +503,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     private void spawnCompanions() {
         // 1. Rafi at Raju Memorial Sculpture
         CompanionNPC rafi = new CompanionNPC(
-            assetManager, CharacterSpec.RAFI, "RAFI", "রাফি (Rafi)", "Classmate & Organizer",
+            assetManager, CharacterSpec.RAFI, "RAFI", "Rafi", "Classmate & Organizer",
             new Vector3f(2.6f, campusWorld.groundHeightAt(2.6f, 6.5f), 6.5f),
             new ColorRGBA(0.72f, 0.25f, 0.22f, 1f), // Red cotton shirt
             new ColorRGBA(0.15f, 0.18f, 0.22f, 1f)
@@ -495,7 +513,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
         // 2. Tanvir at Hakim Chattar / Central Library
         CompanionNPC tanvir = new CompanionNPC(
-            assetManager, CharacterSpec.TANVIR, "TANVIR", "তানভীর (Tanvir)", "Leaflet Distribution",
+            assetManager, CharacterSpec.TANVIR, "TANVIR", "Tanvir", "Leaflet Distribution",
             new Vector3f(-40f, campusWorld.groundHeightAt(-40f, -60f), -60f),
             new ColorRGBA(0.16f, 0.20f, 0.30f, 1f), // Navy jacket and trousers
             new ColorRGBA(0.18f, 0.18f, 0.20f, 1f)
@@ -507,7 +525,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         Vector3f nusratPos = campusWorld.tscLocalToWorld(-8f, -8f);
         nusratPos.y = campusWorld.groundHeightAt(nusratPos.x, nusratPos.z);
         CompanionNPC nusrat = new CompanionNPC(
-            assetManager, CharacterSpec.NUSRAT, "NUSRAT", "নুসরাত (Nusrat)", "Student Liaison",
+            assetManager, CharacterSpec.NUSRAT, "NUSRAT", "Nusrat", "Student Liaison",
             nusratPos,
             new ColorRGBA(0.80f, 0.58f, 0.16f, 1f), // Gold top
             new ColorRGBA(0.68f, 0.22f, 0.25f, 1f)
@@ -706,14 +724,14 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     private void setupDocumentHotspots() {
         hotspots.clear();
         hotspots.add(new DocumentHotspot(new Vector3f(2f, 0.8f, -6f), 3.2f,
-            "[E] রাজু ভাস্কর্যের ফলক পড়ুন (Read Plaque)", HistoricalDialogues::getRajuMemorialDocument, 3));
+            "[E] Read Raju Memorial Plaque", HistoricalDialogues::getRajuMemorialDocument, 3));
         hotspots.add(new DocumentHotspot(campusWorld.getLibraryBoardPosition(), 3.2f,
-            "[E] লাইব্রেরির তথ্যফলক পড়ুন (Read Board)", HistoricalDialogues::getLibraryDocument, -1));
+            "[E] Read Central Library Information Board", HistoricalDialogues::getLibraryDocument, -1));
         hotspots.add(new DocumentHotspot(campusWorld.getTscBoardPosition(), 3.2f,
-            "[E] টিএসসির তথ্যফলক পড়ুন (Read Board)", HistoricalDialogues::getTscDocument, -1));
+            "[E] Read TSC Information Board", HistoricalDialogues::getTscDocument, -1));
         if (campusWorld.getCurzonBoardPosition() != null) {
             hotspots.add(new DocumentHotspot(campusWorld.getCurzonBoardPosition(), 3.2f,
-                "[E] কার্জন হলের তথ্যফলক পড়ুন (Read Board)", HistoricalDialogues::getCurzonHallDocument, -1));
+                "[E] Read Curzon Hall Information Board", HistoricalDialogues::getCurzonHallDocument, -1));
         }
         for (DocumentHotspot h : hotspots) {
             System.out.printf("[ProjectJulyApp] Document hotspot '%s' at (%.2f, %.2f), radius %.1f m%n",
@@ -807,11 +825,11 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         );
         if (ok) {
             audio.playNotify();
-            menu.setStatusMessage("চেকপয়েন্ট সংরক্ষিত হয়েছে  ·  checkpoint saved");
+            menu.setStatusMessage("Checkpoint saved successfully");
             System.out.println("[ProjectJulyApp] Checkpoint saved successfully at objective " + missionTracker.getCurrentObjectiveIndex());
         } else {
             audio.playWarning();
-            menu.setStatusMessage("সংরক্ষণ ব্যর্থ হয়েছে  ·  save failed");
+            menu.setStatusMessage("Save failed");
         }
     }
 
@@ -836,7 +854,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
         for (CompanionNPC c : companions) {
             if (pPos.distance(c.getPosition()) <= 3.8f) {
-                return "[E] " + c.getNameBengali() + "-র সাথে কথা বলুন (Talk)";
+                return "[E] Talk to " + c.getNameEnglish();
             }
         }
 
@@ -847,7 +865,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         }
 
         if (missionTracker.getCurrentObjectiveIndex() == 4 && pPos.distance(new Vector3f(0f, 0f, 0f)) <= 4.5f) {
-            return "[E] ছাত্র-জনতার ঐতিহাসিক সমাবেশে বক্তব্য দিন (Address Rally)";
+            return "[E] Address Student Assembly";
         }
 
         return "";
@@ -883,10 +901,16 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
                 menu.onSelect(); // title -> main menu
             } else if ("settings".equals(testUi)) {
                 menu.showSettings(MenuSystem.Screen.MAIN);
+            } else if ("journal".equals(testUi)) {
+                menu.showJournal();
+            } else if ("credits".equals(testUi)) {
+                menu.showCredits();
+            } else if ("load".equals(testUi)) {
+                menu.showLoadGame();
             } else if ("complete".equals(testUi)) {
                 menu.showChapterComplete();
             } else if ("map".equals(testUi)) {
-                hud.showMap();
+                hud.showMap(playerControl.getPosition(), playerControl.getHeadingDegrees(), missionTracker);
             }
         }
         // The chapter card closes itself after 5 s, so for its capture it opens 80 frames before the shot.
