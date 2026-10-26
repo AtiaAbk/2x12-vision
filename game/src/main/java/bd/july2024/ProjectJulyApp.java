@@ -424,6 +424,11 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             @Override public void playClick() { audio.playClick(); }
             @Override public void playConfirm() { audio.playConfirm(); }
             @Override public void playBack() { audio.playBack(); }
+            @Override public void openMap() {
+                if (hud != null && playerControl != null) {
+                    hud.showMap(playerControl.getPosition(), playerControl.getHeadingDegrees(), missionTracker);
+                }
+            }
         };
     }
 
@@ -647,7 +652,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         }
 
         if ("ToggleMap".equals(name) && isPressed && inGame && !menu.isOpen() && !docModal.isOpen()) {
-            hud.toggleMap();
+            hud.toggleMap(playerControl.getPosition(), playerControl.getHeadingDegrees(), missionTracker);
             if (hud.isMapOpen()) {
                 audio.playClick();
             } else {

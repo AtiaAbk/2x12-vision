@@ -231,4 +231,45 @@ public class FrontEndTest {
         assertFalse(tracker.advanceObjective()); // already at end
         assertTrue(tracker.isAllCompleted());
     }
+
+    @Test
+    public void testCampusMapCoordinateTranslationAndLandmarkAlignment() {
+        int mapW = 800;
+        int mapH = 500;
+        float cx = bd.july2024.ui.CampusMapRenderer.worldToMapX(0f, mapW);
+        float cy = bd.july2024.ui.CampusMapRenderer.worldToMapY(0f, mapH);
+
+        // Origin (Raju Memorial) should be near center
+        assertEquals(mapW * 0.5f, cx, 1.0f);
+        assertTrue(cy > 0 && cy < mapH);
+
+        // Curzon Hall at (64, 64) is South-East (+X East, +Z South)
+        float curzonX = bd.july2024.ui.CampusMapRenderer.worldToMapX(64f, mapW);
+        float curzonY = bd.july2024.ui.CampusMapRenderer.worldToMapY(64f, mapH);
+        assertTrue(curzonX > cx, "Curzon Hall must be East of Raju Memorial");
+        assertTrue(curzonY > cy, "Curzon Hall must be South of Raju Memorial");
+
+        // Central Library at (-45, -92) is North-West (-X West, -Z North)
+        float libX = bd.july2024.ui.CampusMapRenderer.worldToMapX(-45f, mapW);
+        float libY = bd.july2024.ui.CampusMapRenderer.worldToMapY(-92f, mapH);
+        assertTrue(libX < cx, "Central Library must be West of Raju Memorial");
+        assertTrue(libY < cy, "Central Library must be North of Raju Memorial");
+
+        // TSC at (10, 67) is South-East
+        float tscX = bd.july2024.ui.CampusMapRenderer.worldToMapX(10f, mapW);
+        float tscY = bd.july2024.ui.CampusMapRenderer.worldToMapY(67f, mapH);
+        assertTrue(tscX > cx, "TSC must be East of Raju Memorial");
+        assertTrue(tscY > cy, "TSC must be South of Raju Memorial");
+
+        // Hakim Chattar at (-83, -46) is North-West
+        float hakimX = bd.july2024.ui.CampusMapRenderer.worldToMapX(-83f, mapW);
+        float hakimY = bd.july2024.ui.CampusMapRenderer.worldToMapY(-46f, mapH);
+        assertTrue(hakimX < cx, "Hakim Chattar must be West of Raju Memorial");
+        assertTrue(hakimY < cy, "Hakim Chattar must be North of Raju Memorial");
+
+        // North-up verification: decreasing world Z (heading North) must move upwards (decreasing map Y)
+        float northY = bd.july2024.ui.CampusMapRenderer.worldToMapY(-50f, mapH);
+        float southY = bd.july2024.ui.CampusMapRenderer.worldToMapY(50f, mapH);
+        assertTrue(northY < southY, "North-up convention: North must have smaller pixel Y than South");
+    }
 }
