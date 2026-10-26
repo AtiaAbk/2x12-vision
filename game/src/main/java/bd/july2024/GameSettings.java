@@ -34,6 +34,9 @@ public final class GameSettings {
     public float mouseSensitivity = 1.0f;   // 0.3 .. 3.0
     public boolean invertMouseY = false;
     public float masterVolume = 0.8f;       // 0 .. 1
+    public float musicVolume = 0.75f;       // 0 .. 1
+    public float sfxVolume = 0.85f;         // 0 .. 1
+    public boolean muteAudio = false;
     public String subtitles = "both";       // both | bn | en
     public int windowSizeIndex = 0;
     public boolean fullscreen = false;
@@ -108,6 +111,9 @@ public final class GameSettings {
         mouseSensitivity = 1.0f;
         invertMouseY = false;
         masterVolume = 0.8f;
+        musicVolume = 0.75f;
+        sfxVolume = 0.85f;
+        muteAudio = false;
         subtitles = "both";
         windowSizeIndex = 0;
         fullscreen = false;
@@ -139,6 +145,9 @@ public final class GameSettings {
         s.mouseSensitivity = clamp(parseFloat(p.getProperty("mouseSensitivity"), s.mouseSensitivity), 0.3f, 3.0f);
         s.invertMouseY = Boolean.parseBoolean(p.getProperty("invertMouseY", "false"));
         s.masterVolume = clamp(parseFloat(p.getProperty("masterVolume"), s.masterVolume), 0f, 1f);
+        s.musicVolume = clamp(parseFloat(p.getProperty("musicVolume"), s.musicVolume), 0f, 1f);
+        s.sfxVolume = clamp(parseFloat(p.getProperty("sfxVolume"), s.sfxVolume), 0f, 1f);
+        s.muteAudio = Boolean.parseBoolean(p.getProperty("muteAudio", "false"));
         String sub = p.getProperty("subtitles", "both");
         for (String m : SUBTITLE_MODES) if (m.equals(sub)) s.subtitles = m;
         s.windowSizeIndex = Math.max(0, Math.min(WINDOW_SIZES.length - 1, (int) parseFloat(p.getProperty("windowSizeIndex"), 0)));
@@ -164,6 +173,9 @@ public final class GameSettings {
         p.setProperty("mouseSensitivity", String.format(java.util.Locale.ROOT, "%.2f", mouseSensitivity));
         p.setProperty("invertMouseY", Boolean.toString(invertMouseY));
         p.setProperty("masterVolume", String.format(java.util.Locale.ROOT, "%.2f", masterVolume));
+        p.setProperty("musicVolume", String.format(java.util.Locale.ROOT, "%.2f", musicVolume));
+        p.setProperty("sfxVolume", String.format(java.util.Locale.ROOT, "%.2f", sfxVolume));
+        p.setProperty("muteAudio", Boolean.toString(muteAudio));
         p.setProperty("subtitles", subtitles);
         p.setProperty("windowSizeIndex", Integer.toString(windowSizeIndex));
         p.setProperty("fullscreen", Boolean.toString(fullscreen));

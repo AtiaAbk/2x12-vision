@@ -83,3 +83,13 @@
   4. *Voice Acting Asset Tracking:* In the current jMonkeyEngine build, recorded voice acting audio clips are officially registered as MISSING. Synthesized interaction chimes (`ui_click`, `objective`, `bell`) serve as audio placeholders until live voice talent is recorded.
 - **Why:** Solves international player accessibility and UI layout consistency while preserving cultural authenticity, student personality, and emotional weight through authentic spoken Bangla dialogue.
 - **How to Reverse:** Any future adjustment requires explicit project directive.
+
+### DECISION-009: Adaptive Music Director & Original Cinematic Soundtrack System
+- **Decision:** Implement an in-engine adaptive audio director (`bd.july2024.audio.AdaptiveMusicDirector`) built natively on jMonkeyEngine's OpenAL Soft streaming pipeline:
+  1. *Dynamic State Transitions:* Music automatically transitions between `MAIN_MENU`, `EXPLORATION`, `STORY_DIALOGUE`, `GATHERING`, `TENSION`, `PAUSED`, and `CHAPTER_COMPLETE` matching gameplay context.
+  2. *Seamless Dual-Channel Crossfading:* Implemented equal-power sine/cosine crossfading between active and incoming tracks (configurable 0.5s–2.5s duration) without audible clicks or sudden restarts.
+  3. *Intelligent Dialogue & Pause Ducking:* Automatic attenuation during story conversations (-6dB to -9dB) and pause menu (25% volume hold), preserving speech legibility.
+  4. *Original Soundtrack Stems:* Composed 6 dedicated 44.1 kHz 16-bit stereo PCM musical cues in `assets/Audio/` (`music_main_theme.wav`, `music_exploration.wav`, `music_dialogue.wav`, `music_gathering.wav`, `music_tension.wav`, `music_chapter_complete.wav`) using orchestral strings, piano, bansuri, and subtle dhol/timpani.
+  5. *Zero-Crash Fallback Architecture:* If an individual sound file is missing or fails to stream, the music director logs the failure and falls back gracefully to a backup cue without interrupting gameplay.
+- **Why:** Replaces the repetitive, static mono title loop with a rich, responsive, emotionally compelling musical experience tailored to the historical progression of the July 2024 movement.
+- **How to Reverse:** Set fixed track in `AudioController` or toggle music volume in `GameSettings`.

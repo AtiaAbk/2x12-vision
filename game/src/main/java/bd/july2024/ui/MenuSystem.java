@@ -601,10 +601,11 @@ public class MenuSystem {
             // Audio
             switch (selected) {
                 case 1: settings.masterVolume = clamp(Math.round((settings.masterVolume + 0.05f * dir) * 20f) / 20f, 0f, 1f); break;
-                case 2: settings.masterVolume = clamp(Math.round((settings.masterVolume + 0.05f * dir) * 20f) / 20f, 0f, 1f); break;
-                case 3: settings.masterVolume = clamp(Math.round((settings.masterVolume + 0.05f * dir) * 20f) / 20f, 0f, 1f); break;
-                case 4: settings.masterVolume = clamp(Math.round((settings.masterVolume + 0.05f * dir) * 20f) / 20f, 0f, 1f); break;
-                case 5: settings.masterVolume = 1.0f; break;
+                case 2: settings.musicVolume = clamp(Math.round((settings.musicVolume + 0.05f * dir) * 20f) / 20f, 0f, 1f); break;
+                case 3: settings.sfxVolume = clamp(Math.round((settings.sfxVolume + 0.05f * dir) * 20f) / 20f, 0f, 1f); break;
+                case 4: settings.muteAudio = !settings.muteAudio; break;
+                case 5: settings.subtitles = "off".equals(settings.subtitles) ? "en" : "off"; break;
+                case 6: settings.restoreDefaults(); break;
                 default: break;
             }
         } else if (settingsCategory == 2) {
@@ -888,13 +889,15 @@ public class MenuSystem {
             lines.add(menuItem("Restore Category Defaults", null, selected == 11, true, 8));
         } else if (settingsCategory == 1) {
             // Category 1: Audio Settings
-            String volStr = Math.round(settings.masterVolume * 100) + " %";
+            String masterStr = Math.round(settings.masterVolume * 100) + " %";
+            String musicStr = Math.round(settings.musicVolume * 100) + " %";
+            String sfxStr = Math.round(settings.sfxVolume * 100) + " %";
             lines.add(menuItem("Settings Category Tab", SETTINGS_CATEGORIES[settingsCategory], selected == 0, true, 8));
-            lines.add(menuItem("Master Volume", volStr, selected == 1, true, 4));
-            lines.add(menuItem("Campus Ambience Volume", volStr, selected == 2, true, 4));
-            lines.add(menuItem("Sound Effects (SFX)", volStr, selected == 3, true, 4));
-            lines.add(menuItem("UI Sound Volume", volStr, selected == 4, true, 4));
-            lines.add(menuItem("Mute All Audio", settings.masterVolume == 0f ? "Muted" : "Unmuted", selected == 5, true, 4));
+            lines.add(menuItem("Master Volume", masterStr, selected == 1, true, 4));
+            lines.add(menuItem("Music & Cinematic BGM Volume", musicStr, selected == 2, true, 4));
+            lines.add(menuItem("Sound Effects & Ambience (SFX)", sfxStr, selected == 3, true, 4));
+            lines.add(menuItem("Mute All Audio", settings.muteAudio ? "Muted" : "Unmuted", selected == 4, true, 4));
+            lines.add(menuItem("Subtitles (English Default)", !"off".equals(settings.subtitles) ? "Enabled" : "Disabled", selected == 5, true, 4));
             lines.add(menuItem("Restore Category Defaults", null, selected == 6, true, 8));
         } else if (settingsCategory == 2) {
             // Category 2: Controls & Camera

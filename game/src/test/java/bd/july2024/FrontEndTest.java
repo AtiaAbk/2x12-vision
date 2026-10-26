@@ -272,4 +272,57 @@ public class FrontEndTest {
         float southY = bd.july2024.ui.CampusMapRenderer.worldToMapY(50f, mapH);
         assertTrue(northY < southY, "North-up convention: North must have smaller pixel Y than South");
     }
+
+    @Test
+    public void testAudioSettingsRoundTrip(@TempDir Path dir) {
+        File f = dir.resolve("audio_settings.properties").toFile();
+        GameSettings s = new GameSettings();
+        s.masterVolume = 0.65f;
+        s.musicVolume = 0.82f;
+        s.sfxVolume = 0.70f;
+        s.muteAudio = true;
+        assertTrue(s.save(f));
+
+        GameSettings loaded = GameSettings.load(f);
+        assertEquals(0.65f, loaded.masterVolume, 0.01f);
+        assertEquals(0.82f, loaded.musicVolume, 0.01f);
+        assertEquals(0.70f, loaded.sfxVolume, 0.01f);
+        assertTrue(loaded.muteAudio);
+    }
+
+    @Test
+    public void testAdaptiveMusicDirectorStateTransitions() {
+        bd.july2024.audio.AdaptiveMusicDirector dir = new bd.july2024.audio.AdaptiveMusicDirector(null, null);
+        assertNull(dir.getCurrentState());
+
+        // 1. Transition to MAIN_MENU
+        dir.transitionTo(bd.july2024.audio.MusicState.MAIN_MENU, 1.0f);
+        assertEquals(bd.july2024.audio.MusicState.MAIN_MENU, dir.getCurrentState());
+
+        // 2. Transition to EXPLORATION
+        dir.transitionTo(bd.july2024.audio.MusicState.EXPLORATION, 1.5f);
+        assertEquals(bd.july2024.audio.MusicState.EXPLORATION, dir.getCurrentState());
+
+        // 3. Dialogue Ducking & Transition
+        dir.transitionTo(bd.july2024.audio.MusicState.STORY_DIALOGUE, 1.0f);
+        assertEquals(bd.july2024.audio.MusicState.STORY_DIALOGUE, dir.getCurrentState());
+        dir.setDialogueDucking(true);
+        dir.update(0.5f);
+
+        // 4. Pause State preservation
+        dir.transitionTo(bd.july2024.audio.MusicState.PAUSED, 0.5f);
+        assertEquals(bd.july2024.audio.MusicState.PAUSED, dir.getCurrentState());
+
+        // 5. Resume from Pause
+        dir.transitionTo(bd.july2024.audio.MusicState.GATHERING, 1.0f);
+        assertEquals(bd.july2024.audio.MusicState.GATHERING, dir.getCurrentState());
+
+        // 6. Chapter Complete Fanfare
+        dir.transitionTo(bd.july2024.audio.MusicState.CHAPTER_COMPLETE, 0.2f);
+        assertEquals(bd.july2024.audio.MusicState.CHAPTER_COMPLETE, dir.getCurrentState());
+
+        // 7. Stop and cleanup
+        dir.stopAll();
+        assertNull(dir.getCurrentState());
+    }
 }

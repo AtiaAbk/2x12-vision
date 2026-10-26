@@ -36,10 +36,12 @@ public class AudioController {
     private AudioNode musicNode;
     private float ambienceVolume = 0.55f;
     private float musicVolume = 0.5f;
+    private final AdaptiveMusicDirector musicDirector;
 
     public AudioController(AssetManager assetManager, Node rootNode) {
         this.assetManager = assetManager;
         this.rootNode = rootNode;
+        this.musicDirector = new AdaptiveMusicDirector(assetManager, rootNode);
         try {
             clickNode = createAudio("audio/ui_click.wav", 0.5f);
             confirmNode = createAudio("audio/ui_confirm.wav", 0.6f);
@@ -142,17 +144,56 @@ public class AudioController {
     }
 
     public void startTitleMusic() {
-        if (!audioAvailable) return;
-        if (musicNode == null) musicNode = createLoop("audio/music_title.wav", musicVolume);
-        if (musicNode != null && musicNode.getStatus() != com.jme3.audio.AudioSource.Status.Playing) {
-            try { musicNode.play(); } catch (Throwable ignored) {}
+        if (musicDirector != null) {
+            musicDirector.transitionTo(MusicState.MAIN_MENU, 1.5f);
+        } else {
+            if (!audioAvailable) return;
+            if (musicNode == null) musicNode = createLoop("audio/music_title.wav", musicVolume);
+            if (musicNode != null && musicNode.getStatus() != com.jme3.audio.AudioSource.Status.Playing) {
+                try { musicNode.play(); } catch (Throwable ignored) {}
+            }
         }
     }
 
     public void stopMusic() {
+        if (musicDirector != null) {
+            musicDirector.stopAll();
+        }
         if (musicNode != null) {
             try { musicNode.stop(); } catch (Throwable ignored) {}
         }
+    }
+
+    public AdaptiveMusicDirector getMusicDirector() {
+        return musicDirector;
+    }
+
+    public void setMusicState(MusicState state) {
+        setMusicState(state, 2.0f);
+    }
+
+    public void setMusicState(MusicState state, float crossfadeSec) {
+        if (musicDirector != null) musicDirector.transitionTo(state, crossfadeSec);
+    }
+
+    public void onPause() {
+        if (musicDirector != null) musicDirector.transitionTo(MusicState.PAUSED, 0.8f);
+    }
+
+    public void onResume(MusicState resumeState) {
+        if (musicDirector != null) musicDirector.transitionTo(resumeState, 1.2f);
+    }
+
+    public void setDialogueDucking(boolean active) {
+        if (musicDirector != null) musicDirector.setDialogueDucking(active);
+    }
+
+    public void update(float tpf) {
+        if (musicDirector != null) musicDirector.update(tpf);
+    }
+
+    public void syncSettings() {
+        if (musicDirector != null) musicDirector.syncWithSettings();
     }
 
     public boolean isAvailable() {

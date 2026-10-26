@@ -1,6 +1,7 @@
 package bd.july2024;
 
 import bd.july2024.audio.AudioController;
+import bd.july2024.audio.MusicState;
 import bd.july2024.camera.CinematicOrbitCamera;
 import bd.july2024.character.CharacterSpec;
 import bd.july2024.character.CompanionNPC;
@@ -306,7 +307,16 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         orbitCam.setDistance(16f);
         audio.startAmbience();
         audio.setAmbienceLevel(0.35f);
-        audio.startTitleMusic();
+        audio.setMusicState(MusicState.MAIN_MENU, 1.5f);
+    }
+
+    private MusicState getGameplayMusicState() {
+        if (missionTracker == null) return MusicState.EXPLORATION;
+        int idx = missionTracker.getCurrentObjectiveIndex();
+        if (idx <= 1) return MusicState.EXPLORATION;
+        if (idx <= 3) return MusicState.GATHERING;
+        if (idx == 4) return MusicState.TENSION;
+        return MusicState.EXPLORATION;
     }
 
     /** Starts (or restores) Level 01 and optionally shows the chapter card first. */
@@ -338,9 +348,9 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         inGame = true;
         if (hud != null && hud.isMapOpen()) hud.hideMap();
         clearMovementInput();
-        audio.stopMusic();
         audio.startAmbience();
         audio.setAmbienceLevel(1f);
+        audio.setMusicState(getGameplayMusicState(), 2.0f);
         if (showChapter) {
             menu.showChapter(() -> audio.playNotify());
         } else {
@@ -357,6 +367,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         try {
             listener.setVolume(gameSettings.masterVolume);
         } catch (Throwable ignored) {}
+        if (audio != null) audio.syncSettings();
         if (hud != null) hud.invalidateDialogue();
 
         if (lighting != null) {
@@ -416,7 +427,10 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         return new MenuSystem.Actions() {
             @Override public void newGame() { beginGameplay(false, true); }
             @Override public void continueGame() { beginGameplay(true, true); }
-            @Override public void resume() { menu.close(); }
+            @Override public void resume() {
+                menu.close();
+                if (audio != null) audio.onResume(getGameplayMusicState());
+            }
             @Override public void saveCheckpoint() { saveGameCheckpoint(); }
             @Override public void restartLevel() { ProjectJulyApp.this.restartLevel(); }
             @Override public void toMainMenu() { showFrontEnd(false); }
@@ -625,6 +639,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             audio.playClick();
             clearMovementInput();
             menu.showPause();
+            audio.onPause();
             return;
         }
 
@@ -811,18 +826,26 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         // Priority 4: Rally assembly at roundabout
         if (missionTracker.getCurrentObjectiveIndex() == 4 && pPos.distance(new Vector3f(0f, 0f, 0f)) <= 4.5f) {
             audio.playClick();
+            if (audio != null) audio.setMusicState(MusicState.TENSION, 1.0f);
             triggerDialogue(HistoricalDialogues.getRallyDialogue(), () -> {
                 missionTracker.advanceObjective();
                 missionTracker.advanceObjective(); // Mark final chapter objective complete
                 audio.playBell();
                 audio.playObjective();
+                if (audio != null) audio.setMusicState(MusicState.CHAPTER_COMPLETE, 0.4f);
                 menu.showChapterComplete();
             });
         }
     }
 
     private void triggerDialogue(List<DialogueLine> lines, DialogueManager.DialogueCallback callback) {
-        dialogueManager.startDialogue(lines, callback);
+        if (audio != null) audio.setMusicState(MusicState.STORY_DIALOGUE, 1.2f);
+        dialogueManager.startDialogue(lines, () -> {
+            if (audio != null && missionTracker.getCurrentObjectiveIndex() < 5) {
+                audio.setMusicState(getGameplayMusicState(), 1.8f);
+            }
+            if (callback != null) callback.onDialogueFinished();
+        });
         DialogueLine first = dialogueManager.getCurrentLine();
         if (first != null && first.hasVoiceClip()) {
             audio.playVoice(first.getVoiceClip());
@@ -932,6 +955,9 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             menu.showChapter(null);
         }
         menu.update(tpf);
+        if (audio != null) {
+            audio.update(tpf);
+        }
         if (frameCounter <= 5 || frameCounter % 15 == 0) {
             System.out.println("[ProjectJulyApp] Frame " + frameCounter + " rendered (tpf=" + String.format("%.4f", tpf) + ", autoExit=" + autoExitFrames + ")");
         }
