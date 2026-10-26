@@ -11,11 +11,11 @@ places and people are handled under the rules in `docs/spec/`.
 This is an early vertical slice, not a finished game. The current state, with evidence, is in
 [`docs/STATUS_MATRIX_2026-10-25.md`](docs/STATUS_MATRIX_2026-10-25.md). In short:
 
-- Builds and runs on Windows and (per the original configuration) macOS Apple Silicon; 7 unit tests pass.
-- One campus scene (Raju Memorial, Central Library, Hakim Chattar, TSC) built from procedural primitives.
+- Builds and runs on Windows and (per the original configuration) macOS Apple Silicon; 13 unit tests pass. A Windows app image can be built with `./gradlew :game:packageWindowsZip`.
+- One campus scene (Raju Memorial, Central Library, Hakim Chattar, TSC) at true scale from OpenStreetMap footprints, built from textured primitives, with 31 licensed CC0 tree models.
 - Third-person camera, movement, stamina, six-step objective loop, Bengali/English HUD, title screen and menus with settings, pause menu, checkpoint save, original synthesised sound.
-- The character, buildings and trees are **placeholders** and do not yet pass the visual acceptance gate.
-- No music, no inventory, no main menu, no measured performance on the target MacBook Air M4.
+- Characters are stylised low-poly CC0 models, buildings are referenced primitives and the trees are species stand-ins; none yet passes the visual acceptance gate.
+- Music and ambience are synthetic placeholders; no inventory, no crowds, no Level 02, and no measured performance on the target MacBook Air M4.
 
 ## Requirements
 

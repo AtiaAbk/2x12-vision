@@ -4,7 +4,7 @@ Every external asset used by the current code is listed here. "Publicly viewable
 an asset is added only with a licence that permits redistribution and modification. Legacy
 LibGDX-era registers under `docs/research/` are not authoritative for this build.
 
-Last updated: 2026-10-25
+Last updated: 2026-10-26
 
 ## 3D models
 

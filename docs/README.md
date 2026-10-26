@@ -1,6 +1,6 @@
 # Documentation map
 
-Last updated: 2026-10-25
+Last updated: 2026-10-26
 
 ## Current (describes the jMonkeyEngine code in `game/`)
 

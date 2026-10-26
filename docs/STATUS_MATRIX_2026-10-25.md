@@ -43,7 +43,7 @@ This matrix records what was **directly inspected** on this date. Status values:
 |---|---|---|---|
 | Main objective loop | `level/MissionTracker.java`: 6 linear objectives OBJ_01_RAFI … OBJ_06_COMPLETE; unit-tested | implemented | — |
 | Optional side missions | None. | missing | Later milestone. |
-| Checkpoint save / load | `level/SaveManager.java` → `save/checkpoint.json`; S in pause menu saves; load on start; unit-tested | implemented | `save/` is not in `.gitignore`. |
+| Checkpoint save / load | `level/SaveManager.java` → `save/checkpoint.json` (per-user folder when packaged); "Save checkpoint" in the pause menu, "Continue" in the main menu restores it; unit-tested | implemented | — |
 | Autosave | Not implemented. | missing | — |
 | Adaptive difficulty | Not implemented. | missing | — |
 | Pause menu (ESC) | **2026-10-26:** `ui/MenuSystem.java` replaces `PauseMenu`: a navigable list (Resume, Save checkpoint, Settings, Restart level, Main menu, Quit) driven by arrows/WASD and Enter, Esc resumes. Captured with `TEST_UI=pause` (`frontend_2026-10-26_pause_v1.png`). | implemented, capture inspected; by-hand check pending | Owner to try. |
