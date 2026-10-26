@@ -28,8 +28,10 @@ public class ExportCampusMapAssetTest {
         CampusMapRenderer.renderMap(g, 0, 0, width, height, playerPos, playerHeading, tracker);
         g.dispose();
 
-        File outFile = AppPaths.asset("maps/campus_map_geography.png");
-        if (outFile == null) outFile = new File("assets/maps/campus_map_geography.png");
+        File outFile = new File("../assets/maps/campus_map_geography.png");
+        if (!outFile.getParentFile().exists()) {
+            outFile = new File("assets/maps/campus_map_geography.png");
+        }
         if (outFile.getParentFile() != null && !outFile.getParentFile().exists()) {
             outFile.getParentFile().mkdirs();
         }
