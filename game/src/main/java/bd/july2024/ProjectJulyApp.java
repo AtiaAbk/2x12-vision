@@ -6,6 +6,7 @@ import bd.july2024.character.CharacterSpec;
 import bd.july2024.character.CompanionNPC;
 import bd.july2024.character.PlayerControl;
 import bd.july2024.character.PlayerMesh;
+import bd.july2024.dialogue.DialogueLine;
 import bd.july2024.dialogue.DialogueManager;
 import bd.july2024.dialogue.HistoricalDialogues;
 import bd.july2024.level.MissionObjective;
@@ -750,7 +751,12 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         if (dialogueManager.isActive()) {
             boolean hasMore = dialogueManager.advanceDialogue();
             audio.playClick();
-            if (!hasMore) {
+            if (hasMore) {
+                DialogueLine line = dialogueManager.getCurrentLine();
+                if (line != null && line.hasVoiceClip()) {
+                    audio.playVoice(line.getVoiceClip());
+                }
+            } else {
                 audio.playObjective();
             }
             return;
@@ -762,14 +768,14 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             if (pPos.distance(c.getPosition()) <= 3.8f) {
                 audio.playClick();
                 if ("RAFI".equals(c.getId())) {
-                    dialogueManager.startDialogue(HistoricalDialogues.getRafiDialogue(), () -> {
+                    triggerDialogue(HistoricalDialogues.getRafiDialogue(), () -> {
                         if (missionTracker.getCurrentObjectiveIndex() == 0) {
                             missionTracker.advanceObjective();
                             audio.playBell();
                         }
                     });
                 } else if ("TANVIR".equals(c.getId())) {
-                    dialogueManager.startDialogue(HistoricalDialogues.getTanvirDialogue(), () -> {
+                    triggerDialogue(HistoricalDialogues.getTanvirDialogue(), () -> {
                         if (missionTracker.getCurrentObjectiveIndex() == 1) {
                             missionTracker.advanceObjective();
                             if (playerInventory != null) playerInventory.setLeafletCount(50);
@@ -777,7 +783,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
                         }
                     });
                 } else if ("NUSRAT".equals(c.getId())) {
-                    dialogueManager.startDialogue(HistoricalDialogues.getNusratDialogue(), () -> {
+                    triggerDialogue(HistoricalDialogues.getNusratDialogue(), () -> {
                         if (missionTracker.getCurrentObjectiveIndex() == 2) {
                             if (playerInventory != null) playerInventory.setLeafletCount(0);
                             missionTracker.advanceObjective();
@@ -805,13 +811,21 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         // Priority 4: Rally assembly at roundabout
         if (missionTracker.getCurrentObjectiveIndex() == 4 && pPos.distance(new Vector3f(0f, 0f, 0f)) <= 4.5f) {
             audio.playClick();
-            dialogueManager.startDialogue(HistoricalDialogues.getRallyDialogue(), () -> {
+            triggerDialogue(HistoricalDialogues.getRallyDialogue(), () -> {
                 missionTracker.advanceObjective();
                 missionTracker.advanceObjective(); // Mark final chapter objective complete
                 audio.playBell();
                 audio.playObjective();
                 menu.showChapterComplete();
             });
+        }
+    }
+
+    private void triggerDialogue(List<DialogueLine> lines, DialogueManager.DialogueCallback callback) {
+        dialogueManager.startDialogue(lines, callback);
+        DialogueLine first = dialogueManager.getCurrentLine();
+        if (first != null && first.hasVoiceClip()) {
+            audio.playVoice(first.getVoiceClip());
         }
     }
 

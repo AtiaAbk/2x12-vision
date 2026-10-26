@@ -74,3 +74,12 @@
   - *Low:* 1024 shadow map, FXAA only, reduced foliage density.
 - **Why:** Ensures cool thermals on fanless Apple Silicon MacBook Air M4 while offering scalability.
 - **How to Reverse:** User can change preset at any time in the settings menu.
+
+### DECISION-008: Final Language Policy — English Interface, Natural Bangla Spoken Voice Acting, Default English Subtitles
+- **Decision:** Establish the project-wide authoritative language policy:
+  1. *Interface & Written Content (100% English):* All player-facing written content (Main Menu, Title Screen, Pause Menu, Settings, Journal, Map labels, Compass, HUD, Interaction Prompts, Notifications, Document Modals, Notice Boards, Murals, Slogans) is written strictly in professional English. Zero Bengali script in any UI or written game element.
+  2. *Character Dialogue (Natural Spoken Bangla):* Character voice acting in story scenes, conversations, and cinematics is in natural, conversational Bangla appropriate to Bangladeshi university students in July 2024.
+  3. *Default English Subtitles:* Spoken Bangla dialogue is accompanied by accurate, concise English subtitles by default. Bengali-script dialogue is never displayed as subtitles unless a future explicit requirement changes this policy.
+  4. *Voice Acting Asset Tracking:* In the current jMonkeyEngine build, recorded voice acting audio clips are officially registered as MISSING. Synthesized interaction chimes (`ui_click`, `objective`, `bell`) serve as audio placeholders until live voice talent is recorded.
+- **Why:** Solves international player accessibility and UI layout consistency while preserving cultural authenticity, student personality, and emotional weight through authentic spoken Bangla dialogue.
+- **How to Reverse:** Any future adjustment requires explicit project directive.

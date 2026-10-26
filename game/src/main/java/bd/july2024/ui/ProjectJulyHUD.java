@@ -332,6 +332,14 @@ public class ProjectJulyHUD {
         DialogueLine line = dialogueManager.getCurrentLine();
         if (line == null) return;
         bd.july2024.GameSettings gs = bd.july2024.GameSettings.get();
+        if (!gs.showEnglishSubtitles()) {
+            if (dialoguePicture != null) {
+                guiNode.detachChild(dialoguePicture);
+                dialoguePicture = null;
+            }
+            lastDialogueText = "subtitles_disabled";
+            return;
+        }
         String lineKey = line.getSpeaker() + "_" + line.getTextBengali() + "_" + gs.subtitles;
         if (lineKey.equals(lastDialogueText)) return;
         lastDialogueText = lineKey;

@@ -90,11 +90,13 @@ Not integrated but downloaded and checked on 2026-10-25: Quaternius *Universal B
 
 | Asset | Files | Origin | Licence | Status |
 |---|---|---|---|---|
-| Soundbank (18 files) | `assets/audio/ui_click.wav`, `ui_confirm`, `ui_back`, `ui_notify`, `ui_warning`, `objective`, `bell`, `footstep_{grass,paving,asphalt}_{1,2,3}`, `ambience_campus` (39.5 s loop), `music_title` (58.6 s loop); 8.9 MB, 44.1 kHz 16-bit mono | Synthesised from first principles by `tools/synth_audio.py` (numpy) on 2026-10-26 for this project: sine/FM tones with envelopes, filtered noise, Karplus-Strong plucked strings, a flute-like voice playing an original melody written for the project, a small Schroeder reverb. Every parameter is in the script; re-running it regenerates identical files. The ten unverified LibGDX-era WAVs were deleted. | Original work of the project (no third-party material) | Integrated. Limits: the ambience has no real recordings (wind, traffic, koel-like calls and crowd murmur are all synthetic); the music is a placeholder-quality procedural cue; no Bangla voice. |
+| Soundbank (18 files) | `assets/audio/ui_click.wav`, `ui_confirm`, `ui_back`, `ui_notify`, `ui_warning`, `objective`, `bell`, `footstep_{grass,paving,asphalt}_{1,2,3}`, `ambience_campus` (39.5 s loop), `music_title` (58.6 s loop); 8.9 MB, 44.1 kHz 16-bit mono | Synthesised from first principles by `tools/synth_audio.py` (numpy) on 2026-10-26 for this project: sine/FM tones with envelopes, filtered noise, Karplus-Strong plucked strings, a flute-like voice playing an original melody written for the project, a small Schroeder reverb. Every parameter is in the script; re-running it regenerates identical files. The ten unverified LibGDX-era WAVs were deleted. | Original work of the project (no third-party material) | Integrated. Limits: the ambience has no real recordings (wind, traffic, koel-like calls and crowd murmur are all synthetic); the music is a placeholder-quality procedural cue. |
+| Spoken Dialogue Voice Acting (Bangla) | `assets/audio/voice/` (planned tracks: `arif_01..03`, `rafi_01..02`, `tanvir_01..02`, `nusrat_01..03`, `rally_01..02`) | Natural spoken Bangla dialogue written for Bangladeshi university students in July 2024 (see `HistoricalDialogues.java`). Live voice recording not yet performed. | Original work of the project | **MISSING (Placeholder Audio Only)**: Synthesized interaction and objective chimes (`ui_click.wav`, `objective.wav`, `bell.wav`) trigger on dialogue advance. Final voice acting is not yet implemented. |
 
 ## Not yet sourced
 
+- Live Bangla voice acting recordings for student characters (Arif, Rafi, Tanvir, Nusrat) and student assembly chants.
 - Dressed student character (shirt, trousers, backpack) compatible with the UAL rig.
 - Campus architecture models (the landmarks are built from primitives in code; surface textures are sourced, see Textures).
 - Species-correct tree models (krishnachura, jarul, radhachura, banyan); the current trees are CC0 stand-ins (see 3D models).
-- Original music, ambience, voice.
+- Live studio recorded music and on-location campus ambience.

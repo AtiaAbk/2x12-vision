@@ -101,6 +101,18 @@ public class AudioController {
     public void playObjective() { playInstance(objectiveNode); }
     public void playBell() { playInstance(bellNode); }
 
+    /**
+     * Plays a spoken character dialogue voice clip in Bangla. If the audio file is missing
+     * (as during development before final voice recordings are tracked), it falls back silently.
+     */
+    public void playVoice(String clipPath) {
+        if (!audioAvailable || clipPath == null || clipPath.trim().isEmpty()) return;
+        try {
+            AudioNode node = createAudio(clipPath, 1.0f);
+            if (node != null) playInstance(node);
+        } catch (Throwable ignored) {}
+    }
+
     /** Kept for callers that do not know the surface. */
     public void playFootstep() { playFootstep(GroundType.PAVING); }
 
