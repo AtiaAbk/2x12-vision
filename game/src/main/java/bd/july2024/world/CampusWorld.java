@@ -63,6 +63,10 @@ public class CampusWorld {
     /** Hakim Chattar (OSM node 11824686638). */
     private static final float HAKIM_X = -83f;
     private static final float HAKIM_Z = -46f;
+    /** Curzon Hall centre along the south-east avenue. */
+    private static final float CURZON_X = 64f;
+    private static final float CURZON_Z = 64f;
+    private static final float CURZON_YAW = -2.356f; // -135 degrees, facing avenue entrance
 
     private static final boolean BATCH_STATIC_GEOMETRY = true;
 
@@ -81,8 +85,10 @@ public class CampusWorld {
     private final List<float[]> roadArms = new ArrayList<>();
     private final Map<Material, Float> tileOf = new HashMap<>();
     private final Frame tscFrame = new Frame(TSC_X, TSC_Z, TSC_YAW);
+    private final Frame curzonFrame = new Frame(CURZON_X, CURZON_Z, CURZON_YAW);
     private Node tscNode;
     private Node tscDecalNode;
+    private Node curzonNode;
     private int geometryCount = 0;
 
     // Textured (ambientCG CC0) materials
@@ -111,6 +117,7 @@ public class CampusWorld {
     private Material woodMat;
     private Vector3f libraryBoardPos;
     private Vector3f tscBoardPos;
+    private Vector3f curzonBoardPos;
 
     public CampusWorld(AssetManager assetManager, Node sceneRoot) {
         this(assetManager, sceneRoot, null);
@@ -543,6 +550,7 @@ public class CampusWorld {
         buildTSC();
         buildCentralLibrary();
         buildHakimChattar();
+        buildCurzonHall();
         buildNoticeBoards();
         buildVegetation();
         buildCampusProps();
@@ -745,6 +753,12 @@ public class CampusWorld {
         buildBoardStand("TscBoard", tlx, ty, tlz, tscNode);
         addCollider(tw.x - 1.05f, 0f, tw.z - 0.4f, tw.x + 1.05f, ty + 2.1f, tw.z + 0.4f);
         tscBoardPos = new Vector3f(tw.x, ty + 0.8f, tw.z);
+
+        float cx = 46f, cz = 46f;
+        float cy = groundHeightAt(cx, cz);
+        buildBoardStand("CurzonBoard", cx, cy, cz, null);
+        addCollider(cx - 0.95f, 0f, cz - 0.2f, cx + 0.95f, cy + 2.1f, cz + 0.2f);
+        curzonBoardPos = new Vector3f(cx, cy + 0.8f, cz);
     }
 
     private void buildBoardStand(String name, float cx, float y0, float cz, Node parent) {
@@ -762,6 +776,11 @@ public class CampusWorld {
     /** World position (at prompt height) of the TSC notice board, or null before the world is built. */
     public Vector3f getTscBoardPosition() {
         return tscBoardPos;
+    }
+
+    /** World position (at prompt height) of the Curzon Hall notice board, or null before the world is built. */
+    public Vector3f getCurzonBoardPosition() {
+        return curzonBoardPos;
     }
 
     // ---- Teacher-Student Centre -------------------------------------------------------------------
@@ -1057,6 +1076,73 @@ public class CampusWorld {
         buildBanyanTree(HAKIM_X - 4f, HAKIM_Z - 6f);
     }
 
+    // ---- Curzon Hall (Faculty of Science) --------------------------------------------------------
+
+    private void buildCurzonHall() {
+        curzonNode = new Node("CurzonHall");
+        curzonNode.setLocalTranslation(CURZON_X, 0f, CURZON_Z);
+        curzonNode.setLocalRotation(new Quaternion().fromAngleAxis(CURZON_YAW, Vector3f.UNIT_Y));
+        staticNode.attachChild(curzonNode);
+
+        // 1. Front entrance garden plaza
+        addBox("CurzonPlaza", pavingMat, 0f, PLAZA_HEIGHT * 0.5f, -11f, 13f, PLAZA_HEIGHT * 0.5f, 7f, curzonNode);
+        addSurfaceRect(curzonFrame, 0f, -11f, 13f, 7f, PLAZA_HEIGHT);
+
+        // 2. Base plinth
+        addBox("CurzonBase", concreteMat, 0f, 0.4f, 0f, 25f, 0.4f, 6.2f, curzonNode);
+        addSurfaceRect(curzonFrame, 0f, 0f, 25f, 6.2f, 0.8f);
+
+        // 3. Central Block (Grand Indo-Saracenic Pavilion)
+        addBox("CurzonCenterBlock", brickMat, 0f, 5.6f, 0f, 7.2f, 4.8f, 6.0f, curzonNode);
+        addBox("CurzonCenterCornice", plasterMat, 0f, 10.55f, 0f, 7.5f, 0.25f, 6.3f, curzonNode);
+        addBox("CurzonPortalArch", brickDarkMat, 0f, 3.4f, -6.05f, 2.6f, 2.6f, 0.1f, curzonNode);
+        addBox("CurzonPortalTrim", plasterMat, 0f, 3.4f, -6.15f, 2.8f, 2.8f, 0.05f, curzonNode);
+
+        // Mughal Dome on Drum
+        addCylinderY("CurzonDomeDrum", plasterMat, 0f, 10.8f, 0f, 3.2f, 1.6f, curzonNode);
+        Geometry dome = new Geometry("CurzonMainDome", new Sphere(20, 20, 3.2f));
+        dome.setLocalTranslation(0f, 13.6f, 0f);
+        finish(dome, plasterWarmMat, curzonNode);
+        addBox("CurzonFinial", memorialGoldMat, 0f, 17.2f, 0f, 0.08f, 0.6f, 0.08f, curzonNode);
+
+        // 4. Symmetrical Left & Right Wings
+        addBox("CurzonWingL", brickMat, -16.5f, 4.6f, 0f, 9.2f, 3.8f, 5.5f, curzonNode);
+        addBox("CurzonWingR", brickMat, 16.5f, 4.6f, 0f, 9.2f, 3.8f, 5.5f, curzonNode);
+        addBox("CurzonBandL", plasterMat, -16.5f, 8.5f, 0f, 9.4f, 0.15f, 5.7f, curzonNode);
+        addBox("CurzonBandR", plasterMat, 16.5f, 8.5f, 0f, 9.4f, 0.15f, 5.7f, curzonNode);
+
+        // Verandah Arched Colonnade (front pillars)
+        for (int p = 0; p < 4; p++) {
+            float pxL = -23.5f + p * 4.6f;
+            float pxR = 9.5f + p * 4.6f;
+            addCylinderY("CurzonPillarL_" + p, plasterMat, pxL, 0.8f, -5.6f, 0.22f, 7.2f, curzonNode);
+            addCylinderY("CurzonPillarR_" + p, plasterMat, pxR, 0.8f, -5.6f, 0.22f, 7.2f, curzonNode);
+        }
+
+        // 5. Corner Chhatris (towers with domed chhatris)
+        float[] chhatriX = {-24.5f, 24.5f};
+        float[] chhatriZ = {-5.5f, 5.5f};
+        int cIdx = 0;
+        for (float cx : chhatriX) {
+            for (float cz : chhatriZ) {
+                addBox("CurzonTower_" + cIdx, brickMat, cx, 5.0f, cz, 1.2f, 4.2f, 1.2f, curzonNode);
+                addBox("CurzonTowerCornice_" + cIdx, plasterMat, cx, 9.3f, cz, 1.4f, 0.15f, 1.4f, curzonNode);
+                Geometry chhatriDome = new Geometry("CurzonChhatri_" + cIdx, new Sphere(12, 12, 1.15f));
+                chhatriDome.setLocalTranslation(cx, 10.3f, cz);
+                finish(chhatriDome, plasterWarmMat, curzonNode);
+                addBox("CurzonSpire_" + cIdx, memorialGoldMat, cx, 11.8f, cz, 0.05f, 0.35f, 0.05f, curzonNode);
+                cIdx++;
+            }
+        }
+
+        // Curzon Garden Hedges
+        addBox("CurzonHedgeL", hedgeMat, -10f, 0.45f, -17f, 4f, 0.45f, 0.6f, curzonNode);
+        addBox("CurzonHedgeR", hedgeMat, 10f, 0.45f, -17f, 4f, 0.45f, 0.6f, curzonNode);
+
+        // Colliders around Curzon Hall footprint
+        addCollider(CURZON_X - 22f, 0f, CURZON_Z - 22f, CURZON_X + 22f, 14f, CURZON_Z + 22f);
+    }
+
     // ---- Vegetation -----------------------------------------------------------------------------
 
     private void buildVegetation() {
@@ -1184,6 +1270,33 @@ public class CampusWorld {
             addCollider(lx - 0.2f, 0f, lz - 0.2f, lx + 0.2f, 4.2f, lz + 0.2f);
             i++;
         }
+
+        // Campus seating benches at social congregation nodes
+        addBench("Bench_Hakim_1", -78f, groundHeightAt(-78f, -44f), -44f, FastMath.HALF_PI);
+        addBench("Bench_Hakim_2", -86f, groundHeightAt(-86f, -50f), -50f, 0f);
+        addBench("Bench_Hakim_3", -75f, groundHeightAt(-75f, -52f), -52f, -FastMath.HALF_PI);
+
+        addBench("Bench_Lib_1", -45f, groundHeightAt(-45f, -56f), -56f, 0f);
+        addBench("Bench_Lib_2", -54f, groundHeightAt(-54f, -56f), -56f, 0f);
+
+        addBench("Bench_Raju_E", 14f, groundHeightAt(14f, 12f), 12f, -0.6f);
+        addBench("Bench_Raju_W", -14f, groundHeightAt(-14f, 12f), 12f, 0.6f);
+        addBench("Bench_Raju_NW", -14f, groundHeightAt(-14f, -12f), -12f, 2.5f);
+        addBench("Bench_Raju_NE", 14f, groundHeightAt(14f, -12f), -12f, -2.5f);
+    }
+
+    private void addBench(String name, float cx, float groundY, float cz, float yaw) {
+        addYawedBox(name + "_Seat", woodMat, cx, groundY + 0.44f, cz, 0.85f, 0.03f, 0.22f, yaw);
+        float bx = cx - FastMath.sin(yaw) * 0.20f;
+        float bz = cz - FastMath.cos(yaw) * 0.20f;
+        addYawedBox(name + "_Back", woodMat, bx, groundY + 0.72f, bz, 0.85f, 0.16f, 0.03f, yaw);
+        float lx1 = cx + FastMath.cos(yaw) * 0.72f;
+        float lz1 = cz - FastMath.sin(yaw) * 0.72f;
+        float lx2 = cx - FastMath.cos(yaw) * 0.72f;
+        float lz2 = cz + FastMath.sin(yaw) * 0.72f;
+        addYawedBox(name + "_LegL", steelMat, lx1, groundY + 0.22f, lz1, 0.04f, 0.22f, 0.20f, yaw);
+        addYawedBox(name + "_LegR", steelMat, lx2, groundY + 0.22f, lz2, 0.04f, 0.22f, 0.20f, yaw);
+        addCollider(cx - 0.85f, groundY, cz - 0.3f, cx + 0.85f, groundY + 0.85f, cz + 0.3f);
     }
 
     // ---- Banners and road graffiti ----------------------------------------------------------------
@@ -1261,6 +1374,13 @@ public class CampusWorld {
                 tscBoard.setLocalTranslation(6f + 0.8f, tscBoardPos.y + 0.2f, -7f - 0.05f);
                 tscBoard.rotate(0f, FastMath.PI, 0f);
                 tscDecalNode.attachChild(tscBoard);
+
+                if (curzonBoardPos != null) {
+                    Texture2D curzonBoardTex = textRenderer.createTexture("তথ্যফলক · কার্জন হল", 26f, true, boardInk, boardBg, 20, 12);
+                    Geometry curzonBoard = createDecalQuad(assetManager, "Label_CurzonBoard", curzonBoardTex, 1.6f, 0.9f);
+                    curzonBoard.setLocalTranslation(curzonBoardPos.x - 0.8f, curzonBoardPos.y + 0.2f, curzonBoardPos.z + 0.05f);
+                    rootNode.attachChild(curzonBoard);
+                }
             }
 
             // 5. Road graffiti on the west arm (Nilkhet road), read when walking towards the library
@@ -1276,6 +1396,41 @@ public class CampusWorld {
             westDecal.rotate(-FastMath.HALF_PI, 0, 0);
             westDecal.rotate(0, 0, FastMath.HALF_PI);
             rootNode.attachChild(westDecal);
+
+            // 6. Campus road directional signs (connecting Central Library, TSC, and Curzon Hall)
+            Color signWhite = new Color(255, 255, 255);
+            Color signGreen = new Color(14, 46, 30, 235);
+            Color signBlue = new Color(18, 36, 52, 235);
+
+            Texture2D curzonSignTex = textRenderer.createTexture(
+                "দোয়েল চত্বর ও কার্জন হল সড়ক  ·  Road to Curzon Hall",
+                20f, true, signWhite, signGreen, 16, 8
+            );
+            Geometry curzonSign = createDecalQuad(assetManager, "Sign_Curzon", curzonSignTex, 3.8f, 0.95f);
+            curzonSign.setLocalTranslation(22f, 1.8f, 20f);
+            curzonSign.rotate(0f, -FastMath.QUARTER_PI, 0f);
+            rootNode.attachChild(curzonSign);
+            addBox("SignPost_Curzon", steelMat, 22f, 0.9f, 20f, 0.04f, 0.9f, 0.04f);
+
+            Texture2D nilkhetSignTex = textRenderer.createTexture(
+                "নীলক্ষেত ও কেন্দ্রীয় লাইব্রেরি  ·  To Central Library",
+                20f, true, signWhite, signBlue, 16, 8
+            );
+            Geometry nilkhetSign = createDecalQuad(assetManager, "Sign_Nilkhet", nilkhetSignTex, 3.8f, 0.95f);
+            nilkhetSign.setLocalTranslation(-26f, 1.8f, 6f);
+            nilkhetSign.rotate(0f, FastMath.HALF_PI, 0f);
+            rootNode.attachChild(nilkhetSign);
+            addBox("SignPost_Nilkhet", steelMat, -26f, 0.9f, 6f, 0.04f, 0.9f, 0.04f);
+
+            Texture2D shahbaghSignTex = textRenderer.createTexture(
+                "শাহবাগ ও জাতীয় জাদুঘর  ·  To Shahbagh",
+                20f, true, signWhite, signBlue, 16, 8
+            );
+            Geometry shahbaghSign = createDecalQuad(assetManager, "Sign_Shahbagh", shahbaghSignTex, 3.4f, 0.95f);
+            shahbaghSign.setLocalTranslation(16f, 1.8f, -22f);
+            shahbaghSign.rotate(0f, -FastMath.HALF_PI, 0f);
+            rootNode.attachChild(shahbaghSign);
+            addBox("SignPost_Shahbagh", steelMat, 16f, 0.9f, -22f, 0.04f, 0.9f, 0.04f);
 
             System.out.println("[CampusWorld] July Movement Bengali street murals and banners attached: " + slogans.size() + " Level 01 slogans.");
         } catch (Throwable t) {

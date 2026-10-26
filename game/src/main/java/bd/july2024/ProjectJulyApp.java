@@ -9,6 +9,7 @@ import bd.july2024.character.PlayerMesh;
 import bd.july2024.dialogue.DialogueManager;
 import bd.july2024.dialogue.HistoricalDialogues;
 import bd.july2024.level.MissionTracker;
+import bd.july2024.level.ObjectiveMarker;
 import bd.july2024.level.SaveManager;
 import bd.july2024.ui.BengaliTextRenderer;
 import bd.july2024.ui.HistoricalDocumentModal;
@@ -74,6 +75,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     private GameSettings gameSettings;
     private MenuSystem menu;
     private HistoricalDocumentModal docModal;
+    private ObjectiveMarker objectiveMarker;
     /** False on the title screen and main menu, true once a chapter has started. */
     private boolean inGame = false;
     private float frontEndYaw = 200f;
@@ -214,7 +216,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         dialogueManager = new DialogueManager();
         saveManager = new SaveManager(AppPaths.saveDir());
         gameSettings = GameSettings.get();
-        hud = new ProjectJulyHUD(guiNode, textRenderer, settings.getWidth(), settings.getHeight());
+        hud = new ProjectJulyHUD(guiNode, textRenderer, settings.getWidth(), settings.getHeight(), assetManager);
         menu = new MenuSystem(guiNode, textRenderer, settings.getWidth(), settings.getHeight(), gameSettings, menuActions());
         docModal = new HistoricalDocumentModal(guiNode, textRenderer, settings.getWidth(), settings.getHeight());
         applySettings();
@@ -223,6 +225,8 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         campusWorld = new CampusWorld(assetManager, rootNode, textRenderer);
         campusWorld.setLodCamera(cam);
         lighting = new LightingManager(assetManager, rootNode, viewPort);
+        objectiveMarker = new ObjectiveMarker(assetManager);
+        rootNode.attachChild(objectiveMarker.getNode());
 
         // 3. Setup Screenshot Processor on GUI viewport (captures post-processed scene + HUD)
         setupScreenshotProcessor();
@@ -299,6 +303,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         orbitCam.setAngles(-playerControl.getHeadingDegrees(), camPitch);
         orbitCam.setDistance(CinematicOrbitCamera.DEFAULT_DISTANCE);
         inGame = true;
+        if (hud != null && hud.isMapOpen()) hud.hideMap();
         clearMovementInput();
         audio.stopMusic();
         audio.startAmbience();
@@ -442,6 +447,8 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         inputManager.addMapping("Jump", new KeyTrigger(KeyInput.KEY_SPACE), new KeyTrigger(KeyInput.KEY_J));
         inputManager.addMapping("Crouch", new KeyTrigger(KeyInput.KEY_C));
         inputManager.addMapping("Interact", new KeyTrigger(KeyInput.KEY_E), new KeyTrigger(KeyInput.KEY_RETURN));
+        inputManager.addMapping("ResetCamera", new KeyTrigger(KeyInput.KEY_R));
+        inputManager.addMapping("ToggleMap", new KeyTrigger(KeyInput.KEY_M));
         inputManager.addMapping("Screenshot", new KeyTrigger(KeyInput.KEY_F12), new KeyTrigger(KeyInput.KEY_SYSRQ));
         inputManager.addMapping("Pause", new KeyTrigger(KeyInput.KEY_ESCAPE), new KeyTrigger(KeyInput.KEY_P));
 
@@ -450,7 +457,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         inputManager.addMapping("CamUp", new MouseAxisTrigger(MouseInput.AXIS_Y, true));
         inputManager.addMapping("CamDown", new MouseAxisTrigger(MouseInput.AXIS_Y, false));
 
-        inputManager.addListener(this, "Forward", "Backward", "Left", "Right", "Sprint", "Jump", "Crouch", "Interact", "Screenshot", "Pause");
+        inputManager.addListener(this, "Forward", "Backward", "Left", "Right", "Sprint", "Jump", "Crouch", "Interact", "ResetCamera", "ToggleMap", "Screenshot", "Pause");
         inputManager.addListener(this, "CamLeft", "CamRight", "CamUp", "CamDown");
     }
 
@@ -469,6 +476,14 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
                 case "Jump": menu.onSelect(); break;
                 case "Screenshot": triggerScreenshot("docs/screenshots/project_july_jme_gameplay.png"); break;
                 default: break;
+            }
+            return;
+        }
+
+        if (hud != null && hud.isMapOpen()) {
+            if (isPressed && ("ToggleMap".equals(name) || "Pause".equals(name) || "Interact".equals(name) || "Jump".equals(name))) {
+                hud.hideMap();
+                audio.playBack();
             }
             return;
         }
@@ -505,6 +520,20 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             handleInteraction();
         }
 
+        if ("ToggleMap".equals(name) && isPressed && inGame && !menu.isOpen() && !docModal.isOpen()) {
+            hud.toggleMap();
+            if (hud.isMapOpen()) {
+                audio.playClick();
+            } else {
+                audio.playBack();
+            }
+            return;
+        }
+
+        if ("ResetCamera".equals(name) && isPressed && inGame && !menu.isOpen() && !docModal.isOpen() && !hud.isMapOpen()) {
+            orbitCam.setAngles(-playerControl.getHeadingDegrees(), camPitch);
+        }
+
         if ("Screenshot".equals(name) && isPressed) {
             triggerScreenshot("docs/screenshots/project_july_jme_gameplay.png");
         }
@@ -512,7 +541,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
     @Override
     public void onAnalog(String name, float value, float tpf) {
-        if (menu.isOpen() || docModal.isOpen() || !inGame) {
+        if (menu.isOpen() || docModal.isOpen() || (hud != null && hud.isMapOpen()) || !inGame) {
             return; // Freeze camera rotation in menus, the document modal and the front end
         }
         float sens = 45.0f * gameSettings.mouseSensitivity;
@@ -551,6 +580,10 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             "[E] লাইব্রেরির তথ্যফলক পড়ুন (Read Board)", HistoricalDialogues::getLibraryDocument, -1));
         hotspots.add(new DocumentHotspot(campusWorld.getTscBoardPosition(), 3.2f,
             "[E] টিএসসির তথ্যফলক পড়ুন (Read Board)", HistoricalDialogues::getTscDocument, -1));
+        if (campusWorld.getCurzonBoardPosition() != null) {
+            hotspots.add(new DocumentHotspot(campusWorld.getCurzonBoardPosition(), 3.2f,
+                "[E] কার্জন হলের তথ্যফলক পড়ুন (Read Board)", HistoricalDialogues::getCurzonHallDocument, -1));
+        }
         for (DocumentHotspot h : hotspots) {
             System.out.printf("[ProjectJulyApp] Document hotspot '%s' at (%.2f, %.2f), radius %.1f m%n",
                 h.document.get().titleEnglish, h.position.x, h.position.z, h.radius);
@@ -623,7 +656,10 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             audio.playClick();
             dialogueManager.startDialogue(HistoricalDialogues.getRallyDialogue(), () -> {
                 missionTracker.advanceObjective();
+                missionTracker.advanceObjective(); // Mark final chapter objective complete
                 audio.playBell();
+                audio.playObjective();
+                menu.showChapterComplete();
             });
         }
     }
@@ -709,6 +745,10 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
                 menu.onSelect(); // title -> main menu
             } else if ("settings".equals(testUi)) {
                 menu.showSettings(MenuSystem.Screen.MAIN);
+            } else if ("complete".equals(testUi)) {
+                menu.showChapterComplete();
+            } else if ("map".equals(testUi)) {
+                hud.showMap();
             }
         }
         // The chapter card closes itself after 5 s, so for its capture it opens 80 frames before the shot.
@@ -721,8 +761,8 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         }
         applyTestHold();
 
-        // 1. Update Player Locomotion (frozen in menus, dialogue and the document modal)
-        boolean canMove = inGame && !dialogueManager.isActive() && !menu.blocksGameplay() && !docModal.isOpen();
+        // 1. Update Player Locomotion (frozen in menus, dialogue, the document modal and campus map)
+        boolean canMove = inGame && !dialogueManager.isActive() && !menu.blocksGameplay() && !docModal.isOpen() && (hud == null || !hud.isMapOpen());
         if (canMove) {
             playerControl.update(
                 tpf, orbitCam.getYaw(),
@@ -743,6 +783,18 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         // 3. Update Companions
         for (CompanionNPC c : companions) {
             c.update(tpf, playerControl.getPosition());
+        }
+
+        // 3b. Update In-World Objective Marker Beacon
+        if (objectiveMarker != null && missionTracker != null && campusWorld != null) {
+            boolean markerVisible = inGame && !menu.isOpen() && !docModal.isOpen() && !missionTracker.isAllCompleted();
+            if (markerVisible) {
+                Vector3f target = missionTracker.getCurrentObjective().getTargetPosition();
+                float groundY = campusWorld.groundHeightAt(target.x, target.z);
+                objectiveMarker.update(tpf, target.x, groundY, target.z, true);
+            } else {
+                objectiveMarker.update(tpf, 0f, 0f, 0f, false);
+            }
         }
 
         // 4. Update HUD (hidden in the front end)

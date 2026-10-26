@@ -20,7 +20,7 @@ import java.util.List;
  */
 public class MenuSystem {
 
-    public enum Screen { NONE, TITLE, MAIN, SETTINGS, CHAPTER, PAUSE }
+    public enum Screen { NONE, TITLE, MAIN, SETTINGS, CHAPTER, PAUSE, CHAPTER_COMPLETE }
 
     /** What the game does when a menu entry is chosen. */
     public interface Actions {
@@ -115,6 +115,13 @@ public class MenuSystem {
         rebuild();
     }
 
+    public void showChapterComplete() {
+        screen = Screen.CHAPTER_COMPLETE;
+        selected = 0;
+        statusMessage = "";
+        rebuild();
+    }
+
     public void showPause() {
         screen = Screen.PAUSE;
         selected = 0;
@@ -184,6 +191,9 @@ public class MenuSystem {
             case CHAPTER:
                 finishChapter();
                 break;
+            case CHAPTER_COMPLETE:
+                selectChapterComplete();
+                break;
             case PAUSE:
                 selectPause();
                 break;
@@ -206,6 +216,10 @@ public class MenuSystem {
                 return true;
             case CHAPTER:
                 finishChapter();
+                return true;
+            case CHAPTER_COMPLETE:
+                actions.playBack();
+                actions.toMainMenu();
                 return true;
             case PAUSE:
                 actions.playBack();
@@ -232,10 +246,14 @@ public class MenuSystem {
         {"মূল মেনু", "Main menu"},
         {"প্রস্থান", "Quit"},
     };
+    private static final String[][] CHAPTER_COMPLETE_ITEMS = {
+        {"মূল মেনুতে ফিরে যান", "Main menu"},
+        {"লেভেল পুনরায় শুরু", "Restart level"},
+    };
     private static final int SETTINGS_ITEMS = 7;
 
     private boolean hasList() {
-        return screen == Screen.MAIN || screen == Screen.SETTINGS || screen == Screen.PAUSE;
+        return screen == Screen.MAIN || screen == Screen.SETTINGS || screen == Screen.PAUSE || screen == Screen.CHAPTER_COMPLETE;
     }
 
     private int itemCount() {
@@ -243,6 +261,7 @@ public class MenuSystem {
             case MAIN: return MAIN_ITEMS.length;
             case PAUSE: return PAUSE_ITEMS.length;
             case SETTINGS: return SETTINGS_ITEMS;
+            case CHAPTER_COMPLETE: return CHAPTER_COMPLETE_ITEMS.length;
             default: return 1;
         }
     }
@@ -268,6 +287,14 @@ public class MenuSystem {
             case 3: actions.playConfirm(); actions.restartLevel(); break;
             case 4: actions.playBack(); actions.toMainMenu(); break;
             case 5: actions.playBack(); actions.quit(); break;
+            default: break;
+        }
+    }
+
+    private void selectChapterComplete() {
+        switch (selected) {
+            case 0: actions.playBack(); actions.toMainMenu(); break;
+            case 1: actions.playConfirm(); actions.restartLevel(); break;
             default: break;
         }
     }
@@ -320,6 +347,7 @@ public class MenuSystem {
             case MAIN: drawMain(); break;
             case SETTINGS: drawSettings(); break;
             case CHAPTER: drawChapter(); break;
+            case CHAPTER_COMPLETE: drawChapterComplete(); break;
             case PAUSE: drawPause(); break;
             default: break;
         }
@@ -389,7 +417,7 @@ public class MenuSystem {
             lines.add(item(PAUSE_ITEMS[i][0], PAUSE_ITEMS[i][1], null, i == selected, true, i == 0 ? 18 : 8));
         }
         if (!statusMessage.isEmpty()) lines.add(new Line(statusMessage, 12.5f, true, ProjectJulyHUD.AMBER, 16));
-        lines.add(new Line("W A S D / arrows চলাফেরা  ·  Shift দৌড়  ·  Space লাফ  ·  C নিচু  ·  E কথা বলুন  ·  F12 স্ক্রিনশট", 10.5f, false, ProjectJulyHUD.MUTED, 22));
+        lines.add(new Line("W A S D চলাফেরা  ·  Shift দৌড়  ·  Space লাফ  ·  C নিচু  ·  E কথা/নথি  ·  M মানচিত্র  ·  R ক্যামেরা  ·  F12 ছবি", 10.5f, false, ProjectJulyHUD.MUTED, 22));
         lines.add(new Line("Up / Down নির্বাচন  ·  Enter বাছাই  ·  Esc ফিরে যান", 11f, false, ProjectJulyHUD.MUTED, 4));
         panelPicture = textRenderer.createPanelPicture("PauseMenu", lines, menuStyle(), null);
         centre(panelPicture, 0.5f);
@@ -434,6 +462,23 @@ public class MenuSystem {
         s.minWidth = 720;
         s.maxWidth = 880;
         panelPicture = textRenderer.createPanelPicture("ChapterCard", lines, s, null);
+        centre(panelPicture, 0.5f);
+    }
+
+    private void drawChapterComplete() {
+        drawDim(new Color(4, 6, 10, 220));
+        List<Line> lines = new ArrayList<>();
+        lines.add(new Line("অধ্যায় ১ সম্পন্ন  ·  CHAPTER 1 COMPLETE", 14f, true, ProjectJulyHUD.AMBER));
+        lines.add(new Line("ঐক্য ও ঐতিহাসিক সংকল্প", 34f, true, ProjectJulyHUD.TEXT, 8));
+        lines.add(new Line("Solidarity and Historic Resolve", 16f, false, ProjectJulyHUD.MUTED, 2));
+        lines.add(new Line("ঢাকা বিশ্ববিদ্যালয়  ·  জুলাই ২০২৪", 14f, false, ProjectJulyHUD.TEXT, 18));
+        lines.add(new Line("শিক্ষার্থী ও সাধারণ মানুষের ঐক্যবদ্ধ অবস্থান আন্দোলনের প্রথম পর্যায় সফল করেছে।", 13.5f, false, ProjectJulyHUD.TEXT, 8));
+        lines.add(new Line("The united stand of students and citizens marked the resolute beginning of the July Movement.", 12f, false, ProjectJulyHUD.MUTED, 2));
+        for (int i = 0; i < CHAPTER_COMPLETE_ITEMS.length; i++) {
+            lines.add(item(CHAPTER_COMPLETE_ITEMS[i][0], CHAPTER_COMPLETE_ITEMS[i][1], null, i == selected, true, i == 0 ? 22 : 8));
+        }
+        lines.add(new Line("Up / Down নির্বাচন  ·  Enter বাছাই", 11f, false, ProjectJulyHUD.MUTED, 20));
+        panelPicture = textRenderer.createPanelPicture("ChapterComplete", lines, menuStyle(), null);
         centre(panelPicture, 0.5f);
     }
 

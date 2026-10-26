@@ -1,18 +1,23 @@
 package bd.july2024.ui;
 
+import bd.july2024.AppPaths;
 import bd.july2024.dialogue.DialogueLine;
 import bd.july2024.dialogue.DialogueManager;
 import bd.july2024.level.MissionObjective;
 import bd.july2024.level.MissionTracker;
 import bd.july2024.ui.BengaliTextRenderer.Line;
 import bd.july2024.ui.BengaliTextRenderer.PanelStyle;
+import com.jme3.asset.AssetManager;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
 import com.jme3.ui.Picture;
 
+import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.RoundRectangle2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,12 +42,17 @@ public class ProjectJulyHUD {
     private final BengaliTextRenderer textRenderer;
     private final int screenWidth;
     private final int screenHeight;
+    private final AssetManager assetManager;
 
     private Picture compassPicture;
     private Picture objectivePicture;
     private Picture promptPicture;
     private Picture dialoguePicture;
     private Picture staminaPicture;
+
+    private Picture mapPicture;
+    private boolean mapOpen = false;
+    private BufferedImage cachedMapImage;
 
     private String lastObjectiveKey = "";
     private String lastCompassKey = "";
@@ -51,10 +61,89 @@ public class ProjectJulyHUD {
     private int lastStaminaInt = -1;
 
     public ProjectJulyHUD(Node guiNode, BengaliTextRenderer textRenderer, int screenWidth, int screenHeight) {
+        this(guiNode, textRenderer, screenWidth, screenHeight, null);
+    }
+
+    public ProjectJulyHUD(Node guiNode, BengaliTextRenderer textRenderer, int screenWidth, int screenHeight, AssetManager assetManager) {
         this.guiNode = guiNode;
         this.textRenderer = textRenderer;
         this.screenWidth = screenWidth > 0 ? screenWidth : 1280;
         this.screenHeight = screenHeight > 0 ? screenHeight : 720;
+        this.assetManager = assetManager;
+    }
+
+    public boolean isMapOpen() {
+        return mapOpen;
+    }
+
+    public void toggleMap() {
+        if (mapOpen) {
+            hideMap();
+        } else {
+            showMap();
+        }
+    }
+
+    public void showMap() {
+        if (mapOpen) return;
+        mapOpen = true;
+
+        if (mapPicture != null) {
+            guiNode.detachChild(mapPicture);
+            mapPicture = null;
+        }
+
+        BufferedImage img = getMapImage();
+        int mapW = Math.min(680, Math.max(340, screenWidth - 100));
+        int mapH = (int) (mapW * (795f / 1264f));
+
+        List<Line> lines = new ArrayList<>();
+        lines.add(new Line("ক্যাম্পাস মানচিত্র  ·  DHAKA UNIVERSITY CAMPUS MAP", 14.5f, true, AMBER));
+        lines.add(new Line("১. রাজু ভাস্কর্য  ·  ২. হাকিম চত্বর  ·  ৩. কেন্দ্রীয় লাইব্রেরি  ·  ৪. টিএসসি  ·  ৫. কার্জন হল", 12f, false, TEXT, 3));
+        lines.add(new Line("M / Esc / E / Space  ·  মানচিত্র বন্ধ করুন (Close Map)", 11.5f, false, MUTED, 2));
+
+        PanelStyle style = new PanelStyle();
+        style.background = new Color(10, 12, 16, 235);
+        style.accent = AMBER;
+        style.radius = 14;
+        style.paddingX = 22;
+        style.paddingY = 14;
+        style.minWidth = mapW + style.paddingX * 2 + 10;
+        style.extraHeight = mapH + 8;
+
+        mapPicture = textRenderer.createPanelPicture("CampusMapOverlay", lines, style, (Graphics2D g, int x, int y, int w, int h) -> {
+            if (img != null) {
+                g.setColor(new Color(255, 255, 255, 36));
+                g.drawRoundRect(x - 1, y + 2, mapW + 1, mapH + 1, 6, 6);
+                g.drawImage(img, x, y + 3, mapW, mapH, null);
+            }
+        });
+
+        float x = (screenWidth - mapPicture.getWidth()) / 2f;
+        float y = (screenHeight - mapPicture.getHeight()) / 2f;
+        mapPicture.setPosition(Math.max(10f, x), Math.max(10f, y));
+        guiNode.attachChild(mapPicture);
+    }
+
+    public void hideMap() {
+        if (mapPicture != null) {
+            guiNode.detachChild(mapPicture);
+            mapPicture = null;
+        }
+        mapOpen = false;
+    }
+
+    private BufferedImage getMapImage() {
+        if (cachedMapImage != null) return cachedMapImage;
+        try {
+            File f = AppPaths.asset("maps/campus_map.png");
+            if (f != null && f.exists()) {
+                cachedMapImage = ImageIO.read(f);
+            }
+        } catch (Throwable t) {
+            System.err.println("[ProjectJulyHUD] Could not load campus map asset: " + t.getMessage());
+        }
+        return cachedMapImage;
     }
 
     public void update(Vector3f playerPos, float cameraYawDegrees, MissionTracker tracker, DialogueManager dialogueManager, String contextPrompt, float stamina) {
@@ -71,6 +160,7 @@ public class ProjectJulyHUD {
 
     /** Removes every HUD panel (front end) and forgets the cached keys so the next update redraws. */
     public void clear() {
+        hideMap();
         for (Picture p : new Picture[]{compassPicture, objectivePicture, promptPicture, dialoguePicture, staminaPicture}) {
             if (p != null) guiNode.detachChild(p);
         }

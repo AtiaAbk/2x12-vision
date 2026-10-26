@@ -188,4 +188,77 @@ public class ProjectJulyJmeTest {
         assertTrue(img.getWidth() > 50, "Rendered text width should be greater than 50px");
         assertTrue(img.getHeight() > 15, "Rendered text height should be greater than 15px");
     }
+
+    @Test
+    public void testLevel01MissionCompletionFlow() {
+        MissionTracker tracker = new MissionTracker();
+        assertEquals(0, tracker.getCurrentObjectiveIndex());
+        assertFalse(tracker.isAllCompleted());
+
+        // Step 1: Meet Rafi
+        assertEquals("OBJ_01_RAFI", tracker.getCurrentObjective().getId());
+        tracker.advanceObjective();
+
+        // Step 2: Collect leaflets from Tanvir
+        assertEquals("OBJ_02_LIBRARY", tracker.getCurrentObjective().getId());
+        tracker.advanceObjective();
+
+        // Step 3: Hand over leaflets to Nusrat
+        assertEquals("OBJ_03_TSC", tracker.getCurrentObjective().getId());
+        tracker.advanceObjective();
+
+        // Step 4: Read Raju plaque
+        assertEquals("OBJ_04_PLAQUE", tracker.getCurrentObjective().getId());
+        tracker.advanceObjective();
+
+        // Step 5: Assembly at Roundabout
+        assertEquals("OBJ_05_RALLY", tracker.getCurrentObjective().getId());
+        tracker.advanceObjective();
+
+        // Step 6: Chapter complete
+        assertEquals("OBJ_06_COMPLETE", tracker.getCurrentObjective().getId());
+        tracker.advanceObjective();
+
+        assertTrue(tracker.isAllCompleted(), "Chapter 1 should be fully completed after final objective");
+    }
+
+    @Test
+    public void testPlayerPerimeterClamping() {
+        com.jme3.scene.Node testNode = new com.jme3.scene.Node("TestNode");
+        PlayerControl pc = new PlayerControl(testNode, null, null);
+        pc.setPosition(300f, 0f, 300f);
+
+        // Run update tick
+        pc.update(0.016f, 0f, false, false, false, false, false, false, false);
+
+        assertTrue(pc.getPosition().x <= 85.0f, "Player X should be clamped inside eastern campus perimeter");
+        assertTrue(pc.getPosition().z <= 135.0f, "Player Z should be clamped inside southern campus perimeter");
+
+        pc.setPosition(-300f, 0f, -300f);
+        pc.update(0.016f, 0f, false, false, false, false, false, false, false);
+
+        assertTrue(pc.getPosition().x >= -125.0f, "Player X should be clamped inside western campus perimeter");
+        assertTrue(pc.getPosition().z >= -175.0f, "Player Z should be clamped inside northern campus perimeter");
+    }
+
+    @Test
+    public void testCampusMapOverlayLifecycle() {
+        com.jme3.scene.Node guiNode = new com.jme3.scene.Node("GuiNode");
+        bd.july2024.ui.BengaliTextRenderer textRenderer = new bd.july2024.ui.BengaliTextRenderer(null);
+        bd.july2024.ui.ProjectJulyHUD hud = new bd.july2024.ui.ProjectJulyHUD(guiNode, textRenderer, 1280, 720);
+
+        assertFalse(hud.isMapOpen(), "Map should initially be closed");
+
+        hud.toggleMap();
+        assertTrue(hud.isMapOpen(), "Map should be open after toggle");
+
+        hud.toggleMap();
+        assertFalse(hud.isMapOpen(), "Map should be closed after second toggle");
+
+        hud.showMap();
+        assertTrue(hud.isMapOpen(), "Map should be open after showMap()");
+
+        hud.clear();
+        assertFalse(hud.isMapOpen(), "Map should close when HUD is cleared");
+    }
 }

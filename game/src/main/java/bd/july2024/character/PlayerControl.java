@@ -159,6 +159,10 @@ public class PlayerControl {
             velocity.z = 0f;
         }
 
+        // Restrict player to Level 01 playable campus perimeter
+        position.x = Math.max(-125f, Math.min(85f, position.x));
+        position.z = Math.max(-175f, Math.min(135f, position.z));
+
         // Apply transform to jME Node
         characterNode.setLocalTranslation(position);
         characterNode.setLocalRotation(new com.jme3.math.Quaternion().fromAngleAxis(headingDegrees * FastMath.DEG_TO_RAD, Vector3f.UNIT_Y));

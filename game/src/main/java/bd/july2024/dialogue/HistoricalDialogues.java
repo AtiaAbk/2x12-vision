@@ -78,4 +78,15 @@ public class HistoricalDialogues {
             "Designed by the Greek architect Constantinos Doxiadis in the early 1960s: a student union block with brick jali screens and a double roof, an auditorium and cafeteria wings linked by covered walkways. In the first days of July 2024, students demanding quota reform assembled on the Raju sculpture roundabout beside TSC before marching towards Shahbagh."
         );
     }
+
+    public static bd.july2024.ui.HistoricalDocumentModal.DocumentRecord getCurzonHallDocument() {
+        return new bd.july2024.ui.HistoricalDocumentModal.DocumentRecord(
+            "কার্জন হল ও ঐতিহাসিক ঐতিহ্য",
+            "CURZON HALL & HISTORICAL LEGACY",
+            "July 1 – 14, 2024 / Historical",
+            "Curzon Hall, Faculty of Science, Dhaka University",
+            "১৯০৪ সালে ভিত্তিপ্রস্তর স্থাপিত এবং ১৯২১ সালে ঢাকা বিশ্ববিদ্যালয়ের জন্মলগ্ন থেকে বিজ্ঞান অনুষদ হিসেবে ব্যবহৃত এই লাল ইটের ভবনটি ইন্দো-ইউরোপীয় স্থাপত্যের এক অনন্য নিদর্শন। ১৯৪৮ সালে এই ভবনের সমাবর্তন কক্ষেই ঢাকা বিশ্ববিদ্যালয়ের ছাত্ররা প্রথম অন্যায়ের বিরুদ্ধে গর্জে উঠেছিল, যা যুগ যুগ ধরে শিক্ষার্থী আন্দোলনের ঐতিহাসিক অনুপ্রেরণা।",
+            "Founded in 1904 with distinctive Indo-Saracenic red-brick architecture, Curzon Hall has housed the DU Faculty of Science since 1921. In 1948, Dhaka University students in this hall first raised their defiant voices against injustice, forging a timeless legacy of student resistance."
+        );
+    }
 }
