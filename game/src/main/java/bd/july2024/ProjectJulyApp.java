@@ -12,7 +12,7 @@ import bd.july2024.level.MissionTracker;
 import bd.july2024.level.SaveManager;
 import bd.july2024.ui.BengaliTextRenderer;
 import bd.july2024.ui.HistoricalDocumentModal;
-import bd.july2024.ui.PauseMenu;
+import bd.july2024.ui.MenuSystem;
 import bd.july2024.ui.ProjectJulyHUD;
 import bd.july2024.world.CampusWorld;
 import bd.july2024.world.LightingManager;
@@ -70,8 +70,12 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     private MissionTracker missionTracker;
     private DialogueManager dialogueManager;
     private SaveManager saveManager;
-    private PauseMenu pauseMenu;
+    private GameSettings gameSettings;
+    private MenuSystem menu;
     private HistoricalDocumentModal docModal;
+    /** False on the title screen and main menu, true once a chapter has started. */
+    private boolean inGame = false;
+    private float frontEndYaw = 200f;
     private boolean capturePending = false;
     private String pendingScreenshotPath = null;
 
@@ -141,12 +145,14 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         System.out.println("[ProjectJulyApp] Initialized with autoExitFrames: " + autoExitFrames);
 
         ProjectJulyApp app = new ProjectJulyApp();
+        GameSettings gs = GameSettings.get();
         AppSettings settings = new AppSettings(true);
         settings.setTitle("Project July 2024");
-        settings.setWidth(1280);
-        settings.setHeight(720);
-        settings.setResolution(1280, 720);
-        settings.setFullscreen(false);
+        settings.setWidth(gs.windowWidth());
+        settings.setHeight(gs.windowHeight());
+        settings.setResolution(gs.windowWidth(), gs.windowHeight());
+        settings.setFullscreen(gs.fullscreen);
+        System.out.println("[ProjectJulyApp] Window " + gs.windowWidth() + "x" + gs.windowHeight() + (gs.fullscreen ? " fullscreen" : "") + " from " + GameSettings.settingsFile());
         settings.setVSync(false);
         settings.setFrameRate(120);
         settings.setSamples(1); // Anti-aliasing handled via FXAA in post-processing
@@ -205,9 +211,11 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         missionTracker = new MissionTracker();
         dialogueManager = new DialogueManager();
         saveManager = new SaveManager(AppPaths.saveDir());
+        gameSettings = GameSettings.get();
         hud = new ProjectJulyHUD(guiNode, textRenderer, settings.getWidth(), settings.getHeight());
-        pauseMenu = new PauseMenu(guiNode, textRenderer, settings.getWidth(), settings.getHeight());
+        menu = new MenuSystem(guiNode, textRenderer, settings.getWidth(), settings.getHeight(), gameSettings, menuActions());
         docModal = new HistoricalDocumentModal(guiNode, textRenderer, settings.getWidth(), settings.getHeight());
+        applySettings();
 
         // 2. Build 3D Campus Environment & Realistic Summer Lighting
         campusWorld = new CampusWorld(assetManager, rootNode, textRenderer);
@@ -231,16 +239,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         playerControl.setHeadingDegrees(spawnHeading);
         playerControl.setColliders(campusWorld.getColliders());
         playerControl.setGroundSampler(campusWorld::groundHeightAt);
-
-        // Restore checkpoint if saved
-        SaveManager.SaveData saved = saveManager.loadCheckpoint();
-        if (saved != null) {
-            missionTracker.setCurrentObjectiveIndex(saved.objectiveIndex);
-            playerControl.setPosition(saved.posX, saved.posY, saved.posZ);
-            playerControl.setHeadingDegrees(saved.heading);
-            playerControl.setStamina(saved.stamina);
-            System.out.println("[ProjectJulyApp] Loaded saved checkpoint (Objective " + saved.objectiveIndex + ")");
-        }
+        playerControl.setGroundTypeSampler(campusWorld::groundTypeAt);
 
         // 4. Setup Cinematic Orbit Camera
         orbitCam = new CinematicOrbitCamera(cam);
@@ -253,9 +252,98 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         // 6. Setup Controls & Input Handlers
         initInputs();
 
-        // Audio intro click
-        audio.playClick();
+        // 7. Front end, unless this is an automated run that wants to measure gameplay directly
+        String testUi = System.getenv("TEST_UI");
+        boolean frontEndTest = testUi != null && (testUi.equals("title") || testUi.equals("menu") || testUi.equals("settings"));
+        if (autoExitFrames != null && !frontEndTest) {
+            beginGameplay(false, false);
+        } else {
+            showFrontEnd(true);
+        }
         System.out.println("[ProjectJulyApp] Level 01 (Dhaka University) initialized cleanly in jMonkeyEngine.");
+    }
+
+    // ---- front end and game flow ----------------------------------------------------------------
+
+    private void showFrontEnd(boolean title) {
+        inGame = false;
+        clearMovementInput();
+        if (dialogueManager.isActive()) dialogueManager.endDialogue();
+        if (docModal.isOpen()) docModal.close();
+        hud.clear();
+        if (title) menu.showTitle(); else menu.showMain();
+        orbitCam.setDistance(16f);
+        audio.startAmbience();
+        audio.setAmbienceLevel(0.35f);
+        audio.startTitleMusic();
+    }
+
+    /** Starts (or restores) Level 01 and optionally shows the chapter card first. */
+    private void beginGameplay(boolean fromSave, boolean showChapter) {
+        SaveManager.SaveData saved = fromSave ? saveManager.loadCheckpoint() : null;
+        if (saved != null) {
+            missionTracker.setCurrentObjectiveIndex(saved.objectiveIndex);
+            playerControl.setPosition(saved.posX, saved.posY, saved.posZ);
+            playerControl.setHeadingDegrees(saved.heading);
+            playerControl.setStamina(saved.stamina);
+            System.out.println("[ProjectJulyApp] Loaded saved checkpoint (Objective " + saved.objectiveIndex + ")");
+        } else {
+            missionTracker.reset();
+            playerControl.setPosition(spawnX, campusWorld.groundHeightAt(spawnX, spawnZ), spawnZ);
+            playerControl.setHeadingDegrees(spawnHeading);
+            playerControl.setStamina(100f);
+        }
+        orbitCam.setAngles(-playerControl.getHeadingDegrees(), camPitch);
+        orbitCam.setDistance(CinematicOrbitCamera.DEFAULT_DISTANCE);
+        inGame = true;
+        clearMovementInput();
+        audio.stopMusic();
+        audio.startAmbience();
+        audio.setAmbienceLevel(1f);
+        if (showChapter) {
+            menu.showChapter(() -> audio.playNotify());
+        } else {
+            menu.close();
+        }
+    }
+
+    private void clearMovementInput() {
+        moveForward = moveBackward = moveLeft = moveRight = false;
+        isSprint = isJump = isCrouch = false;
+    }
+
+    private void applySettings() {
+        try {
+            listener.setVolume(gameSettings.masterVolume);
+        } catch (Throwable ignored) {}
+        hud.invalidateDialogue();
+    }
+
+    private void quitGame() {
+        System.out.println("[ProjectJulyApp] Player quit from the menu.");
+        gameSettings.save();
+        stop(true);
+        new Thread(() -> {
+            try { Thread.sleep(200); } catch (Exception ignored) {}
+            System.exit(0);
+        }).start();
+    }
+
+    private MenuSystem.Actions menuActions() {
+        return new MenuSystem.Actions() {
+            @Override public void newGame() { beginGameplay(false, true); }
+            @Override public void continueGame() { beginGameplay(true, true); }
+            @Override public void resume() { menu.close(); }
+            @Override public void saveCheckpoint() { saveGameCheckpoint(); }
+            @Override public void restartLevel() { ProjectJulyApp.this.restartLevel(); }
+            @Override public void toMainMenu() { showFrontEnd(false); }
+            @Override public void quit() { quitGame(); }
+            @Override public void settingsChanged() { applySettings(); }
+            @Override public boolean hasCheckpoint() { return saveManager.hasCheckpoint(); }
+            @Override public void playClick() { audio.playClick(); }
+            @Override public void playConfirm() { audio.playConfirm(); }
+            @Override public void playBack() { audio.playBack(); }
+        };
     }
 
     private static final int TEST_HOLD_START = 30;
@@ -353,46 +441,44 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         inputManager.addMapping("Interact", new KeyTrigger(KeyInput.KEY_E), new KeyTrigger(KeyInput.KEY_RETURN));
         inputManager.addMapping("Screenshot", new KeyTrigger(KeyInput.KEY_F12), new KeyTrigger(KeyInput.KEY_SYSRQ));
         inputManager.addMapping("Pause", new KeyTrigger(KeyInput.KEY_ESCAPE), new KeyTrigger(KeyInput.KEY_P));
-        inputManager.addMapping("MenuRestart", new KeyTrigger(KeyInput.KEY_R));
-        inputManager.addMapping("MenuQuit", new KeyTrigger(KeyInput.KEY_Q));
 
         inputManager.addMapping("CamLeft", new MouseAxisTrigger(MouseInput.AXIS_X, true));
         inputManager.addMapping("CamRight", new MouseAxisTrigger(MouseInput.AXIS_X, false));
         inputManager.addMapping("CamUp", new MouseAxisTrigger(MouseInput.AXIS_Y, true));
         inputManager.addMapping("CamDown", new MouseAxisTrigger(MouseInput.AXIS_Y, false));
 
-        inputManager.addListener(this, "Forward", "Backward", "Left", "Right", "Sprint", "Jump", "Crouch", "Interact", "Screenshot", "Pause", "MenuRestart", "MenuQuit");
+        inputManager.addListener(this, "Forward", "Backward", "Left", "Right", "Sprint", "Jump", "Crouch", "Interact", "Screenshot", "Pause");
         inputManager.addListener(this, "CamLeft", "CamRight", "CamUp", "CamDown");
     }
 
     @Override
     public void onAction(String name, boolean isPressed, float tpf) {
-        if ("Pause".equals(name) && isPressed) {
-            if (docModal.isOpen()) {
-                docModal.close();
-                audio.playClick();
-                return;
+        // Menus take every key while open: arrows/WASD move the selection, Enter/E/Space select, Esc backs out.
+        if (menu.isOpen()) {
+            if (!isPressed) return;
+            switch (name) {
+                case "Pause": menu.onBack(); break;
+                case "Forward": menu.onUp(); break;
+                case "Backward": menu.onDown(); break;
+                case "Left": menu.onLeft(); break;
+                case "Right": menu.onRight(); break;
+                case "Interact":
+                case "Jump": menu.onSelect(); break;
+                case "Screenshot": triggerScreenshot("docs/screenshots/project_july_jme_gameplay.png"); break;
+                default: break;
             }
-            audio.playClick();
-            pauseMenu.toggle();
             return;
         }
 
-        if (pauseMenu.isOpen()) {
-            if (isPressed) {
-                if ("Backward".equals(name)) { // S key triggers checkpoint save in pause menu
-                    saveGameCheckpoint();
-                } else if ("MenuRestart".equals(name)) {
-                    restartLevel();
-                } else if ("MenuQuit".equals(name)) {
-                    System.out.println("[ProjectJulyApp] Player quit from pause menu.");
-                    stop(true);
-                    new Thread(() -> {
-                        try { Thread.sleep(200); } catch (Exception ignored) {}
-                        System.exit(0);
-                    }).start();
-                }
+        if ("Pause".equals(name) && isPressed) {
+            if (docModal.isOpen()) {
+                docModal.close();
+                audio.playBack();
+                return;
             }
+            audio.playClick();
+            clearMovementInput();
+            menu.showPause();
             return;
         }
 
@@ -423,16 +509,17 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
 
     @Override
     public void onAnalog(String name, float value, float tpf) {
-        if (pauseMenu.isOpen() || docModal.isOpen()) {
-            return; // Freeze camera rotation during pause or document modal
+        if (menu.isOpen() || docModal.isOpen() || !inGame) {
+            return; // Freeze camera rotation in menus, the document modal and the front end
         }
-        float sens = 45.0f;
+        float sens = 45.0f * gameSettings.mouseSensitivity;
+        float inv = gameSettings.invertMouseY ? -1f : 1f;
         // Positive yaw swings the camera to the player's left, which turns the view right; mouse
         // left must therefore decrease the yaw so the view turns left (verified with TEST_HOLD=CamLeft).
         if ("CamLeft".equals(name)) orbitCam.rotate(-value * sens, 0f);
         if ("CamRight".equals(name)) orbitCam.rotate(value * sens, 0f);
-        if ("CamUp".equals(name)) orbitCam.rotate(0f, -value * sens);
-        if ("CamDown".equals(name)) orbitCam.rotate(0f, value * sens);
+        if ("CamUp".equals(name)) orbitCam.rotate(0f, -value * sens * inv);
+        if ("CamDown".equals(name)) orbitCam.rotate(0f, value * sens * inv);
     }
 
     private void handleInteraction() {
@@ -512,11 +599,12 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             playerControl.getStamina()
         );
         if (ok) {
-            audio.playObjective();
-            pauseMenu.setStatusMessage("চেকপয়েন্ট সংরক্ষিত হয়েছে! (Checkpoint Saved)");
+            audio.playNotify();
+            menu.setStatusMessage("চেকপয়েন্ট সংরক্ষিত হয়েছে  ·  checkpoint saved");
             System.out.println("[ProjectJulyApp] Checkpoint saved successfully at objective " + missionTracker.getCurrentObjectiveIndex());
         } else {
-            pauseMenu.setStatusMessage("সংরক্ষণ ব্যর্থ হয়েছে! (Save Failed)");
+            audio.playWarning();
+            menu.setStatusMessage("সংরক্ষণ ব্যর্থ হয়েছে  ·  save failed");
         }
     }
 
@@ -528,13 +616,14 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         playerControl.setStamina(100f);
         if (dialogueManager.isActive()) dialogueManager.endDialogue();
         if (docModal.isOpen()) docModal.close();
-        if (pauseMenu.isOpen()) pauseMenu.close();
-        audio.playObjective();
+        menu.close();
+        orbitCam.setAngles(-spawnHeading, camPitch);
+        audio.playNotify();
         System.out.println("[ProjectJulyApp] Level 01 restarted to initial state.");
     }
 
     private String getContextPrompt() {
-        if (dialogueManager.isActive() || pauseMenu.isOpen() || docModal.isOpen()) return "";
+        if (!inGame || dialogueManager.isActive() || menu.isOpen() || docModal.isOpen()) return "";
         Vector3f pPos = playerControl.getPosition();
 
         for (CompanionNPC c : companions) {
@@ -574,18 +663,27 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         if (frameCounter == 60) {
             String testUi = System.getenv("TEST_UI");
             if ("pause".equals(testUi)) {
-                pauseMenu.open();
+                menu.showPause();
             } else if ("interact".equals(testUi)) {
                 handleInteraction();
+            } else if ("menu".equals(testUi)) {
+                menu.onSelect(); // title -> main menu
+            } else if ("settings".equals(testUi)) {
+                menu.showSettings(MenuSystem.Screen.MAIN);
             }
         }
+        // The chapter card closes itself after 5 s, so for its capture it opens 80 frames before the shot.
+        if (autoExitFrames != null && frameCounter == autoExitFrames - 80 && "chapter".equals(System.getenv("TEST_UI"))) {
+            menu.showChapter(null);
+        }
+        menu.update(tpf);
         if (frameCounter <= 5 || frameCounter % 15 == 0) {
             System.out.println("[ProjectJulyApp] Frame " + frameCounter + " rendered (tpf=" + String.format("%.4f", tpf) + ", autoExit=" + autoExitFrames + ")");
         }
         applyTestHold();
 
-        // 1. Update Player Locomotion (Pause movement during active dialogue, pause menu, or document modal)
-        boolean canMove = !dialogueManager.isActive() && !pauseMenu.isOpen() && !docModal.isOpen();
+        // 1. Update Player Locomotion (frozen in menus, dialogue and the document modal)
+        boolean canMove = inGame && !dialogueManager.isActive() && !menu.blocksGameplay() && !docModal.isOpen();
         if (canMove) {
             playerControl.update(
                 tpf, orbitCam.getYaw(),
@@ -594,23 +692,31 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             );
         }
 
-        // 2. Update Orbit Camera
-        orbitCam.update(tpf, playerControl.getPosition());
+        // 2. Update Orbit Camera: in the front end it circles the Raju sculpture slowly
+        if (inGame) {
+            orbitCam.update(tpf, playerControl.getPosition());
+        } else {
+            frontEndYaw += tpf * 3.5f;
+            orbitCam.setAngles(frontEndYaw, -14f);
+            orbitCam.update(tpf, new Vector3f(0f, 2.6f, 0f));
+        }
 
         // 3. Update Companions
         for (CompanionNPC c : companions) {
             c.update(tpf, playerControl.getPosition());
         }
 
-        // 4. Update HUD
-        hud.update(
-            playerControl.getPosition(),
-            orbitCam.getYaw(),
-            missionTracker,
-            dialogueManager,
-            getContextPrompt(),
-            playerControl.getStamina()
-        );
+        // 4. Update HUD (hidden in the front end)
+        if (inGame) {
+            hud.update(
+                playerControl.getPosition(),
+                orbitCam.getYaw(),
+                missionTracker,
+                dialogueManager,
+                getContextPrompt(),
+                playerControl.getStamina()
+            );
+        }
 
         // 5. Automated Execution & Profiling Gate
         if (autoExitFrames != null && autoExitFrames > 0) {
@@ -729,6 +835,6 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     public DialogueManager getDialogueManager() { return dialogueManager; }
     public List<CompanionNPC> getCompanions() { return companions; }
     public SaveManager getSaveManager() { return saveManager; }
-    public PauseMenu getPauseMenu() { return pauseMenu; }
+    public MenuSystem getMenu() { return menu; }
     public HistoricalDocumentModal getDocModal() { return docModal; }
 }

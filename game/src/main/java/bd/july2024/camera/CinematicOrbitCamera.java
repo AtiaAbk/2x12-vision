@@ -126,6 +126,12 @@ public class CinematicOrbitCamera {
         }
     }
 
+    /** Default follow distance in metres. */
+    public static final float DEFAULT_DISTANCE = 4.2f;
+
+    /** Sets the distance the camera eases towards (front end uses a wide orbit, play the default). */
+    public void setDistance(float d) { this.targetDistance = d; }
+
     public float getYaw() { return yaw; }
     public float getPitch() { return pitch; }
     public void setAngles(float yaw, float pitch) {

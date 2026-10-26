@@ -69,6 +69,21 @@ public class ProjectJulyHUD {
         updateDialogue(dialogueManager);
     }
 
+    /** Removes every HUD panel (front end) and forgets the cached keys so the next update redraws. */
+    public void clear() {
+        for (Picture p : new Picture[]{compassPicture, objectivePicture, promptPicture, dialoguePicture, staminaPicture}) {
+            if (p != null) guiNode.detachChild(p);
+        }
+        compassPicture = objectivePicture = promptPicture = dialoguePicture = staminaPicture = null;
+        lastObjectiveKey = lastCompassKey = lastPromptText = lastDialogueText = "";
+        lastStaminaInt = -1;
+    }
+
+    /** Forces the dialogue card to be redrawn (after a subtitle setting change). */
+    public void invalidateDialogue() {
+        lastDialogueText = "";
+    }
+
     private static PanelStyle panelStyle(Color accent) {
         PanelStyle s = new PanelStyle();
         s.background = PANEL;
@@ -201,7 +216,8 @@ public class ProjectJulyHUD {
         }
         DialogueLine line = dialogueManager.getCurrentLine();
         if (line == null) return;
-        String lineKey = line.getSpeaker() + "_" + line.getTextBengali();
+        bd.july2024.GameSettings gs = bd.july2024.GameSettings.get();
+        String lineKey = line.getSpeaker() + "_" + line.getTextBengali() + "_" + gs.subtitles;
         if (lineKey.equals(lastDialogueText)) return;
         lastDialogueText = lineKey;
 
@@ -209,8 +225,9 @@ public class ProjectJulyHUD {
 
         List<Line> lines = new ArrayList<>();
         lines.add(new Line(line.getSpeaker(), 13f, true, AMBER));
-        lines.add(new Line(line.getTextBengali(), 18f, true, TEXT, 4));
-        lines.add(new Line(line.getTextEnglish(), 15f, false, MUTED, 3));
+        boolean bn = gs.showBengaliSubtitles();
+        if (bn) lines.add(new Line(line.getTextBengali(), 18f, true, TEXT, 4));
+        if (gs.showEnglishSubtitles()) lines.add(new Line(line.getTextEnglish(), bn ? 15f : 17f, !bn, bn ? MUTED : TEXT, bn ? 3 : 4));
         lines.add(new Line("E / Enter  ·  পরবর্তী (next)", 11.5f, false, MUTED, 10));
         PanelStyle style = panelStyle(ACCENT);
         style.paddingX = 22;
