@@ -77,6 +77,8 @@ public class CampusWorld {
     private final BengaliTextRenderer textRenderer;
     private final List<float[]> colliders = new ArrayList<>();
     private final List<Surface> surfaces = new ArrayList<>();
+    /** Road arms as {dx, dz, px, pz, start, length, halfWidth, lateral} for the footstep surface lookup. */
+    private final List<float[]> roadArms = new ArrayList<>();
     private final Map<Material, Float> tileOf = new HashMap<>();
     private final Frame tscFrame = new Frame(TSC_X, TSC_Z, TSC_YAW);
     private Node tscNode;
@@ -275,6 +277,21 @@ public class CampusWorld {
 
     public int getTreeCount() {
         return treeCount;
+    }
+
+    /** What the ground is made of at a horizontal position: paving on footpaths and plazas, asphalt on roads, else grass. */
+    public GroundType groundTypeAt(float x, float z) {
+        for (Surface s : surfaces) {
+            if (s.contains(x, z)) return GroundType.PAVING;
+        }
+        float r2 = x * x + z * z;
+        if (r2 <= RING_OUTER_RADIUS * RING_OUTER_RADIUS && r2 > ISLAND_RADIUS * ISLAND_RADIUS) return GroundType.ASPHALT;
+        for (float[] arm : roadArms) {
+            float along = x * arm[0] + z * arm[1];
+            float across = x * arm[2] + z * arm[3] - arm[7];
+            if (along >= arm[4] && along <= arm[4] + arm[5] && Math.abs(across) <= arm[6]) return GroundType.ASPHALT;
+        }
+        return GroundType.GRASS;
     }
 
     /** Walkable ground height at a horizontal position (0 on the base ground). */
@@ -599,6 +616,7 @@ public class CampusWorld {
         float cx = dx * mid + px * lateral, cz = dz * mid + pz * lateral;
         // Box local +X runs along the arm: yaw such that +X maps to (dx, dz); jME maps +X to (cos, -sin).
         float yaw = -a;
+        roadArms.add(new float[]{dx, dz, px, pz, start, length, halfWidth, lateral});
         addYawedBox(name, asphaltMat, cx, ROAD_TOP * 0.5f, cz, length * 0.5f, ROAD_TOP * 0.5f, halfWidth, yaw);
         // Paved footpaths on both sides
         float fpHalf = 2.5f;

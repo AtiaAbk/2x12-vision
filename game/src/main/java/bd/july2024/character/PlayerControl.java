@@ -1,6 +1,7 @@
 package bd.july2024.character;
 
 import bd.july2024.audio.AudioController;
+import bd.july2024.world.GroundType;
 import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
@@ -114,7 +115,7 @@ public class PlayerControl {
             float prevPhase = stridePhase;
             stridePhase += speed * delta * 2.8f;
             if (isGrounded && (int)(prevPhase / FastMath.PI) != (int)(stridePhase / FastMath.PI)) {
-                if (audio != null) audio.playFootstep();
+                if (audio != null) audio.playFootstep(groundTypeSampler != null ? groundTypeSampler.typeAt(position.x, position.z) : GroundType.PAVING);
             }
         } else {
             velocity.x *= Math.max(0f, 1f - 12f * delta);
@@ -198,6 +199,17 @@ public class PlayerControl {
     }
 
     private GroundSampler groundSampler;
+
+    /** Tells the footstep sound what the player stands on. */
+    public interface GroundTypeSampler {
+        GroundType typeAt(float x, float z);
+    }
+
+    private GroundTypeSampler groundTypeSampler;
+
+    public void setGroundTypeSampler(GroundTypeSampler sampler) {
+        this.groundTypeSampler = sampler;
+    }
 
     public void setGroundSampler(GroundSampler sampler) {
         this.groundSampler = sampler;
