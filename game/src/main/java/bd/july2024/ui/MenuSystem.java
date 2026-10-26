@@ -339,11 +339,12 @@ public class MenuSystem {
     private void selectPause() {
         switch (selected) {
             case 0: actions.playConfirm(); actions.resume(); break;
-            case 1: actions.playConfirm(); actions.saveCheckpoint(); break;
-            case 2: actions.playConfirm(); showSettings(Screen.PAUSE); break;
-            case 3: actions.playConfirm(); actions.restartLevel(); break;
-            case 4: actions.playBack(); actions.toMainMenu(); break;
-            case 5: actions.playBack(); actions.quit(); break;
+            case 1: actions.playConfirm(); close(); actions.openMap(); break;
+            case 2: actions.playConfirm(); actions.saveCheckpoint(); break;
+            case 3: actions.playConfirm(); showSettings(Screen.PAUSE); break;
+            case 4: actions.playConfirm(); actions.restartLevel(); break;
+            case 5: actions.playBack(); actions.toMainMenu(); break;
+            case 6: actions.playBack(); actions.quit(); break;
             default: break;
         }
     }
