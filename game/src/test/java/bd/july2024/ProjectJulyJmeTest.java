@@ -125,8 +125,10 @@ public class ProjectJulyJmeTest {
         HistoricalDocumentModal.DocumentRecord tscDoc = HistoricalDialogues.getTscDocument();
         assertNotNull(tscDoc);
         assertTrue(tscDoc.titleBengali.contains("টিএসসি"));
-        assertTrue(tscDoc.textBengali.contains("৩৬ জুলাই"));
-        assertTrue(tscDoc.textEnglish.contains("36 July"));
+        assertTrue(tscDoc.textEnglish.contains("Doxiadis"));
+        // Level 01 is set in early July: the card must not jump ahead to 5 August.
+        assertFalse(tscDoc.date.contains("August"));
+        assertFalse(tscDoc.textEnglish.contains("36 July"));
     }
 
     @Test

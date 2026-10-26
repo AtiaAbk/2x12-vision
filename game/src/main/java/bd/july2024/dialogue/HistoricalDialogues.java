@@ -70,12 +70,12 @@ public class HistoricalDialogues {
 
     public static bd.july2024.ui.HistoricalDocumentModal.DocumentRecord getTscDocument() {
         return new bd.july2024.ui.HistoricalDocumentModal.DocumentRecord(
-            "টিএসসি ও ঐতিহাসিক জুলাই সংহতি ঘোষণা",
+            "ছাত্র-শিক্ষক কেন্দ্র (টিএসসি)",
             "TEACHER-STUDENT CENTRE (TSC)",
-            "August 5, 2024 (36 July)",
-            "TSC Main Plaza & Modernist Pavilion",
-            "১৯৬১ সালে বিশ্বখ্যাত স্থপতি কনস্টান্টিনোস ডক্সিয়াডিসের মাস্টারপ্ল্যানে নির্মিত ছাত্র-শিক্ষক কেন্দ্র (টিএসসি) বাঙালির প্রতিটি জাতীয় গণতান্ত্রিক উত্তরণের সূতিকাগার। ২০২৪ সালের ৫ আগস্ট এই প্রাঙ্গণেই ঘোষিত হয় ঐতিহাসিক বিজয়, যাকে ছাত্র-জনতা নাম দেয় '৩৬ জুলাই'।",
-            "Constructed under the master plan of architect Constantinos Doxiadis in 1961, the Teacher-Student Centre has sheltered student conscience through every turning point. Here, the historic culmination was proclaimed as '36 July' — rewriting time for justice."
+            "July 1 – 14, 2024",
+            "TSC union block and the TSC Mor roundabout",
+            "ষাটের দশকের গোড়ায় গ্রিক স্থপতি কনস্টান্টিনোস ডক্সিয়াডিসের নকশায় নির্মিত টিএসসি: ইটের জালি, দোতলা ছাদ ও ঢাকা হাঁটাপথ ঘেরা ছাত্র সংসদ ভবন, মিলনায়তন ও ক্যাফেটেরিয়া। ২০২৪ সালের জুলাইয়ের প্রথম দিনগুলোতে কোটা সংস্কারের দাবিতে শিক্ষার্থীরা পাশের রাজু ভাস্কর্যের চত্বরে জড়ো হয়ে শাহবাগের দিকে মিছিল করে।",
+            "Designed by the Greek architect Constantinos Doxiadis in the early 1960s: a student union block with brick jali screens and a double roof, an auditorium and cafeteria wings linked by covered walkways. In the first days of July 2024, students demanding quota reform assembled on the Raju sculpture roundabout beside TSC before marching towards Shahbagh."
         );
     }
 }
