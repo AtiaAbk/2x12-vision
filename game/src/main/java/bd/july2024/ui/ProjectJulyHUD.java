@@ -60,6 +60,10 @@ public class ProjectJulyHUD {
     private String lastDialogueText = "";
     private int lastStaminaInt = -1;
 
+    private Vector3f lastPlayerPos = new Vector3f(0f, 0f, 17f);
+    private float lastPlayerHeading = 180f;
+    private MissionTracker lastTracker = null;
+
     public ProjectJulyHUD(Node guiNode, BengaliTextRenderer textRenderer, int screenWidth, int screenHeight) {
         this(guiNode, textRenderer, screenWidth, screenHeight, null);
     }
@@ -77,14 +81,22 @@ public class ProjectJulyHUD {
     }
 
     public void toggleMap() {
+        toggleMap(lastPlayerPos, lastPlayerHeading, lastTracker);
+    }
+
+    public void toggleMap(Vector3f playerPos, float playerHeadingDegrees, MissionTracker tracker) {
         if (mapOpen) {
             hideMap();
         } else {
-            showMap();
+            showMap(playerPos, playerHeadingDegrees, tracker);
         }
     }
 
     public void showMap() {
+        showMap(lastPlayerPos, lastPlayerHeading, lastTracker);
+    }
+
+    public void showMap(Vector3f playerPos, float playerHeadingDegrees, MissionTracker tracker) {
         if (mapOpen) return;
         mapOpen = true;
 
@@ -93,30 +105,25 @@ public class ProjectJulyHUD {
             mapPicture = null;
         }
 
-        BufferedImage img = getMapImage();
-        int mapW = Math.min(680, Math.max(340, screenWidth - 100));
-        int mapH = (int) (mapW * (795f / 1264f));
+        int mapW = Math.min(840, Math.max(480, screenWidth - 140));
+        int mapH = (int) (mapW * 0.62f);
 
         List<Line> lines = new ArrayList<>();
-        lines.add(new Line("ক্যাম্পাস মানচিত্র  ·  DHAKA UNIVERSITY CAMPUS MAP", 14.5f, true, AMBER));
-        lines.add(new Line("১. রাজু ভাস্কর্য  ·  ২. হাকিম চত্বর  ·  ৩. কেন্দ্রীয় লাইব্রেরি  ·  ৪. টিএসসি  ·  ৫. কার্জন হল", 12f, false, TEXT, 3));
-        lines.add(new Line("M / Esc / E / Space  ·  মানচিত্র বন্ধ করুন (Close Map)", 11.5f, false, MUTED, 2));
+        lines.add(new Line("ঢাকা বিশ্ববিদ্যালয় ক্যাম্পাস মানচিত্র  ·  DHAKA UNIVERSITY CAMPUS MAP", 15f, true, AMBER));
+        lines.add(new Line("১. রাজু ভাস্কর্য  ·  ২. টিএসসি  ·  ৩. হাকিম চত্বর ও কেন্দ্রীয় লাইব্রেরি  ·  ৪. কার্জন হল", 12f, false, TEXT, 3));
+        lines.add(new Line("M / Esc / Click  ·  মানচিত্র বন্ধ করুন (Close Map)", 11.5f, false, MUTED, 2));
 
         PanelStyle style = new PanelStyle();
-        style.background = new Color(10, 12, 16, 235);
+        style.background = new Color(8, 11, 16, 245);
         style.accent = AMBER;
-        style.radius = 14;
-        style.paddingX = 22;
-        style.paddingY = 14;
+        style.radius = 12;
+        style.paddingX = 18;
+        style.paddingY = 12;
         style.minWidth = mapW + style.paddingX * 2 + 10;
         style.extraHeight = mapH + 8;
 
         mapPicture = textRenderer.createPanelPicture("CampusMapOverlay", lines, style, (Graphics2D g, int x, int y, int w, int h) -> {
-            if (img != null) {
-                g.setColor(new Color(255, 255, 255, 36));
-                g.drawRoundRect(x - 1, y + 2, mapW + 1, mapH + 1, 6, 6);
-                g.drawImage(img, x, y + 3, mapW, mapH, null);
-            }
+            CampusMapRenderer.renderMap(g, x, y + 4, mapW, mapH, playerPos != null ? playerPos : lastPlayerPos, playerHeadingDegrees, tracker != null ? tracker : lastTracker);
         });
 
         float x = (screenWidth - mapPicture.getWidth()) / 2f;
@@ -153,6 +160,10 @@ public class ProjectJulyHUD {
     }
 
     public void update(Vector3f playerPos, float cameraYawDegrees, MissionTracker tracker, DialogueManager dialogueManager, String contextPrompt, float stamina, bd.july2024.level.PlayerInventory inventory) {
+        if (playerPos != null) this.lastPlayerPos.set(playerPos);
+        this.lastPlayerHeading = cameraYawDegrees;
+        this.lastTracker = tracker;
+
         float dist = 0f;
         if (tracker != null && playerPos != null) {
             dist = playerPos.distance(tracker.getCurrentObjective().getTargetPosition());

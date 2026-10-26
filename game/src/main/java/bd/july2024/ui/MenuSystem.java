@@ -36,6 +36,7 @@ public class MenuSystem {
         void playClick();
         void playConfirm();
         void playBack();
+        default void openMap() {}
     }
 
     private static final Color DIM = new Color(0, 0, 0, 120);
@@ -295,6 +296,7 @@ public class MenuSystem {
     };
     private static final String[][] PAUSE_ITEMS = {
         {"খেলা চালিয়ে যান", "Resume"},
+        {"ক্যাম্পাস মানচিত্র", "Campus map"},
         {"চেকপয়েন্ট সংরক্ষণ", "Save checkpoint"},
         {"সেটিংস", "Settings"},
         {"লেভেল পুনরায় শুরু", "Restart level"},
