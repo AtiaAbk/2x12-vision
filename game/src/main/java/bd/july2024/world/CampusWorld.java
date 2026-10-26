@@ -1,5 +1,6 @@
 package bd.july2024.world;
 
+import bd.july2024.level.Slogans;
 import bd.july2024.ui.BengaliTextRenderer;
 import com.jme3.asset.AssetManager;
 import com.jme3.asset.TextureKey;
@@ -1129,9 +1130,13 @@ public class CampusWorld {
         if (textRenderer == null || assetManager == null) return;
 
         try {
+            // Texts come from Slogans.forLevel01(): the level is set in the first days of July 2024,
+            // so only quota-reform slogans appear (docs/REFERENCE_LEDGER.md, section 7).
+            java.util.List<Slogans.Slogan> slogans = Slogans.forLevel01();
+
             // 1. Road graffiti on the roundabout carriageway, read when walking towards the sculpture
             Texture2D quotaTex = textRenderer.createTexture(
-                "কোটা না মেধা?  মেধা! মেধা!",
+                slogans.get(0).bengali,
                 28f, true,
                 new Color(255, 255, 255),
                 new Color(20, 20, 22, 230),
@@ -1144,7 +1149,7 @@ public class CampusWorld {
 
             // 2. Road graffiti behind the spawn point
             Texture2D july36Tex = textRenderer.createTexture(
-                "৩৬ জুলাই — ছাত্র-জনতার ঐতিহাসিক বিজয়",
+                slogans.get(2).bengali,
                 28f, true,
                 new Color(255, 230, 80),
                 new Color(20, 20, 22, 230),
@@ -1157,7 +1162,7 @@ public class CampusWorld {
 
             // 3. Banner on the south face of Central Library Building II (faces the sculpture)
             Texture2D bannerTex1 = textRenderer.createTexture(
-                "আমার ভাই মরলো কেন?  জবাব চাই!",
+                slogans.get(1).bengali,
                 32f, true,
                 new Color(255, 255, 255),
                 new Color(180, 25, 20, 240),
@@ -1169,7 +1174,7 @@ public class CampusWorld {
 
             // 4. Banner on the north face of the TSC union block, over the verandah
             Texture2D bannerTex2 = textRenderer.createTexture(
-                "স্বৈরাচার নিপাত যাক, গণতন্ত্র মুক্তি পাক",
+                slogans.get(3).bengali,
                 30f, true,
                 new Color(255, 245, 120),
                 new Color(15, 30, 25, 240),
@@ -1180,7 +1185,21 @@ public class CampusWorld {
             tscBanner.rotate(0f, FastMath.PI, 0f);
             tscDecalNode.attachChild(tscBanner);
 
-            System.out.println("[CampusWorld] July Movement Bengali street murals and banners attached.");
+            // 5. Road graffiti on the west arm (Nilkhet road), read when walking towards the library
+            Texture2D westTex = textRenderer.createTexture(
+                slogans.get(4).bengali,
+                28f, true,
+                new Color(255, 255, 255),
+                new Color(20, 20, 22, 230),
+                20, 10
+            );
+            Geometry westDecal = createDecalQuad(assetManager, "Decal_West", westTex, 9.0f, 2.2f);
+            westDecal.setLocalTranslation(-33f, ROAD_TOP + 0.01f, -3.5f);
+            westDecal.rotate(-FastMath.HALF_PI, 0, 0);
+            westDecal.rotate(0, 0, FastMath.HALF_PI);
+            rootNode.attachChild(westDecal);
+
+            System.out.println("[CampusWorld] July Movement Bengali street murals and banners attached: " + slogans.size() + " Level 01 slogans.");
         } catch (Throwable t) {
             System.err.println("[CampusWorld] Failed to generate text decals: " + t.getMessage());
         }
