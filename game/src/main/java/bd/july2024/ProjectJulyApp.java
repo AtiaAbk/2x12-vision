@@ -24,7 +24,9 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.AnalogListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseAxisTrigger;
+import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.post.SceneProcessor;
 import com.jme3.profile.AppProfiler;
@@ -78,6 +80,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     private ObjectiveMarker objectiveMarker;
     /** False on the title screen and main menu, true once a chapter has started. */
     private boolean inGame = false;
+    private boolean cursorVisible = false;
     private float frontEndYaw = 200f;
     private boolean capturePending = false;
     private String pendingScreenshotPath = null;
@@ -449,6 +452,8 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         inputManager.addMapping("Interact", new KeyTrigger(KeyInput.KEY_E), new KeyTrigger(KeyInput.KEY_RETURN));
         inputManager.addMapping("ResetCamera", new KeyTrigger(KeyInput.KEY_R));
         inputManager.addMapping("ToggleMap", new KeyTrigger(KeyInput.KEY_M));
+        inputManager.addMapping("ToggleFullscreen", new KeyTrigger(KeyInput.KEY_F11));
+        inputManager.addMapping("MouseClick", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
         inputManager.addMapping("Screenshot", new KeyTrigger(KeyInput.KEY_F12), new KeyTrigger(KeyInput.KEY_SYSRQ));
         inputManager.addMapping("Pause", new KeyTrigger(KeyInput.KEY_ESCAPE), new KeyTrigger(KeyInput.KEY_P));
 
@@ -457,12 +462,39 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         inputManager.addMapping("CamUp", new MouseAxisTrigger(MouseInput.AXIS_Y, true));
         inputManager.addMapping("CamDown", new MouseAxisTrigger(MouseInput.AXIS_Y, false));
 
-        inputManager.addListener(this, "Forward", "Backward", "Left", "Right", "Sprint", "Jump", "Crouch", "Interact", "ResetCamera", "ToggleMap", "Screenshot", "Pause");
+        inputManager.addListener(this, "Forward", "Backward", "Left", "Right", "Sprint", "Jump", "Crouch", "Interact", "ResetCamera", "ToggleMap", "ToggleFullscreen", "MouseClick", "Screenshot", "Pause");
         inputManager.addListener(this, "CamLeft", "CamRight", "CamUp", "CamDown");
     }
 
     @Override
     public void onAction(String name, boolean isPressed, float tpf) {
+        if ("MouseClick".equals(name) && isPressed) {
+            if (menu.isOpen()) {
+                Vector2f cPos = inputManager.getCursorPosition();
+                menu.onClick(cPos.x, cPos.y);
+                return;
+            }
+            if (docModal.isOpen()) {
+                docModal.close();
+                audio.playClick();
+                return;
+            }
+            if (hud != null && hud.isMapOpen()) {
+                hud.hideMap();
+                audio.playBack();
+                return;
+            }
+        }
+
+        if ("ToggleFullscreen".equals(name) && isPressed) {
+            gameSettings.fullscreen = !gameSettings.fullscreen;
+            gameSettings.save();
+            audio.playClick();
+            if (menu.isOpen()) menu.rebuild();
+            System.out.println("[ProjectJulyApp] Fullscreen toggled: " + gameSettings.fullscreen + " (saved; applies on next launch)");
+            return;
+        }
+
         // Menus take every key while open: arrows/WASD move the selection, Enter/E/Space select, Esc backs out.
         if (menu.isOpen()) {
             if (!isPressed) return;
@@ -722,10 +754,10 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     public void simpleUpdate(float tpf) {
         frameCounter++;
         totalDeltaTime += tpf;
-        if (frameCounter == 1) {
-            // The LWJGL3 window only forwards cursor-mode changes once it is renderable, which is
-            // after simpleInitApp here, so the call made there is repeated on the first frame.
-            inputManager.setCursorVisible(false);
+        boolean showCursor = !inGame || menu.isOpen() || docModal.isOpen() || (hud != null && hud.isMapOpen());
+        if (cursorVisible != showCursor || frameCounter == 1) {
+            cursorVisible = showCursor;
+            inputManager.setCursorVisible(showCursor);
         }
         if (autoExitFrames != null && frameCounter > autoExitFrames - STEADY_FRAMES) {
             steadyDeltaTime += tpf;

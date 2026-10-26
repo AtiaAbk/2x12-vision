@@ -73,4 +73,32 @@ public class FrontEndTest {
             assertTrue(f.isFile() && f.length() > 1000, f + " missing");
         }
     }
+
+    @Test
+    public void menuMouseClickNavigation() {
+        com.jme3.scene.Node gui = new com.jme3.scene.Node("gui");
+        bd.july2024.ui.BengaliTextRenderer text = new bd.july2024.ui.BengaliTextRenderer(null);
+        GameSettings s = new GameSettings();
+        boolean[] flags = new boolean[1];
+        bd.july2024.ui.MenuSystem.Actions act = new bd.july2024.ui.MenuSystem.Actions() {
+            public void newGame() { flags[0] = true; }
+            public void continueGame() {}
+            public void resume() {}
+            public void saveCheckpoint() {}
+            public void restartLevel() {}
+            public void toMainMenu() {}
+            public void quit() {}
+            public void settingsChanged() {}
+            public boolean hasCheckpoint() { return false; }
+            public void playClick() {}
+            public void playConfirm() {}
+            public void playBack() {}
+        };
+        bd.july2024.ui.MenuSystem menu = new bd.july2024.ui.MenuSystem(gui, text, 1280, 720, s, act);
+        menu.showTitle();
+        assertTrue(menu.isOpen());
+        // Clicking on Title Screen transitions to Main Menu
+        menu.onClick(640, 360);
+        assertEquals(bd.july2024.ui.MenuSystem.Screen.MAIN, menu.getScreen());
+    }
 }

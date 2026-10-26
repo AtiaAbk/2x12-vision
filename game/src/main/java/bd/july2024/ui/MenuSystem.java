@@ -202,6 +202,56 @@ public class MenuSystem {
         }
     }
 
+    /** Handles mouse clicks on menus and interactive cards. */
+    public void onClick(float mouseX, float mouseY) {
+        if (!isOpen()) return;
+
+        if (screen == Screen.TITLE) {
+            onSelect();
+            return;
+        }
+
+        if (screen == Screen.CHAPTER) {
+            finishChapter();
+            return;
+        }
+
+        if (panelPicture == null) return;
+
+        float px = panelPicture.getLocalTranslation().x;
+        float py = panelPicture.getLocalTranslation().y;
+        float pw = panelPicture.getWidth();
+        float ph = panelPicture.getHeight();
+
+        if (mouseX >= px && mouseX <= px + pw && mouseY >= py && mouseY <= py + ph) {
+            float fromTop = (py + ph) - mouseY;
+
+            float headerH = 75f;
+            if (screen == Screen.CHAPTER_COMPLETE) headerH = 175f;
+            else if (screen == Screen.MAIN) headerH = 70f;
+            else if (screen == Screen.PAUSE) headerH = 75f;
+            else if (screen == Screen.SETTINGS) headerH = 70f;
+
+            if (fromTop >= headerH) {
+                float itemH = 34f;
+                int clickedIndex = (int) ((fromTop - headerH) / itemH);
+                if (clickedIndex >= 0 && clickedIndex < itemCount()) {
+                    selected = clickedIndex;
+                    if (screen == Screen.SETTINGS && selected < 6) {
+                        float relX = (mouseX - px) / pw;
+                        if (relX < 0.5f) {
+                            onLeft();
+                        } else {
+                            onRight();
+                        }
+                    } else {
+                        onSelect();
+                    }
+                }
+            }
+        }
+    }
+
     /** Esc: back out of the current screen. Returns false if nothing was open. */
     public boolean onBack() {
         switch (screen) {
@@ -339,7 +389,7 @@ public class MenuSystem {
         if (dimPicture != null) { guiNode.detachChild(dimPicture); dimPicture = null; }
     }
 
-    private void rebuild() {
+    public void rebuild() {
         detach();
         if (screen == Screen.NONE) return;
         switch (screen) {
