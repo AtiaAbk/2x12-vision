@@ -61,10 +61,10 @@ public class HistoricalDialogues {
         return new bd.july2024.ui.HistoricalDocumentModal.DocumentRecord(
             "ঢাকা বিশ্ববিদ্যালয় কেন্দ্রীয় লাইব্রেরি ও হাকিম চত্বর",
             "CENTRAL LIBRARY & HAKIM CHATTAR",
-            "July 7 – 18, 2024",
-            "Central Library Steps & Pilotis Colonnade",
-            "স্থপতি মাজহারুল ইসলামের ১৯৫৩ সালের আধুনিক স্থাপত্যে নির্মিত এই লাইব্রেরি মুক্তচিন্তা ও বুদ্ধিবৃত্তিক প্রতিরোধের কেন্দ্রবিন্দু। আন্দোলনের সময় হাকিম চত্বর ও লাইব্রেরির উন্মুক্ত চত্বরে শিক্ষার্থীরা চিকিৎসাসেবা, খাদ্য বিতরণ ও ব্ল্যাকআউট চলাকালে যোগাযোগ কেন্দ্র পরিচালনা করে।",
-            "Designed by pioneer architect Muzharul Islam in 1953, this regional modernist landmark became the nexus of intellectual solidarity. Students established study circles, emergency aid, and dispatch centers beneath its iconic open pilotis."
+            "July 1 – 14, 2024",
+            "Central Library open ground floor and Hakim Chattar",
+            "স্থপতি মাজহারুল ইসলামের নকশায় ১৯৫৩–৫৫ সালে নির্মিত কেন্দ্রীয় লাইব্রেরি: স্তম্ভের ওপর তোলা দুটি আয়তাকার ব্লক, দোতলায় ওঠার ঢালু পথ, খোলা নিচতলা আর খিলানছাদের একটি ব্লক। লাইব্রেরি ও সড়কের মাঝের হাকিম চত্বর শিক্ষার্থীদের চায়ের আড্ডার জায়গা। ২০২৪ সালের জুলাইয়ের প্রথম সপ্তাহে কোটা সংস্কারের দাবিতে এই লাইব্রেরির সামনে শান্তিপূর্ণ সমাবেশ হয়; বৈষম্যবিরোধী ছাত্র আন্দোলন নামটি এই দিনগুলোতেই সামনে আসে।",
+            "Designed by Muzharul Islam and built in 1953–1955: two rectangular blocks raised on pilotis, a ramp to the first floor, an open ground floor and a third block under a vaulted roof. Hakim Chattar, between the library and the road, is where students gather over tea. In the first week of July 2024 peaceful rallies for quota reform assembled in front of this library, the days in which the name Students Against Discrimination came into use."
         );
     }
 

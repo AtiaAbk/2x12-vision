@@ -121,6 +121,11 @@ public class ProjectJulyJmeTest {
         assertTrue(libDoc.titleBengali.contains("লাইব্রেরি"));
         assertTrue(libDoc.textBengali.contains("মাজহারুল ইসলাম"));
         assertTrue(libDoc.textEnglish.contains("Muzharul Islam"));
+        assertTrue(libDoc.textEnglish.contains("1953"));
+        // Level 01 is set in early July: no later-July events or unsourced aid/blackout claims.
+        assertTrue(libDoc.date.startsWith("July 1"));
+        assertFalse(libDoc.date.contains("18"));
+        assertFalse(libDoc.textEnglish.contains("dispatch"));
 
         HistoricalDocumentModal.DocumentRecord tscDoc = HistoricalDialogues.getTscDocument();
         assertNotNull(tscDoc);
