@@ -29,7 +29,7 @@ This matrix records what was **directly inspected** on this date. Status values:
 | Requirement | Evidence | Status | Next action |
 |---|---|---|---|
 | Third-person orbit camera | `camera/CinematicOrbitCamera.java`: spring arm, pitch clamp, ray–AABB clipping, ground clamp | unverified | Verify by hand; check clipping inside library colonnade. |
-| WASD + mouse look | `ProjectJulyApp.initInputs` maps W/A/S/D, arrows, mouse axes | unverified | Verify by hand. |
+| WASD + mouse look | `ProjectJulyApp.initInputs` maps W/A/S/D, arrows, mouse axes. **2026-10-26:** the owner reported that ↑ walked towards the screen. Confirmed from the camera-relative formula (both axes negated) and fixed in `PlayerControl.update`; mouse-left also turned the view right and was fixed in `onAnalog`. Verified with `TEST_HOLD=Forward` (player z 17.0 → 4.0 while the camera stayed south at z 21 → 8), `TEST_HOLD=Right` (x 0 → +23, east, facing north) and `TEST_HOLD=CamLeft` (view bearing 0° → 310°, sculpture on the right). | fixed, verified by automated runs; by-hand check by the owner pending | Owner to confirm feel. |
 | Sprint / jump / crouch | `character/PlayerControl.java`: walk 4.2 m/s, sprint 7.6 m/s, jump, crouch, gravity | unverified | Verify by hand. |
 | Stamina soft limit | `PlayerControl`: drain 28/s, recover 20/s, sprint blocked below 5 | implemented | — |
 | Water / food restore, inventory | No inventory class, no items in world. | missing | Design and implement after the visual gate. |
@@ -128,6 +128,9 @@ This matrix records what was **directly inspected** on this date. Status values:
 - `docs/screenshots/trees_2026-10-25_library_v1.png` — jarul stand-ins (jacaranda) in front of the library (`TEST_SPAWN=-25,-35,225`).
 - `docs/screenshots/trees_2026-10-25_banyan_v1.png` — the large shade tree standing in for the Hakim Chattar banyan (`TEST_SPAWN=-75,-35,215`, pitch 4).
 - `docs/screenshots/trees_2026-10-25_tsc_v1.png` — TSC union block framed by two trees (`TEST_SPAWN=0,35,17`).
+- `docs/screenshots/controls_2026-10-26_forward_v1.png` — after holding Forward for 120 frames from the spawn: Arif has walked north onto the island, away from the camera.
+- `docs/screenshots/controls_2026-10-26_mouse_left_v1.png` — after mouse-left for 120 frames: view turned to NW 310°, sculpture on the right.
+- `docs/screenshots/slogans_2026-10-26_{west_road,tsc,library}_v1.png` — Level 01 quota-reform slogans on the west road, the TSC banner and the library banner.
 - Build and run logs are quoted above; they were not committed.
 
 ## 11. What this matrix does not claim

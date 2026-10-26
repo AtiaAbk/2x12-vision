@@ -91,3 +91,32 @@ The tree positions in `CampusWorld.buildVegetation` are not surveyed; they are c
 | Tree models | Stand-ins, documented | Poly Haven CC0 scans (`docs/ASSET_REGISTER.md`) | island_tree_02 scaled 2.6-3.6x for krishnachura, radhachura, shade; 4.4x for the banyan; jacaranda_tree at 0.55-0.63x for jarul |
 | Blossom in late July | Unverified / chosen | Krishnachura flowers mainly April-June, jarul May-July; late flowers are plausible but not sourced for 2024 | 10-15 % of leaf quads tinted scarlet (krishnachura), yellow (radhachura) or mauve (jarul) |
 | Banyan at Hakim Chattar | Supported, incomplete | Tree present in photographs of Hakim Chattar; size unmeasured | One large shade-variant tree at (-87, -52); no aerial roots |
+
+## 7. Slogans
+
+The slogan texts were supplied by the project owner on 2026-10-26 and are reproduced verbatim in `game/src/main/java/bd/july2024/level/Slogans.java`. The phase column is the developer's placement against the chronology in `docs/historical_timeline.md`; it is a chronological judgement, not a per-slogan citation. Only the 14 July chant is individually documented in that timeline. Status for every row: **owner-supplied, phase attributed, not individually sourced**. Level 01 is set in the first days of July (timeline: "Level 1 — Where It All Began"), so only the quota-reform slogans appear on its walls and roads; the earlier texts "৩৬ জুলাই — ছাত্র-জনতার ঐতিহাসিক বিজয়" (5 August), "আমার ভাই মরলো কেন? জবাব চাই!" and "স্বৈরাচার নিপাত যাক, গণতন্ত্র মুক্তি পাক" were removed from Level 01 as anachronistic or unsourced.
+
+| Slogan (as supplied) | Phase (developer's attribution) | Use in game |
+|---|---|---|
+| কোটা না মেধা? মেধা, মেধা! | 1–14 July (quota reform) | Level 01 road graffiti by the roundabout |
+| আমার সোনার বাংলায়, বৈষম্যের ঠাঁই নাই! | 1–14 July (quota reform) | Level 01 banner, Central Library south face |
+| সারা বাংলায় খবর দে, কোটাপ্রথা কবর দে! | 1–14 July (quota reform) | Level 01 road graffiti behind the spawn |
+| কোটাপ্রথা নিপাত যাক, মেধাবীরা মুক্তি পাক! | 1–14 July (quota reform) | Level 01 banner, TSC north face |
+| জেগেছে রে জেগেছে, ছাত্রসমাজ জেগেছে! | 1–14 July (quota reform) | Level 01 road graffiti, west arm |
+| তুমি কে? আমি কে? রাজাকার, রাজাকার! কে বলেছে? কে বলেছে? স্বৈরাচার, স্বৈরাচার! | night of 14 July onwards (documented in docs/historical_timeline.md) | reserved for Level 02 |
+| চাইলাম অধিকার, হয়ে গেলাম রাজাকার! | 14 July onwards | reserved |
+| লেগেছে রে লেগেছে, রক্তে আগুন লেগেছে! | 14 July onwards (attribution uncertain) | reserved |
+| তোর কোটা তুই নে, আমার ভাই ফিরিয়ে দে! | after the first deaths, 16 July onwards | reserved |
+| আমার ভাইয়ের রক্ত, বৃথা যেতে দেব না! | 16 July onwards | reserved |
+| বুকের ভেতর অনেক ঝড়, বুক পেতেছি গুলি কর! | 16 July onwards | reserved |
+| আমার ভাই কবরে, খুনি কেন বাইরে? | 16 July onwards | reserved |
+| লাঠি, বোমা, টিয়ারগ্যাস, জবাব দিবে বাংলাদেশ! | 16 July onwards | reserved |
+| লড়াই লড়াই লড়াই চাই, লড়াই করে বাঁচতে চাই! | 16 July onwards (older slogan reused) | reserved |
+| এক দফা, এক দাবি, স্বৈরাচার তুই কবে যাবি! | 3–4 August (one-point demand) | reserved |
+| এক দুই তিন চার, শেখ হাসিনা গদি ছাড়! | late July – 4 August | reserved |
+| ঢাকায় আসো জনতা, ছাড়তে হবে ক্ষমতা! | 4–5 August (march on Dhaka) | reserved |
+| গোলামি না আজাদি? আজাদি, আজাদি! | late July – August | reserved |
+| গোলামি না ইনকিলাব? ইনকিলাব, ইনকিলাব! | late July – August | reserved |
+| আপস না সংগ্রাম? সংগ্রাম, সংগ্রাম! | late July – August (older slogan reused) | reserved |
+| লাখো শহীদের দামে কেনা, দেশটা কারও বাপের না! | late July – August (older slogan reused) | reserved |
+| পালাইছে রে পালাইছে, শেখ হাসিনা পালাইছে! | 5 August and after | reserved for the final level |
