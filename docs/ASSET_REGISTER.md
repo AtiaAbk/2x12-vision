@@ -90,7 +90,7 @@ Not integrated but downloaded and checked on 2026-10-25: Quaternius *Universal B
 
 | Asset | Files | Origin | Licence | Status |
 |---|---|---|---|---|
-| UI and gameplay effects | `assets/audio/*.wav` (10 files; 4 referenced by `AudioController`) | Legacy LibGDX-era docs (`docs/audio_design.md`) state they were synthesised procedurally in-project. Not independently verified. | Unrecorded | **Provenance must be confirmed or the files regenerated before release.** |
+| Soundbank (18 files) | `assets/audio/ui_click.wav`, `ui_confirm`, `ui_back`, `ui_notify`, `ui_warning`, `objective`, `bell`, `footstep_{grass,paving,asphalt}_{1,2,3}`, `ambience_campus` (39.5 s loop), `music_title` (58.6 s loop); 8.9 MB, 44.1 kHz 16-bit mono | Synthesised from first principles by `tools/synth_audio.py` (numpy) on 2026-10-26 for this project: sine/FM tones with envelopes, filtered noise, Karplus-Strong plucked strings, a flute-like voice playing an original melody written for the project, a small Schroeder reverb. Every parameter is in the script; re-running it regenerates identical files. The ten unverified LibGDX-era WAVs were deleted. | Original work of the project (no third-party material) | Integrated. Limits: the ambience has no real recordings (wind, traffic, koel-like calls and crowd murmur are all synthetic); the music is a placeholder-quality procedural cue; no Bangla voice. |
 
 ## Not yet sourced
 

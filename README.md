@@ -13,7 +13,7 @@ This is an early vertical slice, not a finished game. The current state, with ev
 
 - Builds and runs on Windows and (per the original configuration) macOS Apple Silicon; 7 unit tests pass.
 - One campus scene (Raju Memorial, Central Library, Hakim Chattar, TSC) built from procedural primitives.
-- Third-person camera, movement, stamina, six-step objective loop, Bengali/English HUD, pause menu, checkpoint save.
+- Third-person camera, movement, stamina, six-step objective loop, Bengali/English HUD, title screen and menus with settings, pause menu, checkpoint save, original synthesised sound.
 - The character, buildings and trees are **placeholders** and do not yet pass the visual acceptance gate.
 - No music, no inventory, no main menu, no measured performance on the target MacBook Air M4.
 

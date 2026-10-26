@@ -18,14 +18,19 @@ combos, wall climb, map, gender switch) that do not exist in the current code.
 | Screenshot | `F12`, `Print Screen` | Writes `docs/screenshots/project_july_jme_gameplay.png`. |
 | Pause | `Esc`, `P` | Opens or closes the pause menu; also closes an open document. |
 
-## Pause menu
+## Menus (title, main menu, settings, pause)
 
-| Action | Key |
+| Action | Keys |
 |---|---|
-| Resume | `Esc` |
-| Save checkpoint | `S` |
-| Restart Level 01 | `R` |
-| Quit to desktop | `Q` |
+| Move selection | `↑` / `↓`, `W` / `S` |
+| Change a setting | `←` / `→`, `A` / `D` |
+| Select | `Enter`, `E`, `Space` |
+| Back / resume | `Esc` |
+
+Pause menu entries: Resume, Save checkpoint, Settings, Restart level, Main menu, Quit.
+Settings: mouse sensitivity, invert mouse Y, master volume, subtitles (both / বাংলা / English),
+window size and fullscreen (the last two apply at the next start). Settings are stored in
+`save/settings.properties` (per-user folder when installed).
 
 ## Document modal
 
@@ -35,6 +40,6 @@ combos, wall climb, map, gender switch) that do not exist in the current code.
 
 ## Not implemented yet
 
-Inventory and quick-use, map, camera reset key, main menu, autosave, difficulty options.
+Inventory and quick-use, map, camera reset key, mouse-driven menus, autosave, difficulty options.
 The specification mentions `R` for camera reset and `E` for quick-use; those bindings are not
 in the code and should be designed together with the inventory.
