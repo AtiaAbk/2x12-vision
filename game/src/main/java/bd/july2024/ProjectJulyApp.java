@@ -258,6 +258,32 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         System.out.println("[ProjectJulyApp] Level 01 (Dhaka University) initialized cleanly in jMonkeyEngine.");
     }
 
+    private static final int TEST_HOLD_START = 30;
+    private static final int TEST_HOLD_END = 150;
+
+    /**
+     * TEST_HOLD=Forward|Backward|Left|Right|CamLeft|CamRight (comma separated) holds those inputs from
+     * frame 30 to frame 150 of an automated run and logs the player and camera positions at both
+     * ends, so movement directions can be verified without a keyboard.
+     */
+    private void applyTestHold() {
+        String hold = System.getenv("TEST_HOLD");
+        if (hold == null || hold.isEmpty()) return;
+        boolean active = frameCounter >= TEST_HOLD_START && frameCounter < TEST_HOLD_END;
+        if (frameCounter == TEST_HOLD_START || frameCounter == TEST_HOLD_END) {
+            Vector3f p = playerControl.getPosition();
+            Vector3f c = cam.getLocation();
+            System.out.println(String.format("[ProjectJulyApp] TEST_HOLD %s frame %d: player (%.2f, %.2f, %.2f) heading %.0f, camera (%.2f, %.2f, %.2f) yaw %.0f",
+                hold, frameCounter, p.x, p.y, p.z, playerControl.getHeadingDegrees(), c.x, c.y, c.z, orbitCam.getYaw()));
+        }
+        moveForward = active && hold.contains("Forward");
+        moveBackward = active && hold.contains("Backward");
+        moveLeft = active && hold.contains("Left") && !hold.contains("CamLeft");
+        moveRight = active && hold.contains("Right") && !hold.contains("CamRight");
+        if (active && hold.contains("CamLeft")) orbitCam.rotate(-0.4f, 0f);  // same sign as onAnalog CamLeft
+        if (active && hold.contains("CamRight")) orbitCam.rotate(0.4f, 0f);
+    }
+
     /** Optional environment overrides used by the automated verification runs. */
     private void readTestOverrides() {
         String spawn = System.getenv("TEST_SPAWN");
@@ -401,8 +427,10 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
             return; // Freeze camera rotation during pause or document modal
         }
         float sens = 45.0f;
-        if ("CamLeft".equals(name)) orbitCam.rotate(value * sens, 0f);
-        if ("CamRight".equals(name)) orbitCam.rotate(-value * sens, 0f);
+        // Positive yaw swings the camera to the player's left, which turns the view right; mouse
+        // left must therefore decrease the yaw so the view turns left (verified with TEST_HOLD=CamLeft).
+        if ("CamLeft".equals(name)) orbitCam.rotate(-value * sens, 0f);
+        if ("CamRight".equals(name)) orbitCam.rotate(value * sens, 0f);
         if ("CamUp".equals(name)) orbitCam.rotate(0f, -value * sens);
         if ("CamDown".equals(name)) orbitCam.rotate(0f, value * sens);
     }
@@ -554,6 +582,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         if (frameCounter <= 5 || frameCounter % 15 == 0) {
             System.out.println("[ProjectJulyApp] Frame " + frameCounter + " rendered (tpf=" + String.format("%.4f", tpf) + ", autoExit=" + autoExitFrames + ")");
         }
+        applyTestHold();
 
         // 1. Update Player Locomotion (Pause movement during active dialogue, pause menu, or document modal)
         boolean canMove = !dialogueManager.isActive() && !pauseMenu.isOpen() && !docModal.isOpen();

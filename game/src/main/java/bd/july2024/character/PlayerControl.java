@@ -91,13 +91,18 @@ public class PlayerControl {
             float speed = isSprinting ? SPRINT_SPEED : (isCrouching ? WALK_SPEED * 0.55f : WALK_SPEED);
             currentSpeed = speed;
 
-            // Rotate movement relative to camera horizontal yaw
+            // Camera-relative movement. The orbit camera with yaw theta sits at (sin, -cos) from the
+            // player and looks along F = (-sin, cos); its right vector is R = F x up = (-cos, -sin).
+            // "Forward" is +F (away from the camera), "Right" is +R. The previous formula produced -F
+            // and -R, so the up arrow walked towards the screen.
             float rad = cameraYawDegrees * FastMath.DEG_TO_RAD;
             float cos = FastMath.cos(rad);
             float sin = FastMath.sin(rad);
+            float fwd = -moveZ;   // input: forward = -1 on moveZ
+            float rgt = moveX;
 
-            float worldDirX = moveX * cos - moveZ * sin;
-            float worldDirZ = moveX * sin + moveZ * cos;
+            float worldDirX = -fwd * sin - rgt * cos;
+            float worldDirZ = fwd * cos - rgt * sin;
 
             velocity.x = worldDirX * speed;
             velocity.z = worldDirZ * speed;
