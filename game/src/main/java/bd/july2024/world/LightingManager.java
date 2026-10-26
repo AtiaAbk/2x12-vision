@@ -37,6 +37,10 @@ public class LightingManager {
     private final DirectionalLight fillLight;
     private final AmbientLight ambient;
     private FilterPostProcessor fpp;
+    private DirectionalLightShadowFilter shadowFilter;
+    private SSAOFilter ssaoFilter;
+    private ToneMapFilter toneMapFilter;
+    private FXAAFilter fxaaFilter;
 
     public LightingManager(AssetManager assetManager, Node rootNode, ViewPort viewPort) {
         // 1. Primary Sun Light (Warm afternoon golden light, ~3:30 PM Bangladesh summer)
@@ -86,7 +90,7 @@ public class LightingManager {
 
             // 1. Cascaded Directional Shadows (PSSM)
             try {
-                DirectionalLightShadowFilter shadowFilter = new DirectionalLightShadowFilter(assetManager, 2048, 3);
+                shadowFilter = new DirectionalLightShadowFilter(assetManager, 2048, 3);
                 shadowFilter.setLight(sun);
                 shadowFilter.setShadowIntensity(0.55f);
                 shadowFilter.setEdgeFilteringMode(com.jme3.shadow.EdgeFilteringMode.PCF4);
@@ -98,7 +102,7 @@ public class LightingManager {
 
             // 2. Screen Space Ambient Occlusion (SSAO) — subtle contact shadows
             try {
-                SSAOFilter ssaoFilter = new SSAOFilter(1.2f, 2.4f, 0.2f, 0.1f);
+                ssaoFilter = new SSAOFilter(1.2f, 2.4f, 0.2f, 0.1f);
                 fpp.addFilter(ssaoFilter);
             } catch (Throwable t) {
                 System.err.println("[LightingManager] SSAOFilter failed: " + t.getMessage());
@@ -106,17 +110,17 @@ public class LightingManager {
 
             // 3. Filmic Tone Mapping (Natural daylight dynamic range)
             try {
-                ToneMapFilter toneMap = new ToneMapFilter();
-                toneMap.setWhitePoint(new Vector3f(1.15f, 1.15f, 1.15f));
-                fpp.addFilter(toneMap);
+                toneMapFilter = new ToneMapFilter();
+                toneMapFilter.setWhitePoint(new Vector3f(1.15f, 1.15f, 1.15f));
+                fpp.addFilter(toneMapFilter);
             } catch (Throwable t) {
                 System.err.println("[LightingManager] ToneMapFilter failed: " + t.getMessage());
             }
 
             // 4. Fast Approximate Anti-Aliasing (FXAA 3.11)
             try {
-                FXAAFilter fxaa = new FXAAFilter();
-                fpp.addFilter(fxaa);
+                fxaaFilter = new FXAAFilter();
+                fpp.addFilter(fxaaFilter);
             } catch (Throwable t) {
                 System.err.println("[LightingManager] FXAAFilter failed: " + t.getMessage());
             }
@@ -127,6 +131,35 @@ public class LightingManager {
             System.err.println("[LightingManager] Post processor setup failed: " + t.getMessage());
         }
     }
+
+    public void applyGraphicsSettings(int shadowQuality, boolean ssao, boolean fxaa) {
+        if (shadowFilter != null) {
+            boolean enableShadow = shadowQuality > 0;
+            shadowFilter.setEnabled(enableShadow);
+            if (enableShadow) {
+                float intensity = shadowQuality == 1 ? 0.40f : (shadowQuality == 2 ? 0.55f : 0.65f);
+                shadowFilter.setShadowIntensity(intensity);
+            }
+        }
+        if (ssaoFilter != null) {
+            ssaoFilter.setEnabled(ssao);
+        }
+        if (fxaaFilter != null) {
+            fxaaFilter.setEnabled(fxaa);
+        }
+    }
+
+    public void setShadowsEnabled(boolean enabled) {
+        if (shadowFilter != null) shadowFilter.setEnabled(enabled);
+    }
+
+    public void setSsaoEnabled(boolean enabled) {
+        if (ssaoFilter != null) ssaoFilter.setEnabled(enabled);
+    }
+
+    public DirectionalLightShadowFilter getShadowFilter() { return shadowFilter; }
+    public SSAOFilter getSsaoFilter() { return ssaoFilter; }
+    public FXAAFilter getFxaaFilter() { return fxaaFilter; }
 
     public DirectionalLight getSun() { return sun; }
     public AmbientLight getAmbient() { return ambient; }

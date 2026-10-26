@@ -39,6 +39,9 @@ public class TreeLibrary {
     public static final float LOD2_DISTANCE = 130f;
     public static final int LOD_COUNT = 3;
 
+    public static float lod1Distance = LOD1_DISTANCE;
+    public static float lod2Distance = LOD2_DISTANCE;
+
     private final AssetManager assetManager;
     private final Map<String, Spatial[]> cache = new HashMap<>();
     private final Map<String, int[]> triangleCounts = new HashMap<>();
@@ -57,10 +60,30 @@ public class TreeLibrary {
         return camera;
     }
 
+    public static void setLodDistances(float lod1, float lod2) {
+        lod1Distance = Math.max(10f, lod1);
+        lod2Distance = Math.max(lod1Distance + 10f, lod2);
+    }
+
+    public static void setVegetationLodLevel(int level) {
+        switch (level) {
+            case 0: // Performance / aggressive
+                setLodDistances(25f, 75f);
+                break;
+            case 2: // High
+                setLodDistances(70f, 180f);
+                break;
+            case 1: // Balanced
+            default:
+                setLodDistances(LOD1_DISTANCE, LOD2_DISTANCE);
+                break;
+        }
+    }
+
     /** LOD index for a camera distance. */
     public static int lodIndexFor(float distance) {
-        if (distance >= LOD2_DISTANCE) return 2;
-        if (distance >= LOD1_DISTANCE) return 1;
+        if (distance >= lod2Distance) return 2;
+        if (distance >= lod1Distance) return 1;
         return 0;
     }
 

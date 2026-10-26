@@ -101,4 +101,66 @@ public class FrontEndTest {
         menu.onClick(640, 360);
         assertEquals(bd.july2024.ui.MenuSystem.Screen.MAIN, menu.getScreen());
     }
+
+    @Test
+    public void testGraphicsPresetsAndCustomOverrides() {
+        GameSettings s = new GameSettings();
+        s.applyPreset(GameSettings.PRESET_LOW);
+        assertEquals(0, s.shadowQuality, "Low preset disables shadows");
+        assertFalse(s.ssao, "Low preset disables SSAO");
+        assertFalse(s.fxaa, "Low preset disables FXAA");
+
+        s.applyPreset(GameSettings.PRESET_BALANCED);
+        assertEquals(2, s.shadowQuality, "Balanced preset uses medium shadows");
+        assertTrue(s.ssao, "Balanced preset enables SSAO");
+        assertTrue(s.fxaa, "Balanced preset enables FXAA");
+
+        s.applyPreset(GameSettings.PRESET_PERFORMANCE);
+        assertEquals(1, s.shadowQuality);
+        assertFalse(s.ssao, "Performance preset disables SSAO");
+        assertTrue(s.fxaa, "Performance preset keeps FXAA");
+
+        s.applyPreset(GameSettings.PRESET_HIGH);
+        assertEquals(3, s.shadowQuality, "High preset uses maximum shadows");
+        assertTrue(s.ssao);
+        assertTrue(s.fxaa);
+        assertEquals(2, s.viewDistanceIndex);
+    }
+
+    @Test
+    public void testHardwareProfileDetection() {
+        bd.july2024.performance.HardwareProfile hp = bd.july2024.performance.HardwareProfile.get();
+        assertNotNull(hp.getOsName());
+        assertNotNull(hp.getOsArch());
+        assertTrue(hp.getCpuCores() >= 1);
+        assertTrue(hp.getMaxHeapMb() > 0);
+        assertNotNull(hp.getRecommendedPresetName());
+        assertTrue(hp.getSummary().contains("HardwareProfile"));
+    }
+
+    @Test
+    public void testAdaptivePerformanceControllerStepDownAndRecovery() {
+        int[] levels = new int[1];
+        bd.july2024.performance.AdaptivePerformanceController controller =
+            new bd.july2024.performance.AdaptivePerformanceController((level, desc) -> levels[0] = level);
+
+        controller.setTargetFps(60f);
+        assertEquals(0, controller.getCurrentAdaptationLevel());
+
+        // Simulate sustained underperformance: 35ms frames (> 28 FPS drops) for 5 seconds
+        for (int i = 0; i < 150; i++) {
+            controller.recordFrame(0.035f, true);
+        }
+
+        assertTrue(controller.getCurrentAdaptationLevel() > 0, "Adaptive controller should step down under sustained load");
+        assertTrue(levels[0] > 0);
+        int steppedDownLevel = controller.getCurrentAdaptationLevel();
+
+        // Simulate sustained high headroom: 8ms frames (125 FPS) for 8 seconds (1000 frames)
+        for (int i = 0; i < 1000; i++) {
+            controller.recordFrame(0.008f, true);
+        }
+
+        assertTrue(controller.getCurrentAdaptationLevel() < steppedDownLevel, "Adaptive controller should step back up when headroom is available");
+    }
 }

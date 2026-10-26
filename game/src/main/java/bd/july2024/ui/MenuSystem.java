@@ -182,7 +182,12 @@ public class MenuSystem {
                 selectMain();
                 break;
             case SETTINGS:
-                if (selected == SETTINGS_ITEMS - 1) {
+                if (selected == 14) {
+                    settings.restoreDefaults();
+                    actions.playClick();
+                    actions.settingsChanged();
+                    rebuild();
+                } else if (selected == SETTINGS_ITEMS - 1) {
                     leaveSettings();
                 } else {
                     adjustSetting(1);
@@ -230,14 +235,14 @@ public class MenuSystem {
             if (screen == Screen.CHAPTER_COMPLETE) headerH = 175f;
             else if (screen == Screen.MAIN) headerH = 70f;
             else if (screen == Screen.PAUSE) headerH = 75f;
-            else if (screen == Screen.SETTINGS) headerH = 70f;
+            else if (screen == Screen.SETTINGS) headerH = 65f;
 
+            float itemH = screen == Screen.SETTINGS ? 26f : 34f;
             if (fromTop >= headerH) {
-                float itemH = 34f;
                 int clickedIndex = (int) ((fromTop - headerH) / itemH);
                 if (clickedIndex >= 0 && clickedIndex < itemCount()) {
                     selected = clickedIndex;
-                    if (screen == Screen.SETTINGS && selected < 6) {
+                    if (screen == Screen.SETTINGS && selected < 14) {
                         float relX = (mouseX - px) / pw;
                         if (relX < 0.5f) {
                             onLeft();
@@ -300,7 +305,7 @@ public class MenuSystem {
         {"মূল মেনুতে ফিরে যান", "Main menu"},
         {"লেভেল পুনরায় শুরু", "Restart level"},
     };
-    private static final int SETTINGS_ITEMS = 7;
+    private static final int SETTINGS_ITEMS = 16;
 
     private boolean hasList() {
         return screen == Screen.MAIN || screen == Screen.SETTINGS || screen == Screen.PAUSE || screen == Screen.CHAPTER_COMPLETE;
@@ -358,16 +363,66 @@ public class MenuSystem {
 
     private void adjustSetting(int dir) {
         switch (selected) {
-            case 0: settings.mouseSensitivity = clamp(round1(settings.mouseSensitivity + 0.1f * dir), 0.3f, 3.0f); break;
-            case 1: settings.invertMouseY = !settings.invertMouseY; break;
-            case 2: settings.masterVolume = clamp(Math.round((settings.masterVolume + 0.05f * dir) * 20f) / 20f, 0f, 1f); break;
+            case 0: {
+                int count = GameSettings.PRESET_NAMES.length;
+                int next = (settings.graphicsPresetIndex + dir + count) % count;
+                settings.applyPreset(next);
+                break;
+            }
+            case 1: settings.adaptivePerformance = !settings.adaptivePerformance; break;
+            case 2: {
+                int idx = 0;
+                for (int i = 0; i < GameSettings.TARGET_FPS_OPTIONS.length; i++) {
+                    if (GameSettings.TARGET_FPS_OPTIONS[i] == settings.targetFps) idx = i;
+                }
+                idx = (idx + dir + GameSettings.TARGET_FPS_OPTIONS.length) % GameSettings.TARGET_FPS_OPTIONS.length;
+                settings.targetFps = GameSettings.TARGET_FPS_OPTIONS[idx];
+                break;
+            }
             case 3: {
+                int sm = GameSettings.SHADOW_MODES.length;
+                settings.shadowQuality = (settings.shadowQuality + dir + sm) % sm;
+                settings.graphicsPresetIndex = GameSettings.PRESET_CUSTOM;
+                break;
+            }
+            case 4: {
+                settings.ssao = !settings.ssao;
+                settings.graphicsPresetIndex = GameSettings.PRESET_CUSTOM;
+                break;
+            }
+            case 5: {
+                settings.fxaa = !settings.fxaa;
+                settings.graphicsPresetIndex = GameSettings.PRESET_CUSTOM;
+                break;
+            }
+            case 6: {
+                int vd = GameSettings.VIEW_DISTANCES.length;
+                settings.viewDistanceIndex = (settings.viewDistanceIndex + dir + vd) % vd;
+                settings.graphicsPresetIndex = GameSettings.PRESET_CUSTOM;
+                break;
+            }
+            case 7: {
+                int vl = GameSettings.VEGETATION_LODS.length;
+                settings.vegetationLodIndex = (settings.vegetationLodIndex + dir + vl) % vl;
+                settings.graphicsPresetIndex = GameSettings.PRESET_CUSTOM;
+                break;
+            }
+            case 8: settings.mouseSensitivity = clamp(round1(settings.mouseSensitivity + 0.1f * dir), 0.3f, 3.0f); break;
+            case 9: settings.invertMouseY = !settings.invertMouseY; break;
+            case 10: settings.masterVolume = clamp(Math.round((settings.masterVolume + 0.05f * dir) * 20f) / 20f, 0f, 1f); break;
+            case 11: {
                 int i = indexOf(GameSettings.SUBTITLE_MODES, settings.subtitles);
                 settings.subtitles = GameSettings.SUBTITLE_MODES[(i + dir + GameSettings.SUBTITLE_MODES.length) % GameSettings.SUBTITLE_MODES.length];
                 break;
             }
-            case 4: settings.windowSizeIndex = (settings.windowSizeIndex + dir + GameSettings.WINDOW_SIZES.length) % GameSettings.WINDOW_SIZES.length; break;
-            case 5: settings.fullscreen = !settings.fullscreen; break;
+            case 12: settings.windowSizeIndex = (settings.windowSizeIndex + dir + GameSettings.WINDOW_SIZES.length) % GameSettings.WINDOW_SIZES.length; break;
+            case 13: settings.fullscreen = !settings.fullscreen; break;
+            case 14:
+                settings.restoreDefaults();
+                break;
+            case 15:
+                leaveSettings();
+                return;
             default: return;
         }
         actions.playClick();
@@ -477,18 +532,35 @@ public class MenuSystem {
         drawDim(DIM);
         List<Line> lines = new ArrayList<>();
         lines.add(new Line("সেটিংস  ·  SETTINGS", 20f, true, ProjectJulyHUD.TEXT));
-        lines.add(new Line("Left / Right মান বদলান  ·  Enter / Esc ফিরে যান ও সংরক্ষণ করুন", 11f, false, ProjectJulyHUD.MUTED, 2));
+        lines.add(new Line("Left / Right মান বদলান  ·  Enter / Click বাছাই  ·  Esc ফিরে যান", 11f, false, ProjectJulyHUD.MUTED, 2));
+
         String[] subLabels = {"বাংলা + English", "শুধু বাংলা", "English only"};
         int sub = indexOf(GameSettings.SUBTITLE_MODES, settings.subtitles);
         String win = settings.windowWidth() + " × " + settings.windowHeight();
-        lines.add(item("মাউস সংবেদনশীলতা", "mouse sensitivity", String.format(java.util.Locale.ROOT, "%.1f", settings.mouseSensitivity), selected == 0, true, 18));
-        lines.add(item("মাউস Y উল্টানো", "invert mouse Y", settings.invertMouseY ? "চালু · on" : "বন্ধ · off", selected == 1, true, 8));
-        lines.add(item("শব্দের মাত্রা", "master volume", Math.round(settings.masterVolume * 100) + " %", selected == 2, true, 8));
-        lines.add(item("সাবটাইটেল", "subtitles", subLabels[Math.max(0, sub)], selected == 3, true, 8));
-        lines.add(item("উইন্ডোর আকার", "window size", win + "  (পুনরায় চালু করলে কার্যকর · after restart)", selected == 4, true, 8));
-        lines.add(item("ফুলস্ক্রিন", "fullscreen", (settings.fullscreen ? "চালু · on" : "বন্ধ · off") + "  (after restart)", selected == 5, true, 8));
-        lines.add(item("ফিরে যান", "back", null, selected == 6, true, 18));
-        panelPicture = textRenderer.createPanelPicture("Settings", lines, menuStyle(), null);
+        String fpsStr = settings.targetFps > 0 ? (settings.targetFps + " FPS") : "সীমাহীন · Unlimited";
+
+        lines.add(item("গ্রাফিক্স প্রিসেট", "graphics preset", GameSettings.PRESET_NAMES[settings.graphicsPresetIndex], selected == 0, true, 10));
+        lines.add(item("অভিযোজিত পারফরম্যান্স", "adaptive performance", settings.adaptivePerformance ? "চালু · on" : "বন্ধ · off", selected == 1, true, 3));
+        lines.add(item("ফ্রেমরেট টার্গেট", "target frame rate", fpsStr, selected == 2, true, 3));
+        lines.add(item("ছায়া", "shadow quality", GameSettings.SHADOW_MODES[settings.shadowQuality], selected == 3, true, 3));
+        lines.add(item("অ্যাম্বিয়েন্ট অকলুশন (SSAO)", "ambient occlusion", settings.ssao ? "চালু · on" : "বন্ধ · off", selected == 4, true, 3));
+        lines.add(item("অ্যান্টি-অ্যালাইজিং (FXAA)", "anti-aliasing", settings.fxaa ? "চালু · on" : "বন্ধ · off", selected == 5, true, 3));
+        lines.add(item("দৃশ্যমান দূরত্ব", "view distance", GameSettings.VIEW_DISTANCES[settings.viewDistanceIndex], selected == 6, true, 3));
+        lines.add(item("গাছপালার ডিটেইল", "foliage LOD", GameSettings.VEGETATION_LODS[settings.vegetationLodIndex], selected == 7, true, 3));
+        lines.add(item("মাউস সংবেদনশীলতা", "mouse sensitivity", String.format(java.util.Locale.ROOT, "%.1f", settings.mouseSensitivity), selected == 8, true, 6));
+        lines.add(item("মাউস Y উল্টানো", "invert mouse Y", settings.invertMouseY ? "চালু · on" : "বন্ধ · off", selected == 9, true, 3));
+        lines.add(item("শব্দের মাত্রা", "master volume", Math.round(settings.masterVolume * 100) + " %", selected == 10, true, 3));
+        lines.add(item("সাবটাইটেল", "subtitles", subLabels[Math.max(0, sub)], selected == 11, true, 3));
+        lines.add(item("উইন্ডোর আকার", "window size", win + " (restart)", selected == 12, true, 3));
+        lines.add(item("ফুলস্ক্রিন", "fullscreen", (settings.fullscreen ? "চালু · on" : "বন্ধ · off") + " (restart)", selected == 13, true, 3));
+        lines.add(item("ডিফল্ট সেটিংস ফিরুন", "restore defaults", null, selected == 14, true, 8));
+        lines.add(item("ফিরে যান ও সংরক্ষণ", "save & back", null, selected == 15, true, 4));
+
+        PanelStyle s = menuStyle();
+        s.minWidth = 660;
+        s.maxWidth = 920;
+        s.paddingY = 16;
+        panelPicture = textRenderer.createPanelPicture("Settings", lines, s, null);
         centre(panelPicture, 0.5f);
     }
 

@@ -15,6 +15,19 @@ public final class GameSettings {
 
     public static final int[][] WINDOW_SIZES = {{1280, 720}, {1600, 900}, {1920, 1080}};
     public static final String[] SUBTITLE_MODES = {"both", "bn", "en"};
+    public static final String[] PRESET_NAMES = {"Low", "Medium", "High", "Performance", "Balanced", "Custom"};
+    public static final int PRESET_LOW = 0;
+    public static final int PRESET_MEDIUM = 1;
+    public static final int PRESET_HIGH = 2;
+    public static final int PRESET_PERFORMANCE = 3;
+    public static final int PRESET_BALANCED = 4;
+    public static final int PRESET_CUSTOM = 5;
+
+    public static final String[] SHADOW_MODES = {"Off", "Low", "Medium", "High"};
+    public static final String[] VIEW_DISTANCES = {"Near (200m)", "Medium (300m)", "Far (400m)", "Ultra (550m)"};
+    public static final float[] VIEW_DISTANCE_METRES = {200f, 300f, 400f, 550f};
+    public static final String[] VEGETATION_LODS = {"Performance", "Balanced", "High"};
+    public static final int[] TARGET_FPS_OPTIONS = {30, 60, 120, 0};
 
     private static GameSettings current;
 
@@ -24,6 +37,83 @@ public final class GameSettings {
     public String subtitles = "both";       // both | bn | en
     public int windowSizeIndex = 0;
     public boolean fullscreen = false;
+
+    // Hardware-Aware Graphics Settings
+    public int graphicsPresetIndex = PRESET_BALANCED;
+    public boolean adaptivePerformance = true;
+    public int targetFps = 60;
+    public int shadowQuality = 2;           // 0=Off, 1=Low, 2=Medium, 3=High
+    public boolean ssao = true;
+    public boolean fxaa = true;
+    public int viewDistanceIndex = 1;       // 1 = Medium (300m)
+    public int vegetationLodIndex = 1;      // 1 = Balanced
+    public boolean vsync = true;
+
+    public void applyPreset(int presetIdx) {
+        if (presetIdx < 0 || presetIdx >= PRESET_NAMES.length) return;
+        this.graphicsPresetIndex = presetIdx;
+        switch (presetIdx) {
+            case PRESET_LOW:
+                shadowQuality = 0;
+                ssao = false;
+                fxaa = false;
+                viewDistanceIndex = 0;
+                vegetationLodIndex = 0;
+                targetFps = 60;
+                vsync = true;
+                break;
+            case PRESET_PERFORMANCE:
+                shadowQuality = 1;
+                ssao = false;
+                fxaa = true;
+                viewDistanceIndex = 0;
+                vegetationLodIndex = 0;
+                targetFps = 60;
+                vsync = true;
+                break;
+            case PRESET_MEDIUM:
+                shadowQuality = 1;
+                ssao = true;
+                fxaa = true;
+                viewDistanceIndex = 1;
+                vegetationLodIndex = 1;
+                targetFps = 60;
+                vsync = true;
+                break;
+            case PRESET_BALANCED:
+                shadowQuality = 2;
+                ssao = true;
+                fxaa = true;
+                viewDistanceIndex = 1;
+                vegetationLodIndex = 1;
+                targetFps = 60;
+                vsync = true;
+                break;
+            case PRESET_HIGH:
+                shadowQuality = 3;
+                ssao = true;
+                fxaa = true;
+                viewDistanceIndex = 2;
+                vegetationLodIndex = 2;
+                targetFps = 60;
+                vsync = true;
+                break;
+            case PRESET_CUSTOM:
+            default:
+                break;
+        }
+    }
+
+    public void restoreDefaults() {
+        mouseSensitivity = 1.0f;
+        invertMouseY = false;
+        masterVolume = 0.8f;
+        subtitles = "both";
+        windowSizeIndex = 0;
+        fullscreen = false;
+        adaptivePerformance = true;
+        applyPreset(PRESET_BALANCED);
+    }
 
     public static synchronized GameSettings get() {
         if (current == null) {
@@ -53,6 +143,15 @@ public final class GameSettings {
         for (String m : SUBTITLE_MODES) if (m.equals(sub)) s.subtitles = m;
         s.windowSizeIndex = Math.max(0, Math.min(WINDOW_SIZES.length - 1, (int) parseFloat(p.getProperty("windowSizeIndex"), 0)));
         s.fullscreen = Boolean.parseBoolean(p.getProperty("fullscreen", "false"));
+        s.graphicsPresetIndex = Math.max(0, Math.min(PRESET_NAMES.length - 1, (int) parseFloat(p.getProperty("graphicsPresetIndex"), s.graphicsPresetIndex)));
+        s.adaptivePerformance = Boolean.parseBoolean(p.getProperty("adaptivePerformance", "true"));
+        s.targetFps = (int) parseFloat(p.getProperty("targetFps"), s.targetFps);
+        s.shadowQuality = Math.max(0, Math.min(SHADOW_MODES.length - 1, (int) parseFloat(p.getProperty("shadowQuality"), s.shadowQuality)));
+        s.ssao = Boolean.parseBoolean(p.getProperty("ssao", Boolean.toString(s.ssao)));
+        s.fxaa = Boolean.parseBoolean(p.getProperty("fxaa", Boolean.toString(s.fxaa)));
+        s.viewDistanceIndex = Math.max(0, Math.min(VIEW_DISTANCES.length - 1, (int) parseFloat(p.getProperty("viewDistanceIndex"), s.viewDistanceIndex)));
+        s.vegetationLodIndex = Math.max(0, Math.min(VEGETATION_LODS.length - 1, (int) parseFloat(p.getProperty("vegetationLodIndex"), s.vegetationLodIndex)));
+        s.vsync = Boolean.parseBoolean(p.getProperty("vsync", "true"));
         return s;
     }
 
@@ -68,6 +167,15 @@ public final class GameSettings {
         p.setProperty("subtitles", subtitles);
         p.setProperty("windowSizeIndex", Integer.toString(windowSizeIndex));
         p.setProperty("fullscreen", Boolean.toString(fullscreen));
+        p.setProperty("graphicsPresetIndex", Integer.toString(graphicsPresetIndex));
+        p.setProperty("adaptivePerformance", Boolean.toString(adaptivePerformance));
+        p.setProperty("targetFps", Integer.toString(targetFps));
+        p.setProperty("shadowQuality", Integer.toString(shadowQuality));
+        p.setProperty("ssao", Boolean.toString(ssao));
+        p.setProperty("fxaa", Boolean.toString(fxaa));
+        p.setProperty("viewDistanceIndex", Integer.toString(viewDistanceIndex));
+        p.setProperty("vegetationLodIndex", Integer.toString(vegetationLodIndex));
+        p.setProperty("vsync", Boolean.toString(vsync));
         try {
             File dir = file.getParentFile();
             if (dir != null) dir.mkdirs();

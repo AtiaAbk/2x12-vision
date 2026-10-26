@@ -11,12 +11,15 @@ import bd.july2024.dialogue.HistoricalDialogues;
 import bd.july2024.level.MissionTracker;
 import bd.july2024.level.ObjectiveMarker;
 import bd.july2024.level.SaveManager;
+import bd.july2024.performance.AdaptivePerformanceController;
+import bd.july2024.performance.HardwareProfile;
 import bd.july2024.ui.BengaliTextRenderer;
 import bd.july2024.ui.HistoricalDocumentModal;
 import bd.july2024.ui.MenuSystem;
 import bd.july2024.ui.ProjectJulyHUD;
 import bd.july2024.world.CampusWorld;
 import bd.july2024.world.LightingManager;
+import bd.july2024.world.TreeLibrary;
 import com.jme3.app.SimpleApplication;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
@@ -78,6 +81,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
     private MenuSystem menu;
     private HistoricalDocumentModal docModal;
     private ObjectiveMarker objectiveMarker;
+    private AdaptivePerformanceController adaptiveController;
     /** False on the title screen and main menu, true once a chapter has started. */
     private boolean inGame = false;
     private boolean cursorVisible = false;
@@ -213,12 +217,23 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         System.out.println("[ProjectJulyApp] Assets: " + assetsDir.getAbsolutePath() + (AppPaths.isPackaged() ? " (packaged launcher)" : ""));
 
         // 1. Initialize Subsystems
+        gameSettings = GameSettings.get();
+        HardwareProfile hp = HardwareProfile.get();
+        if (renderer != null) {
+            hp.setGpuInfo(renderer.getClass().getSimpleName(), "OpenGL " + settings.getRenderer());
+        }
+        System.out.println("[ProjectJulyApp] " + hp.getSummary());
+
+        adaptiveController = new AdaptivePerformanceController((int level, String desc) -> {
+            applyAdaptiveQuality(level);
+        });
+        adaptiveController.setTargetFps(gameSettings.targetFps);
+
         audio = new AudioController(assetManager, rootNode);
         textRenderer = new BengaliTextRenderer(assetManager);
         missionTracker = new MissionTracker();
         dialogueManager = new DialogueManager();
         saveManager = new SaveManager(AppPaths.saveDir());
-        gameSettings = GameSettings.get();
         hud = new ProjectJulyHUD(guiNode, textRenderer, settings.getWidth(), settings.getHeight(), assetManager);
         menu = new MenuSystem(guiNode, textRenderer, settings.getWidth(), settings.getHeight(), gameSettings, menuActions());
         docModal = new HistoricalDocumentModal(guiNode, textRenderer, settings.getWidth(), settings.getHeight());
@@ -254,6 +269,7 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         orbitCam = new CinematicOrbitCamera(cam);
         orbitCam.setAngles(-spawnHeading, camPitch); // camera yaw is the mirror of the character heading (see PlayerControl)
         orbitCam.setColliders(campusWorld.getColliders());
+        applySettings();
 
         // 5. Spawn Companion NPCs
         spawnCompanions();
@@ -327,7 +343,49 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         try {
             listener.setVolume(gameSettings.masterVolume);
         } catch (Throwable ignored) {}
-        hud.invalidateDialogue();
+        if (hud != null) hud.invalidateDialogue();
+
+        if (lighting != null) {
+            lighting.applyGraphicsSettings(gameSettings.shadowQuality, gameSettings.ssao, gameSettings.fxaa);
+        }
+        TreeLibrary.setVegetationLodLevel(gameSettings.vegetationLodIndex);
+        if (orbitCam != null && gameSettings.viewDistanceIndex >= 0 && gameSettings.viewDistanceIndex < GameSettings.VIEW_DISTANCE_METRES.length) {
+            orbitCam.setViewDistance(GameSettings.VIEW_DISTANCE_METRES[gameSettings.viewDistanceIndex]);
+        }
+        if (adaptiveController != null) {
+            adaptiveController.setTargetFps(gameSettings.targetFps);
+            adaptiveController.reset();
+        }
+    }
+
+    private void applyAdaptiveQuality(int level) {
+        if (lighting == null) return;
+        switch (level) {
+            case 0:
+                lighting.applyGraphicsSettings(gameSettings.shadowQuality, gameSettings.ssao, gameSettings.fxaa);
+                TreeLibrary.setVegetationLodLevel(gameSettings.vegetationLodIndex);
+                if (orbitCam != null && gameSettings.viewDistanceIndex >= 0 && gameSettings.viewDistanceIndex < GameSettings.VIEW_DISTANCE_METRES.length) {
+                    orbitCam.setViewDistance(GameSettings.VIEW_DISTANCE_METRES[gameSettings.viewDistanceIndex]);
+                }
+                break;
+            case 1:
+                if (lighting.getShadowFilter() != null) lighting.getShadowFilter().setShadowIntensity(0.35f);
+                break;
+            case 2:
+                lighting.setSsaoEnabled(false);
+                break;
+            case 3:
+                TreeLibrary.setVegetationLodLevel(0);
+                break;
+            case 4:
+                if (orbitCam != null) orbitCam.setViewDistance(200f);
+                break;
+            case 5:
+                lighting.setShadowsEnabled(false);
+                break;
+            default:
+                break;
+        }
     }
 
     private void quitGame() {
@@ -765,6 +823,9 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
         }
         if (tpf < minDelta) minDelta = tpf;
         if (tpf > maxDelta) maxDelta = tpf;
+        if (adaptiveController != null) {
+            adaptiveController.recordFrame(tpf, gameSettings.adaptivePerformance && inGame && !menu.isOpen());
+        }
         // TEST_UI=pause|interact opens the pause menu or triggers one interaction at frame 60 so the
         // automated capture can show those panels.
         if (frameCounter == 60) {
@@ -867,6 +928,12 @@ public class ProjectJulyApp extends SimpleApplication implements ActionListener,
                 System.out.println("Heap Memory: Used " + usedMem + " MB / Total " + totalMem + " MB (Max: " + maxMem + " MB)");
                 System.out.println("Resolution: " + settings.getWidth() + "x" + settings.getHeight());
                 System.out.println("Renderer: " + renderer.getClass().getSimpleName());
+                System.out.println("Hardware: " + HardwareProfile.get().getSummary());
+                System.out.println("Graphics Preset: " + GameSettings.PRESET_NAMES[gameSettings.graphicsPresetIndex]
+                    + " (Adaptive: " + (gameSettings.adaptivePerformance ? "ENABLED, Level " + (adaptiveController != null ? adaptiveController.getCurrentAdaptationLevel() : 0) : "DISABLED") + ")");
+                System.out.println("Shadows: " + GameSettings.SHADOW_MODES[gameSettings.shadowQuality]
+                    + ", SSAO: " + gameSettings.ssao + ", FXAA: " + gameSettings.fxaa
+                    + ", ViewDist: " + GameSettings.VIEW_DISTANCES[gameSettings.viewDistanceIndex]);
                 System.out.println("Character: model loaded=" + playerMesh.isModelLoaded() + ", clip=" + playerMesh.getCurrentClip() + ", clip time=" + String.format("%.2f", playerMesh.getAnimationTime()) + " s");
                 System.out.println("Note: automated static run with no input; not a gameplay benchmark and not a 60 FPS claim. Spec target 1920x1080 @ 60 FPS on MacBook Air M4 remains unmeasured.");
                 System.out.println("=============================================================");

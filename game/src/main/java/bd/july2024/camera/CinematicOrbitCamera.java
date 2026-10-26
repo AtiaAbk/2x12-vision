@@ -31,6 +31,11 @@ public class CinematicOrbitCamera {
         cam.setFrustumPerspective(65f, (float) cam.getWidth() / (float) cam.getHeight(), 0.15f, 350f);
     }
 
+    public void setViewDistance(float metres) {
+        float far = Math.max(100f, metres);
+        cam.setFrustumPerspective(65f, (float) cam.getWidth() / (float) cam.getHeight(), 0.15f, far);
+    }
+
     public void update(float delta, Vector3f playerPos) {
         if (delta > 0.1f) delta = 0.1f;
 
