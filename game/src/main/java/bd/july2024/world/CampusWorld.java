@@ -1084,63 +1084,136 @@ public class CampusWorld {
         curzonNode.setLocalRotation(new Quaternion().fromAngleAxis(CURZON_YAW, Vector3f.UNIT_Y));
         staticNode.attachChild(curzonNode);
 
-        // 1. Front entrance garden plaza
-        addBox("CurzonPlaza", pavingMat, 0f, PLAZA_HEIGHT * 0.5f, -11f, 13f, PLAZA_HEIGHT * 0.5f, 7f, curzonNode);
-        addSurfaceRect(curzonFrame, 0f, -11f, 13f, 7f, PLAZA_HEIGHT);
-
-        // 2. Base plinth
-        addBox("CurzonBase", concreteMat, 0f, 0.4f, 0f, 25f, 0.4f, 6.2f, curzonNode);
-        addSurfaceRect(curzonFrame, 0f, 0f, 25f, 6.2f, 0.8f);
-
-        // 3. Central Block (Grand Indo-Saracenic Pavilion)
-        addBox("CurzonCenterBlock", brickMat, 0f, 5.6f, 0f, 7.2f, 4.8f, 6.0f, curzonNode);
-        addBox("CurzonCenterCornice", plasterMat, 0f, 10.55f, 0f, 7.5f, 0.25f, 6.3f, curzonNode);
-        addBox("CurzonPortalArch", brickDarkMat, 0f, 3.4f, -6.05f, 2.6f, 2.6f, 0.1f, curzonNode);
-        addBox("CurzonPortalTrim", plasterMat, 0f, 3.4f, -6.15f, 2.8f, 2.8f, 0.05f, curzonNode);
-
-        // Mughal Dome on Drum
-        addCylinderY("CurzonDomeDrum", plasterMat, 0f, 10.8f, 0f, 3.2f, 1.6f, curzonNode);
-        Geometry dome = new Geometry("CurzonMainDome", new Sphere(20, 20, 3.2f));
-        dome.setLocalTranslation(0f, 13.6f, 0f);
-        finish(dome, plasterWarmMat, curzonNode);
-        addBox("CurzonFinial", memorialGoldMat, 0f, 17.2f, 0f, 0.08f, 0.6f, 0.08f, curzonNode);
-
-        // 4. Symmetrical Left & Right Wings
-        addBox("CurzonWingL", brickMat, -16.5f, 4.6f, 0f, 9.2f, 3.8f, 5.5f, curzonNode);
-        addBox("CurzonWingR", brickMat, 16.5f, 4.6f, 0f, 9.2f, 3.8f, 5.5f, curzonNode);
-        addBox("CurzonBandL", plasterMat, -16.5f, 8.5f, 0f, 9.4f, 0.15f, 5.7f, curzonNode);
-        addBox("CurzonBandR", plasterMat, 16.5f, 8.5f, 0f, 9.4f, 0.15f, 5.7f, curzonNode);
-
-        // Verandah Arched Colonnade (front pillars)
-        for (int p = 0; p < 4; p++) {
-            float pxL = -23.5f + p * 4.6f;
-            float pxR = 9.5f + p * 4.6f;
-            addCylinderY("CurzonPillarL_" + p, plasterMat, pxL, 0.8f, -5.6f, 0.22f, 7.2f, curzonNode);
-            addCylinderY("CurzonPillarR_" + p, plasterMat, pxR, 0.8f, -5.6f, 0.22f, 7.2f, curzonNode);
+        // 1. Front entrance garden plaza & stepped approach
+        addBox("CurzonPlaza", pavingMat, 0f, PLAZA_HEIGHT * 0.5f, -11f, 16f, PLAZA_HEIGHT * 0.5f, 7f, curzonNode);
+        addSurfaceRect(curzonFrame, 0f, -11f, 16f, 7f, PLAZA_HEIGHT);
+        for (int step = 0; step < 3; step++) {
+            float sy = 0.15f + step * 0.15f;
+            float sz = -6.5f - step * 0.5f;
+            addBox("CurzonStep_" + step, pavingMat, 0f, sy * 0.5f, sz, 4.2f - step * 0.2f, sy * 0.5f, 0.35f, curzonNode);
         }
 
-        // 5. Corner Chhatris (towers with domed chhatris)
-        float[] chhatriX = {-24.5f, 24.5f};
-        float[] chhatriZ = {-5.5f, 5.5f};
-        int cIdx = 0;
-        for (float cx : chhatriX) {
-            for (float cz : chhatriZ) {
-                addBox("CurzonTower_" + cIdx, brickMat, cx, 5.0f, cz, 1.2f, 4.2f, 1.2f, curzonNode);
-                addBox("CurzonTowerCornice_" + cIdx, plasterMat, cx, 9.3f, cz, 1.4f, 0.15f, 1.4f, curzonNode);
-                Geometry chhatriDome = new Geometry("CurzonChhatri_" + cIdx, new Sphere(12, 12, 1.15f));
-                chhatriDome.setLocalTranslation(cx, 10.3f, cz);
-                finish(chhatriDome, plasterWarmMat, curzonNode);
-                addBox("CurzonSpire_" + cIdx, memorialGoldMat, cx, 11.8f, cz, 0.05f, 0.35f, 0.05f, curzonNode);
-                cIdx++;
+        // 2. Base plinth (elevated ground floor)
+        addBox("CurzonBase", concreteMat, 0f, 0.45f, 0f, 28f, 0.45f, 6.5f, curzonNode);
+        addSurfaceRect(curzonFrame, 0f, 0f, 28f, 6.5f, 0.9f);
+
+        // 3. Central Entrance Block (Projecting Forward, Indo-Saracenic Composition)
+        float cY0 = 0.9f;
+        addBox("CurzonCenterBlock", brickMat, 0f, cY0 + 4.2f, -1.0f, 7.8f, 4.2f, 6.8f, curzonNode);
+        addBox("CurzonCenterProj", brickDarkMat, 0f, cY0 + 4.2f, -6.2f, 4.8f, 4.2f, 1.6f, curzonNode);
+
+        // Ground Floor Entrance: Large multicusped foliated archway portal
+        addBox("CurzonPortalArchInner", brickDarkMat, 0f, cY0 + 2.0f, -6.85f, 2.2f, 2.0f, 0.2f, curzonNode);
+        addBox("CurzonPortalTrim", plasterMat, 0f, cY0 + 2.1f, -7.02f, 2.4f, 2.1f, 0.06f, curzonNode);
+        addBox("CurzonPortalLintel", plasterWarmMat, 0f, cY0 + 4.25f, -6.8f, 3.2f, 0.18f, 0.3f, curzonNode);
+        addBox("CurzonPortalDoor", glassMat, 0f, cY0 + 1.6f, -6.7f, 1.6f, 1.6f, 0.05f, curzonNode);
+
+        // First Floor Central Gallery: Tripartite multicusped arched openings with white jali/lattice
+        float f1Y = cY0 + 4.5f;
+        addBox("CurzonBalconyBase", plasterMat, 0f, f1Y + 0.15f, -7.1f, 4.6f, 0.15f, 0.6f, curzonNode);
+        addBox("CurzonBalconyBalustrade", plasterWarmMat, 0f, f1Y + 0.65f, -7.55f, 4.4f, 0.35f, 0.08f, curzonNode);
+        for (int b = -1; b <= 1; b++) {
+            float bx = b * 1.5f;
+            addBox("CurzonGalleryArch_" + b, brickDarkMat, bx, f1Y + 2.2f, -6.85f, 0.65f, 1.4f, 0.15f, curzonNode);
+            addBox("CurzonGalleryTrim_" + b, plasterMat, bx, f1Y + 2.3f, -6.95f, 0.72f, 1.5f, 0.06f, curzonNode);
+            addBox("CurzonGalleryJali_" + b, plasterWarmMat, bx, f1Y + 3.2f, -6.9f, 0.58f, 0.55f, 0.04f, curzonNode);
+        }
+
+        // Projecting Chajja Eaves supported by decorative brackets above first floor
+        addBox("CurzonCenterChajja", plasterMat, 0f, cY0 + 8.45f, -6.9f, 5.2f, 0.12f, 1.1f, curzonNode);
+        for (int brk = -3; brk <= 3; brk++) {
+            float brkX = brk * 1.5f;
+            addBox("CurzonCenterBracket_" + brk, plasterWarmMat, brkX, cY0 + 8.1f, -6.7f, 0.12f, 0.25f, 0.35f, curzonNode);
+        }
+
+        // 4. Central Square Tower (Authentic Historic Landmark Silhouette)
+        float towerY0 = cY0 + 8.5f;
+        float towerH = 4.8f;
+        addBox("CurzonTowerBody", brickMat, 0f, towerY0 + towerH * 0.5f, -1.0f, 4.5f, towerH * 0.5f, 4.5f, curzonNode);
+        for (int n = -2; n <= 2; n++) {
+            float nx = n * 1.3f;
+            addBox("CurzonTowerNiche_" + n, brickDarkMat, nx, towerY0 + 2.4f, -3.28f, 0.28f, 1.4f, 0.06f, curzonNode);
+            addBox("CurzonTowerNicheTrim_" + n, plasterMat, nx, towerY0 + 3.15f, -3.29f, 0.32f, 0.2f, 0.06f, curzonNode);
+        }
+
+        // Tower Parapet, Heavy Cornice & Stepped Battlements (Crenellations)
+        float towerTop = towerY0 + towerH;
+        addBox("CurzonTowerCornice", plasterWarmMat, 0f, towerTop + 0.2f, -1.0f, 4.9f, 0.2f, 4.9f, curzonNode);
+        addBox("CurzonTowerParapet", brickDarkMat, 0f, towerTop + 0.65f, -1.0f, 4.6f, 0.25f, 4.6f, curzonNode);
+        for (int bt = -2; bt <= 2; bt++) {
+            float bx = bt * 1.6f;
+            addBox("CurzonTowerBattle_" + bt, plasterMat, bx, towerTop + 1.05f, -3.3f, 0.45f, 0.25f, 0.15f, curzonNode);
+        }
+
+        // Four Corner Open Chhatri Kiosks atop the Central Tower
+        float[] tChhatriX = {-4.0f, 4.0f};
+        float[] tChhatriZ = {-5.0f, 3.0f};
+        int tkIdx = 0;
+        for (float cx : tChhatriX) {
+            for (float cz : tChhatriZ) {
+                addBox("CurzonKioskBase_" + tkIdx, plasterWarmMat, cx, towerTop + 0.3f, cz, 0.75f, 0.3f, 0.75f, curzonNode);
+                for (int kp = 0; kp < 4; kp++) {
+                    float kpx = cx + ((kp % 2 == 0) ? -0.5f : 0.5f);
+                    float kpz = cz + ((kp / 2 == 0) ? -0.5f : 0.5f);
+                    addCylinderY("CurzonKioskCol_" + tkIdx + "_" + kp, plasterMat, kpx, towerTop + 0.6f, kpz, 0.08f, 1.4f, curzonNode);
+                }
+                Geometry kDome = new Geometry("CurzonKioskDome_" + tkIdx, new Sphere(12, 12, 0.75f));
+                kDome.setLocalTranslation(cx, towerTop + 2.05f, cz);
+                finish(kDome, plasterWarmMat, curzonNode);
+                addBox("CurzonKioskFinial_" + tkIdx, memorialGoldMat, cx, towerTop + 3.0f, cz, 0.04f, 0.35f, 0.04f, curzonNode);
+                tkIdx++;
+            }
+        }
+        for (int inf = -1; inf <= 1; inf += 2) {
+            addBox("CurzonTowerPinnacle_" + inf, memorialGoldMat, inf * 2.0f, towerTop + 1.8f, -3.3f, 0.06f, 0.5f, 0.06f, curzonNode);
+        }
+
+        // 5. Symmetrical Left & Right Two-Storey Loggia Wings
+        float wingW = 18.5f;
+        float wingH = 4.2f;
+        float[] wingOffsets = {-17.5f, 17.5f};
+        for (int w = 0; w < 2; w++) {
+            float wx = wingOffsets[w];
+            String side = (w == 0) ? "L" : "R";
+            addBox("CurzonWingMass_" + side, brickMat, wx, cY0 + wingH, 0f, wingW * 0.5f, wingH, 5.8f, curzonNode);
+            addBox("CurzonStringBand_" + side, plasterMat, wx, cY0 + 4.2f, -5.85f, wingW * 0.5f + 0.1f, 0.15f, 0.15f, curzonNode);
+            addBox("CurzonWingChajja_" + side, plasterMat, wx, cY0 + 8.45f, -5.95f, wingW * 0.5f + 0.2f, 0.12f, 0.8f, curzonNode);
+            addBox("CurzonWingBalustrade_" + side, plasterWarmMat, wx, cY0 + 8.9f, -5.82f, wingW * 0.5f, 0.35f, 0.08f, curzonNode);
+
+            for (int bay = 0; bay < 4; bay++) {
+                float bayX = wx - (wingW * 0.5f) + 2.2f + bay * 4.4f;
+                addBox("CurzonArchG_" + side + "_" + bay, brickDarkMat, bayX, cY0 + 2.1f, -5.82f, 1.4f, 1.8f, 0.08f, curzonNode);
+                addBox("CurzonArchGTrim_" + side + "_" + bay, plasterMat, bayX, cY0 + 2.2f, -5.88f, 1.5f, 1.9f, 0.04f, curzonNode);
+                addBox("CurzonArchF1_" + side + "_" + bay, brickDarkMat, bayX, cY0 + 6.3f, -5.82f, 1.4f, 1.8f, 0.08f, curzonNode);
+                addBox("CurzonArchF1Trim_" + side + "_" + bay, plasterMat, bayX, cY0 + 6.4f, -5.88f, 1.5f, 1.9f, 0.04f, curzonNode);
+                addBox("CurzonArchF1Bal_" + side + "_" + bay, plasterWarmMat, bayX, cY0 + 4.8f, -5.85f, 1.35f, 0.35f, 0.06f, curzonNode);
             }
         }
 
-        // Curzon Garden Hedges
-        addBox("CurzonHedgeL", hedgeMat, -10f, 0.45f, -17f, 4f, 0.45f, 0.6f, curzonNode);
-        addBox("CurzonHedgeR", hedgeMat, 10f, 0.45f, -17f, 4f, 0.45f, 0.6f, curzonNode);
+        // 6. Flanking Corner Turrets with Domed Chhatris (East & West extremes)
+        float[] turretX = {-27.5f, 27.5f};
+        for (int t = 0; t < 2; t++) {
+            float tx = turretX[t];
+            String side = (t == 0) ? "West" : "East";
+            addBox("CurzonTurret_" + side, brickDarkMat, tx, cY0 + 4.8f, -4.5f, 1.4f, 4.8f, 1.4f, curzonNode);
+            addBox("CurzonTurretCornice_" + side, plasterWarmMat, tx, cY0 + 9.8f, -4.5f, 1.6f, 0.18f, 1.6f, curzonNode);
+            for (int tp = 0; tp < 4; tp++) {
+                float tpx = tx + ((tp % 2 == 0) ? -0.9f : 0.9f);
+                float tpz = -4.5f + ((tp / 2 == 0) ? -0.9f : 0.9f);
+                addCylinderY("CurzonTurretCol_" + side + "_" + tp, plasterMat, tpx, cY0 + 10.0f, tpz, 0.07f, 1.3f, curzonNode);
+            }
+            Geometry tDome = new Geometry("CurzonTurretDome_" + side, new Sphere(14, 14, 1.25f));
+            tDome.setLocalTranslation(tx, cY0 + 11.4f, -4.5f);
+            finish(tDome, plasterWarmMat, curzonNode);
+            addBox("CurzonTurretSpire_" + side, memorialGoldMat, tx, cY0 + 13.0f, -4.5f, 0.05f, 0.5f, 0.05f, curzonNode);
+        }
 
-        // Colliders around Curzon Hall footprint
-        addCollider(CURZON_X - 22f, 0f, CURZON_Z - 22f, CURZON_X + 22f, 14f, CURZON_Z + 22f);
+        // 7. Curzon Garden Hedges & Landscaping
+        addBox("CurzonHedgeL", hedgeMat, -10f, 0.45f, -17f, 5.5f, 0.45f, 0.65f, curzonNode);
+        addBox("CurzonHedgeR", hedgeMat, 10f, 0.45f, -17f, 5.5f, 0.45f, 0.65f, curzonNode);
+
+        // 8. Colliders around Curzon Hall footprint
+        addCollider(CURZON_X - 29f, 0f, CURZON_Z - 20f, CURZON_X + 29f, 16f, CURZON_Z + 20f);
     }
 
     // ---- Vegetation -----------------------------------------------------------------------------
