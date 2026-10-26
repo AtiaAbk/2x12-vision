@@ -143,7 +143,8 @@ public class ProjectJulyHUD {
     private BufferedImage getMapImage() {
         if (cachedMapImage != null) return cachedMapImage;
         try {
-            File f = AppPaths.asset("maps/campus_map.png");
+            File f = AppPaths.asset("maps/campus_map_geography.png");
+            if (f == null || !f.exists()) f = AppPaths.asset("maps/campus_map.png");
             if (f != null && f.exists()) {
                 cachedMapImage = ImageIO.read(f);
             }
