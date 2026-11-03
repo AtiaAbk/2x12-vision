@@ -91,7 +91,3 @@ Controls are listed in [`CONTROLS.md`](CONTROLS.md).
 | `docs/` (other files), `CHANGES.md`, `LEVELS.md` | Legacy documents from the earlier LibGDX build. See `docs/README.md`. |
 
 ## Working rules
-
-See `AGENTS.md` and `docs/spec/04_MASTER_PROMPT_FOR_DEVELOPER.md`. In particular: no feature is
-called complete without a build, a run and a genuine screenshot; no historical claim is called
-verified without a source ledger entry; no asset is used without a recorded licence.
