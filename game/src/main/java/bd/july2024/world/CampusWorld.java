@@ -115,6 +115,10 @@ public class CampusWorld {
     private Material lampMat;
     private Material memorialGoldMat;
     private Material woodMat;
+    private Material waterMat;
+    private Material lilyMat;
+    private Material drainMat;
+    private Material kerbMat;
     private Vector3f libraryBoardPos;
     private Vector3f tscBoardPos;
     private Vector3f curzonBoardPos;
@@ -179,6 +183,11 @@ public class CampusWorld {
         hedgeMat = createLitMaterial(assetManager, new ColorRGBA(0.16f, 0.32f, 0.14f, 1f), 8f);
         lampMat = createLitMaterial(assetManager, new ColorRGBA(0.10f, 0.20f, 0.14f, 1f), 35f);
         woodMat = createLitMaterial(assetManager, new ColorRGBA(0.45f, 0.30f, 0.18f, 1f), 10f);
+        waterMat = createLitMaterial(assetManager, new ColorRGBA(0.12f, 0.32f, 0.40f, 1f), 90f);
+        waterMat.setColor("Specular", ColorRGBA.White.mult(0.75f));
+        lilyMat = createLitMaterial(assetManager, new ColorRGBA(0.18f, 0.42f, 0.16f, 1f), 20f);
+        drainMat = createLitMaterial(assetManager, new ColorRGBA(0.18f, 0.18f, 0.20f, 1f), 25f);
+        kerbMat = createLitMaterial(assetManager, new ColorRGBA(0.68f, 0.67f, 0.65f, 1f), 15f);
 
         memorialGoldMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         memorialGoldMat.setColor("Color", new ColorRGBA(1.0f, 0.86f, 0.32f, 1f));
@@ -590,28 +599,66 @@ public class CampusWorld {
         // Roundabout carriageway (OSM: four lanes, asphalt) as a disc; the island sits on top.
         addDisc("RingRoad", asphaltMat, 0f, 0.02f, 0f, RING_OUTER_RADIUS, 72);
 
+        // Outer concrete kerb around the roundabout carriageway
+        for (int k = 0; k < 48; k++) {
+            float kAngle = k * (FastMath.TWO_PI / 48f);
+            float kx = FastMath.cos(kAngle) * (RING_OUTER_RADIUS + 0.15f);
+            float kz = FastMath.sin(kAngle) * (RING_OUTER_RADIUS + 0.15f);
+            addYawedBox("RingKerb_" + k, kerbMat, kx, 0.08f, kz, 1.7f, 0.08f, 0.16f, -kAngle + FastMath.HALF_PI);
+        }
+
+        // White circular dashed lane divider line in the roundabout carriageway (radius ~17.5m)
+        for (int d = 0; d < 24; d += 2) {
+            float dAngle = d * (FastMath.TWO_PI / 24f);
+            float dx = FastMath.cos(dAngle) * 17.5f;
+            float dz = FastMath.sin(dAngle) * 17.5f;
+            addYawedBox("RingLaneDash_" + d, roadLineMat, dx, ROAD_TOP + 0.003f, dz, 1.2f, 0.003f, 0.10f, -dAngle + FastMath.HALF_PI);
+        }
+
         // Road arms. Only the roundabout footprint and the south-west bearing of Shahid Minar Sarak are
         // from OSM; the other bearings are approximate (docs/REFERENCE_LEDGER.md, section 4).
         addRoadArm("RoadWest_NilkhetSarak", 180f, 6f, 150f, 8f);              // west, centre line 8 m north
         addRoadArm("RoadSouthWest_ShahidMinarSarak", 120f, 6f, 150f, 0f);     // south-west
-        addRoadArm("RoadSouthEast_KaziNazrulIslamAve", 45f, 5f, 170f, 0f);    // south-east
+        addRoadArm("RoadSouthEast_KaziNazrulIslamAve", 45f, 5.5f, 170f, 0f);  // south-east to Curzon Hall
         addRoadArm("RoadNorthEast_Shahbagh", -50f, 6f, 150f, 0f);             // north-east
 
-        // Zebra crossings near the roundabout
+        // Zebra pedestrian crossings near the roundabout at all key approaches
+        // 1. West arm (Nilkhet)
         for (int i = -3; i <= 3; i++) {
             addBox("ZebraW_" + i, roadLineMat, -31f, ROAD_TOP + 0.004f, -8f + i * 1.7f, 2.6f, 0.004f, 0.55f);
         }
-        float a = 120f * FastMath.DEG_TO_RAD;
+        // 2. South-west arm (Shahid Minar)
+        float aSW = 120f * FastMath.DEG_TO_RAD;
         for (int i = -3; i <= 3; i++) {
             float along = 31f, across = i * 1.7f;
-            float cx = FastMath.cos(a) * along - FastMath.sin(a) * across;
-            float cz = FastMath.sin(a) * along + FastMath.cos(a) * across;
-            addYawedBox("ZebraSW_" + i, roadLineMat, cx, ROAD_TOP + 0.004f, cz, 2.6f, 0.004f, 0.55f, -a);
+            float cx = FastMath.cos(aSW) * along - FastMath.sin(aSW) * across;
+            float cz = FastMath.sin(aSW) * along + FastMath.cos(aSW) * across;
+            addYawedBox("ZebraSW_" + i, roadLineMat, cx, ROAD_TOP + 0.004f, cz, 2.6f, 0.004f, 0.55f, -aSW);
+        }
+        // 3. South-east arm (Curzon Hall Avenue)
+        float aSE = 45f * FastMath.DEG_TO_RAD;
+        for (int i = -3; i <= 3; i++) {
+            float along = 31f, across = i * 1.6f;
+            float cx = FastMath.cos(aSE) * along - FastMath.sin(aSE) * across;
+            float cz = FastMath.sin(aSE) * along + FastMath.cos(aSE) * across;
+            addYawedBox("ZebraSE_" + i, roadLineMat, cx, ROAD_TOP + 0.004f, cz, 2.5f, 0.004f, 0.55f, -aSE);
+        }
+        // 4. North-east arm (Shahbagh)
+        float aNE = -50f * FastMath.DEG_TO_RAD;
+        for (int i = -3; i <= 3; i++) {
+            float along = 31f, across = i * 1.7f;
+            float cx = FastMath.cos(aNE) * along - FastMath.sin(aNE) * across;
+            float cz = FastMath.sin(aNE) * along + FastMath.cos(aNE) * across;
+            addYawedBox("ZebraNE_" + i, roadLineMat, cx, ROAD_TOP + 0.004f, cz, 2.6f, 0.004f, 0.55f, -aNE);
         }
 
         // Footpath from the roundabout to the TSC plaza (axis-aligned, approximate)
         addBox("PathToTSC", pavingMat, 6f, FOOTPATH_HEIGHT * 0.5f, 36.5f, 2.2f, FOOTPATH_HEIGHT * 0.5f, 11f);
         addSurfaceRect(new Frame(0f, 0f, 0f), 6f, 36.5f, 2.2f, 11f, FOOTPATH_HEIGHT);
+
+        // Footpath connecting Nilkhet road arm to Hakim Chattar & Central Library
+        addBox("PathToHakim", pavingMat, -60f, FOOTPATH_HEIGHT * 0.5f, -28f, 2.0f, FOOTPATH_HEIGHT * 0.5f, 16f);
+        addSurfaceRect(new Frame(0f, 0f, 0f), -60f, -28f, 2.0f, 16f, FOOTPATH_HEIGHT);
     }
 
     /**
@@ -628,15 +675,57 @@ public class CampusWorld {
         // Box local +X runs along the arm: yaw such that +X maps to (dx, dz); jME maps +X to (cos, -sin).
         float yaw = -a;
         roadArms.add(new float[]{dx, dz, px, pz, start, length, halfWidth, lateral});
+
+        // 1. Asphalt carriageway
         addYawedBox(name, asphaltMat, cx, ROAD_TOP * 0.5f, cz, length * 0.5f, ROAD_TOP * 0.5f, halfWidth, yaw);
-        // Paved footpaths on both sides
+
+        // 2. White dashed centerline lane markings along the road arm
+        int dashes = (int) (length / 6.0f);
+        for (int d = 1; d < dashes - 1; d++) {
+            float dist = start + d * 6.0f;
+            float lcx = dx * dist + px * lateral, lcz = dz * dist + pz * lateral;
+            addYawedBox(name + "_CenterDash_" + d, roadLineMat, lcx, ROAD_TOP + 0.003f, lcz, 1.5f, 0.003f, 0.10f, yaw);
+        }
+
+        // 3. Concrete kerbs and drainage grates along both sides of the carriageway
         float fpHalf = 2.5f;
         for (int side = -1; side <= 1; side += 2) {
-            float off = lateral + side * (halfWidth + fpHalf);
+            float kOff = lateral + side * (halfWidth + 0.12f);
+            float kx = dx * mid + px * kOff, kz = dz * mid + pz * kOff;
+            addYawedBox(name + "_Kerb_" + (side < 0 ? "L" : "R"), kerbMat, kx, (ROAD_TOP + FOOTPATH_HEIGHT) * 0.5f, kz,
+                length * 0.5f, (FOOTPATH_HEIGHT - ROAD_TOP) * 0.5f + 0.02f, 0.12f, yaw);
+
+            // Drainage storm grates every 20m along the road gutter
+            int drains = (int) (length / 20.0f);
+            for (int dr = 1; dr <= drains; dr++) {
+                float drDist = start + dr * 20.0f;
+                float drx = dx * drDist + px * (lateral + side * (halfWidth - 0.35f));
+                float drz = dz * drDist + pz * (lateral + side * (halfWidth - 0.35f));
+                addYawedBox(name + "_Drain_" + side + "_" + dr, drainMat, drx, ROAD_TOP + 0.003f, drz, 0.5f, 0.003f, 0.28f, yaw);
+            }
+
+            // Paved footpaths on both sides
+            float off = lateral + side * (halfWidth + fpHalf + 0.24f);
             float fx = dx * (mid + 2f) + px * off, fz = dz * (mid + 2f) + pz * off;
             addYawedBox(name + "_Footpath" + (side < 0 ? "L" : "R"), pavingMat, fx, FOOTPATH_HEIGHT * 0.5f, fz,
                 length * 0.5f - 2f, FOOTPATH_HEIGHT * 0.5f, fpHalf, yaw);
             surfaces.add(new Surface(new Frame(fx, fz, yaw), length * 0.5f - 2f, fpHalf, 0f, FOOTPATH_HEIGHT));
+
+            // Campus boundary walls with red-brick piers and iron railings along outer edge
+            float wallOff = lateral + side * (halfWidth + fpHalf * 2f + 0.45f);
+            int piers = (int) ((length - 10f) / 10f);
+            for (int p = 0; p <= piers; p++) {
+                float pDist = start + 5f + p * 10f;
+                float pxPos = dx * pDist + px * wallOff, pzPos = dz * pDist + pz * wallOff;
+                addYawedBox(name + "_WallPier_" + side + "_" + p, brickMat, pxPos, 0.8f, pzPos, 0.25f, 0.8f, 0.25f, yaw);
+                addYawedBox(name + "_WallCap_" + side + "_" + p, plasterMat, pxPos, 1.65f, pzPos, 0.28f, 0.05f, 0.28f, yaw);
+                if (p < piers) {
+                    float sDist = pDist + 5f;
+                    float sxPos = dx * sDist + px * wallOff, szPos = dz * sDist + pz * wallOff;
+                    addYawedBox(name + "_WallBase_" + side + "_" + p, brickMat, sxPos, 0.3f, szPos, 4.7f, 0.3f, 0.15f, yaw);
+                    addYawedBox(name + "_WallRailing_" + side + "_" + p, steelMat, sxPos, 0.95f, szPos, 4.7f, 0.35f, 0.03f, yaw);
+                }
+            }
         }
     }
 
@@ -999,6 +1088,10 @@ public class CampusWorld {
     private void buildLibraryBar(String name, float cx, float cz, float hx, float hz, boolean vaulted, boolean finsOnEast) {
         float colTop = 4.0f, slab1 = 4.4f, floor1Top = 7.6f, slab2 = 8.0f, floor2Top = 11.2f;
 
+        // Ground-level paved colonnade floor under pilotis (open walkable ground storey)
+        addBox(name + "_ColonnadePaving", pavingMat, cx, 0.05f, cz, hx + 0.3f, 0.05f, hz + 0.3f);
+        addSurfaceRect(new Frame(0f, 0f, 0f), cx, cz, hx + 0.3f, hz + 0.3f, 0.10f);
+
         // Pilotis: perimeter columns plus a centre row, open ground floor
         int nx = Math.max(2, Math.round(hx * 2f / 6f)) + 1;
         int nz = Math.max(2, Math.round(hz * 2f / 6f)) + 1;
@@ -1024,6 +1117,7 @@ public class CampusWorld {
         addBox(name + "_Core", plasterMat, cx, colTop * 0.5f, cz, coreHx, colTop * 0.5f, coreHz);
         addCollider(cx - coreHx, 0f, cz - coreHz, cx + coreHx, colTop, cz + coreHz);
         addBox(name + "_CoreDoor", glassMat, cx, 1.4f, cz + coreHz + 0.03f, 1.2f, 1.4f, 0.04f);
+        addBox(name + "_DoorLintel", concreteDarkMat, cx, 2.95f, cz + coreHz + 0.05f, 1.4f, 0.15f, 0.08f);
 
         // Slabs and two brick upper floors with strip windows on all faces
         addBox(name + "_Slab1", concreteMat, cx, (colTop + slab1) * 0.5f, cz, hx + 0.4f, (slab1 - colTop) * 0.5f, hz + 0.4f);
@@ -1035,6 +1129,8 @@ public class CampusWorld {
             for (int s = -1; s <= 1; s += 2) {
                 addBox(name + "_WinX" + f + s, glassMat, cx + s * (hx + 0.03f), floorY[f], cz, 0.04f, 0.8f, hz - 1.0f);
                 addBox(name + "_WinZ" + f + s, glassMat, cx, floorY[f], cz + s * (hz + 0.03f), hx - 1.0f, 0.8f, 0.04f);
+                // Continuous horizontal concrete sunshades above windows
+                addBox(name + "_SunshadeZ" + f + s, concreteMat, cx, floorY[f] + 0.88f, cz + s * (hz + 0.28f), hx - 0.5f, 0.06f, 0.32f);
             }
         }
         if (vaulted) {
@@ -1059,21 +1155,44 @@ public class CampusWorld {
 
     private void buildHakimChattar() {
         float hx = HAKIM_X + 3f, hz = HAKIM_Z + 2f;
-        // Raised brick pavilion with a tea stall, benches and the banyan tree (tree and stall: scene choices)
+        // Raised brick pavilion with a tea stall, benches and the banyan tree
         addBox("HakimBase", brickMat, hx, 0.15f, hz, 6.0f, 0.15f, 5.0f);
         addSurfaceRect(new Frame(0f, 0f, 0f), hx, hz, 6.0f, 5.0f, 0.30f);
+
+        // Tea stall counter and shelter
         addBox("HakimTeaStall", woodMat, hx - 2.0f, 0.3f + 1.0f, hz, 1.6f, 1.0f, 1.1f);
         addCollider(hx - 3.6f, 0f, hz - 1.1f, hx - 0.4f, 2.4f, hz + 1.1f);
+
+        // Wooden serving counter shelf and tea accessories
+        addBox("HakimCounterShelf", woodMat, hx - 0.35f, 1.35f, hz, 0.25f, 0.04f, 0.95f);
+        // Brass tea samovar / kettle
+        addCylinderY("HakimKettle", memorialGoldMat, hx - 0.35f, 1.45f, hz - 0.4f, 0.16f, 0.32f, null);
+        // Tea glasses on counter
+        for (int g = 0; g < 3; g++) {
+            addCylinderY("HakimGlass_" + g, glassMat, hx - 0.35f, 1.42f, hz + 0.1f + g * 0.2f, 0.045f, 0.12f, null);
+        }
+
         Geometry roof = new Geometry("HakimRoof", new Box(2.4f, 0.05f, 1.8f));
         roof.setLocalTranslation(hx - 2.0f, 2.75f, hz);
         roof.rotate(0.06f, 0f, -0.05f);
         finish(roof, steelMat, null);
+
+        // Signboard above tea stall
+        addBox("HakimSignBoard", woodMat, hx - 0.3f, 2.65f, hz, 0.04f, 0.20f, 1.2f);
+
         for (int s = -1; s <= 1; s += 2) {
             addBox("HakimRoofPost" + s, woodMat, hx - 2.0f + s * 2.1f, 1.5f, hz + 1.5f, 0.05f, 1.2f, 0.05f);
             addBox("HakimBench" + s, woodMat, hx + 2.5f, 0.3f + 0.42f, hz + s * 2.0f, 1.6f, 0.06f, 0.3f);
             addBox("HakimBenchLegs" + s, concreteDarkMat, hx + 2.5f, 0.3f + 0.18f, hz + s * 2.0f, 1.4f, 0.18f, 0.2f);
         }
-        buildBanyanTree(HAKIM_X - 4f, HAKIM_Z - 6f);
+
+        // Stepped circular red-brick seating planter surrounding the banyan tree trunk
+        float bx = HAKIM_X - 4f, bz = HAKIM_Z - 6f;
+        addCylinderY("BanyanPlanterOuter", brickMat, bx, 0f, bz, 3.4f, 0.42f, null);
+        addCylinderY("BanyanPlanterCoping", concreteMat, bx, 0.42f, bz, 3.5f, 0.06f, null);
+        addSurfaceDisc(bx, bz, 3.5f, 0.48f);
+
+        buildBanyanTree(bx, bz);
     }
 
     // ---- Curzon Hall (Faculty of Science) --------------------------------------------------------
@@ -1212,8 +1331,75 @@ public class CampusWorld {
         addBox("CurzonHedgeL", hedgeMat, -10f, 0.45f, -17f, 5.5f, 0.45f, 0.65f, curzonNode);
         addBox("CurzonHedgeR", hedgeMat, 10f, 0.45f, -17f, 5.5f, 0.45f, 0.65f, curzonNode);
 
-        // 8. Colliders around Curzon Hall footprint
+        // 8. The Curzon Freshwater Pond (কার্জন পুকুর - Curzon Pukur) & Stepped Ghats
+        float pX = 0f, pZ = -34f;
+        float pHx = 11.0f, pHz = 7.0f;
+        // Water surface
+        addBox("CurzonPond_Water", waterMat, pX, 0.04f, pZ, pHx - 0.2f, 0.02f, pHz - 0.2f, curzonNode);
+        // Brick retaining perimeter walls with white plaster coping
+        for (int s = -1; s <= 1; s += 2) {
+            // East and West walls
+            addBox("CurzonPond_WallX_" + s, brickDarkMat, pX + s * pHx, 0.22f, pZ, 0.25f, 0.22f, pHz + 0.25f, curzonNode);
+            addBox("CurzonPond_CopingX_" + s, plasterWarmMat, pX + s * pHx, 0.48f, pZ, 0.28f, 0.04f, pHz + 0.28f, curzonNode);
+            // North and South outer wall sections (flanking the central ghat steps)
+            float segW = 3.2f;
+            addBox("CurzonPond_WallZ_L_" + s, brickDarkMat, pX - 7.5f, 0.22f, pZ + s * pHz, segW, 0.22f, 0.25f, curzonNode);
+            addBox("CurzonPond_CopingZ_L_" + s, plasterWarmMat, pX - 7.5f, 0.48f, pZ + s * pHz, segW + 0.03f, 0.04f, 0.28f, curzonNode);
+            addBox("CurzonPond_WallZ_R_" + s, brickDarkMat, pX + 7.5f, 0.22f, pZ + s * pHz, segW, 0.22f, 0.25f, curzonNode);
+            addBox("CurzonPond_CopingZ_R_" + s, plasterWarmMat, pX + 7.5f, 0.48f, pZ + s * pHz, segW + 0.03f, 0.04f, 0.28f, curzonNode);
+
+            // Stepped brick ghat steps descending toward water
+            for (int gt = 0; gt < 3; gt++) {
+                float gy = 0.12f + gt * 0.11f;
+                float gz = pZ + s * (pHz - 0.35f - gt * 0.45f);
+                addBox("CurzonPond_Ghat_" + s + "_" + gt, brickMat, pX, gy * 0.5f, gz, 4.0f, gy * 0.5f, 0.25f, curzonNode);
+            }
+        }
+        // Paved walking promenade surrounding the pond
+        addBox("CurzonPond_Promenade", pavingMat, pX, 0.06f, pZ, pHx + 2.4f, 0.06f, pHz + 2.4f, curzonNode);
+        addSurfaceRect(curzonFrame, pX, pZ, pHx + 2.4f, pHz + 2.4f, 0.12f);
+        // Pathway connecting the Curzon Plaza to the Pond Promenade
+        addBox("CurzonPond_LinkPath", pavingMat, 0f, 0.06f, -22.5f, 2.5f, 0.06f, 4.5f, curzonNode);
+        addSurfaceRect(curzonFrame, 0f, -22.5f, 2.5f, 4.5f, 0.12f);
+
+        // Waterside teak benches facing the water
+        addBench("Bench_Curzon_E", curzonFrame.worldX(pHx + 1.2f, pZ), 0.12f, curzonFrame.worldZ(pHx + 1.2f, pZ), CURZON_YAW - FastMath.HALF_PI);
+        addBench("Bench_Curzon_W", curzonFrame.worldX(-pHx - 1.2f, pZ), 0.12f, curzonFrame.worldZ(-pHx - 1.2f, pZ), CURZON_YAW + FastMath.HALF_PI);
+
+        // Floating water lilies on pond
+        float[][] lilies = {{-6f, -32f}, {7f, -35f}, {-4f, -36f}, {5f, -31f}};
+        for (int li = 0; li < lilies.length; li++) {
+            Geometry lily = new Geometry("CurzonLily_" + li, new Cylinder(2, 8, 0.65f, 0.02f, true));
+            lily.rotate(FastMath.HALF_PI, 0f, 0f);
+            lily.setLocalTranslation(lilies[li][0], 0.055f, lilies[li][1]);
+            finish(lily, lilyMat, curzonNode);
+        }
+
+        // 9. Curzon Monumental Entrance Gateway (at Avenue Approach)
+        float gateZ = -46.5f;
+        for (int gs = -1; gs <= 1; gs += 2) {
+            float gx = gs * 4.0f;
+            addBox("CurzonGate_Pier_" + gs, brickMat, gx, 2.4f, gateZ, 0.55f, 2.4f, 0.55f, curzonNode);
+            addBox("CurzonGate_Cornice_" + gs, plasterMat, gx, 4.9f, gateZ, 0.68f, 0.12f, 0.68f, curzonNode);
+            Geometry gBall = new Geometry("CurzonGate_Finial_" + gs, new Sphere(10, 10, 0.28f));
+            gBall.setLocalTranslation(gx, 5.35f, gateZ);
+            finish(gBall, memorialGoldMat, curzonNode);
+            // Flanking boundary wall sections
+            addBox("CurzonGate_Wall_" + gs, brickMat, gx + gs * 4.0f, 0.8f, gateZ, 3.4f, 0.8f, 0.20f, curzonNode);
+            addBox("CurzonGate_Railing_" + gs, steelMat, gx + gs * 4.0f, 1.7f, gateZ, 3.4f, 0.45f, 0.03f, curzonNode);
+        }
+        // Wrought-iron decorative gate archway over entrance
+        addBox("CurzonGate_ArchBeam", steelMat, 0f, 4.5f, gateZ, 3.6f, 0.08f, 0.08f, curzonNode);
+        addBox("CurzonGate_SignPanel", plasterWarmMat, 0f, 4.85f, gateZ, 2.6f, 0.25f, 0.04f, curzonNode);
+        // Pathway connecting gateway to Pond Promenade
+        addBox("CurzonGate_AvenueLink", pavingMat, 0f, 0.06f, -42.5f, 2.8f, 0.06f, 4.0f, curzonNode);
+        addSurfaceRect(curzonFrame, 0f, -42.5f, 2.8f, 4.0f, 0.12f);
+
+        // 10. Colliders around Curzon Hall footprint
         addCollider(CURZON_X - 29f, 0f, CURZON_Z - 20f, CURZON_X + 29f, 16f, CURZON_Z + 20f);
+        // Pond water collider (prevent player falling into water basin; promenade and ghat steps remain walkable)
+        float pondWx = curzonFrame.worldX(pX, pZ), pondWz = curzonFrame.worldZ(pX, pZ);
+        addCollider(pondWx - 8.5f, 0f, pondWz - 8.5f, pondWx + 8.5f, 0.4f, pondWz + 8.5f);
     }
 
     // ---- Vegetation -----------------------------------------------------------------------------
@@ -1223,30 +1409,53 @@ public class CampusWorld {
         // and "shade" variants are Poly Haven island_tree_02 (a 3.4 m scan) scaled to 9-12 m with a
         // blossom tint on some leaves; "jarul" is Poly Haven jacaranda_tree (19.5 m scan) at about 0.6.
         float[][] krishnachura = {
-            {-22f, -22f}, {-38f, -21f}, {-54f, -21f}, {-70f, -22f},
-            {-30f, 6f}, {-48f, 6f}, {-66f, 7f},
-            {34f, 16f}, {-5f, 32f}, {22f, 40f}, {-48f, 44f}, {50f, 28f}
+            {-22f, -22f}, {-38f, -21f}, {-54f, -21f}, {-70f, -22f}, {-88f, -22f}, {-108f, -22f},
+            {-30f, 6f}, {-48f, 6f}, {-66f, 7f}, {-88f, 7f}, {-108f, 7f},
+            {34f, 16f}, {-5f, 32f}, {22f, 40f}, {-48f, 44f}, {50f, 28f},
+            // Kazi Nazrul Islam Avenue (avenue leading to Curzon Hall)
+            {30f, 24f}, {42f, 34f}, {52f, 44f}, {36f, 44f}, {48f, 56f},
+            // Shahid Minar arm
+            {-18f, 28f}, {-32f, 38f}, {-46f, 52f}
         };
         for (int i = 0; i < krishnachura.length; i++) {
             placeTree("Krishnachura_" + i, "island_tree_02", "krishnachura", krishnachura[i][0], krishnachura[i][1],
                 2.7f + (i % 3) * 0.25f, i * 137f, 0.32f, krishnachuraBloomMat);
         }
-        float[][] jarul = {{-40f, -50f}, {-25f, -46f}, {-66f, -56f}, {-100f, -82f}, {-20f, -75f}, {-22f, -105f}};
+        float[][] jarul = {
+            {-40f, -50f}, {-25f, -46f}, {-66f, -56f}, {-100f, -82f}, {-20f, -75f}, {-22f, -105f},
+            // Central Library lawns & gardens
+            {-52f, -46f}, {-34f, -46f}, {-32f, -74f}, {-68f, -72f},
+            // Curzon Hall botanical gardens
+            {62f, 42f}, {42f, 62f}, {78f, 78f}
+        };
         for (int i = 0; i < jarul.length; i++) {
             placeTree("Jarul_" + i, "jacaranda_tree", "jarul", jarul[i][0], jarul[i][1],
                 0.55f + (i % 2) * 0.08f, 40f + i * 97f, 1.1f, jarulBloomMat);
         }
-        float[][] radhachura = {{-10f, 46f}, {20f, 42f}, {-24f, 84f}, {40f, 92f}};
+        float[][] radhachura = {
+            {-10f, 46f}, {20f, 42f}, {-24f, 84f}, {40f, 92f},
+            // TSC Green & recreation court
+            {16f, 48f}, {-14f, 52f}, {32f, 66f}, {-18f, 86f}, {24f, 100f}, {45f, 85f}
+        };
         for (int i = 0; i < radhachura.length; i++) {
             placeTree("Radhachura_" + i, "island_tree_02", "radhachura", radhachura[i][0], radhachura[i][1],
                 2.6f + (i % 2) * 0.3f, 20f + i * 151f, 0.32f, radhachuraBloomMat);
         }
         // Plain shade trees further out
-        float[][] shade = {{-120f, -30f}, {-140f, 10f}, {70f, -50f}, {80f, -20f}, {-80f, 100f}, {100f, 60f}, {-110f, -120f}, {0f, -70f}};
+        float[][] shade = {
+            {-120f, -30f}, {-140f, 10f}, {70f, -50f}, {80f, -20f}, {-80f, 100f}, {100f, 60f}, {-110f, -120f}, {0f, -70f},
+            {-60f, 90f}, {60f, -80f}, {-130f, -90f}, {90f, 90f}
+        };
         for (int i = 0; i < shade.length; i++) {
             placeTree("Shade_" + i, "island_tree_02", "shade", shade[i][0], shade[i][1],
                 3.2f + (i % 3) * 0.2f, 70f + i * 113f, 0.32f, null);
         }
+
+        // Layered ornamental hedges along major campus walkways
+        addBox("Hedge_TSC_L", hedgeMat, 3.2f, 0.45f, 36.5f, 0.45f, 0.45f, 11f);
+        addBox("Hedge_TSC_R", hedgeMat, 8.8f, 0.45f, 36.5f, 0.45f, 0.45f, 11f);
+        addBox("Hedge_Hakim_1", hedgeMat, -62.5f, 0.45f, -28f, 0.45f, 0.45f, 16f);
+        addBox("Hedge_Hakim_2", hedgeMat, -57.5f, 0.45f, -28f, 0.45f, 0.45f, 16f);
     }
 
     /**

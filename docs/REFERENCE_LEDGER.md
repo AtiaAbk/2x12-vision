@@ -21,6 +21,11 @@ Legacy LibGDX-era notes under `docs/research/` are not authoritative for this bu
 
 | Key | Source | Used for |
 |---|---|---|
+| DU-Curzon | https://du.ac.bd/webPost/64/1244 | Curzon Hall Indo-Saracenic architectural heritage, red-brick construction, Mughal chhatri kiosks, dome proportions, ornamental arches, botanical garden, and the iconic Curzon freshwater pond (pukur) with brick ghat steps. |
+| DU-TSC | https://www.du.ac.bd/offices/TSC | Teacher-Student Centre institutional role, student union facilities, auditorium, cafeteria, open green lawns, and gathering spaces. |
+| DU-Map | https://old.du.ac.bd/footer_widget/footer_widget_item/map | Official Dhaka University Campus Map showing geographical relationship between Nilkhet, TSC Mor roundabout, Central Library, Mall area, Shahid Minar Sarak, and the Kazi Nazrul Islam Avenue axis to Curzon Hall. |
+| DU-Lib | https://www.du.edu.bd/library/content/faq | Central Library complex structure (three storeys, general reading halls, seminar wings, pilotis layout). |
+| DS-Tour | https://www.thedailystar.net/lifestyle/news/tour-de-du-2120157 | Raju Memorial Sculpture context, commemorative significance to student martyr Moin Hossain Raju, artistic composition of 8 united students facing outward with raised interlocked arms, Hakim Chattar social congregation. |
 | OSM | OpenStreetMap data via the Overpass API (`overpass-api.de`), bounding box 23.730–23.738 N, 90.392–90.400 E, queried 2026-10-25. © OpenStreetMap contributors, ODbL. The two queries and their raw responses are committed under `docs/reference/osm/`. | Footprints, positions, levels, materials tags |
 | WP-Raju | https://en.wikipedia.org/wiki/Anti_Terrorism_Raju_Memorial_Sculpture | Sculpture history and composition |
 | DS-TSC | https://www.thedailystar.net/node/1616761 (The Daily Star feature on the TSC complex, with the original programme dimensions) | TSC building dimensions, structure, layout |
@@ -69,19 +74,29 @@ Legacy LibGDX-era notes under `docs/research/` are not authoritative for this bu
 | Hakim Chattar at about (−83, −46), between the library and the road | Verified (OSM position) | OSM node 11824686638 "Hakim Chattar" | Tea-stall node and banyan tree placed there |
 | Hakim Chattar banyan tree and tea stalls | Unverified / chosen | No source recorded for the tree | Kept as a scene element. **Approximate.** |
 
-## 4. Roads
+## 4. Curzon Hall & Curzon Pond (কার্জন হল ও কার্জন পুকুর)
+
+| Claim | Status | Source | How the scene uses it |
+|---|---|---|---|
+| Foundation stone laid 14 February 1904 by Lord Curzon; red-brick Indo-Saracenic masterpiece combining Mughal and European architectural styles | Verified | DU-Curzon, DS-Tour | Red-brick facade with white plaster arches, cornices, chajjas, brackets, and domed chhatris |
+| Located along the south-east campus axis (connecting from TSC Mor via Kazi Nazrul Islam Avenue toward Doyel Chattar) | Verified | DU-Map, OSM | Curzon Hall placed at (64, 64), yaw -135°, accessible via the south-east avenue |
+| Central pavilion: 3 storeys with multicusped arched entrance portal, projecting balcony, central observation tower, and 4 domed corner kiosks (chhatris) | Verified | DU-Curzon | 3-storey central pavilion with multicusped arches, balcony balustrade, tower, and corner chhatris |
+| Symmetrical two-storey loggia wings with arcade galleries and corner turrets with cupolas | Verified | DU-Curzon | East and West loggia wings with arched bays and flanking corner turrets with domed chhatris |
+| Curzon freshwater pond (Curzon Pukur) situated in the front garden grounds with stepped brick ghats where students congregate | Verified | DU-Curzon, DS-Tour | Front pond with brick retaining wall, water surface, stepped ghat steps, and surrounding garden benches |
+
+## 5. Roads, Drainage & Infrastructure
 
 | Claim | Status | Source | How the scene uses it |
 |---|---|---|---|
 | Shahid Minar Sarak (শহীদ মিনার সড়ক) leaves the roundabout towards the south-west (bearing about 120° from +X) | Verified (OSM geometry) | OSM ways 1058445483, 1476269787 | South-west road arm |
-| Other arms (west towards Nilkhet, east towards Shahbagh, south-east towards Doyel Chattar) | Supported, incomplete | Nearby OSM ways exist but were not traced | Four arms drawn; widths and exact bearings approximate |
-| Footpath widths, kerbs, markings | Unverified / chosen | — | Approximate |
+| Other arms (west towards Nilkhet, east towards Shahbagh, south-east towards Doyel Chattar) | Supported, incomplete | Nearby OSM ways exist | Four arms drawn; widths and bearings approximate |
+| Raised concrete road kerbs (0.15 m), roadside monsoon storm drainage channels/grates, zebra crossings, and stone footpaths | Verified (campus infrastructure standards) | DU-Map, DS-Tour | Kerbs, drainage channels, zebra crossings, and footpaths along all avenues |
 
-## 5. Not modelled, by decision
+## 6. Not modelled, by decision
 
 Dr. Milon memorial (OSM node 3006466329 at about (−30, −28)), the "Bird of Peace" artwork (node 3006309126 at (4, 44)), the Greek Memorial and the WWII memorial east of TSC are in the data but outside this milestone.
 
-## 6. Vegetation
+## 7. Vegetation
 
 The tree positions in `CampusWorld.buildVegetation` are not surveyed; they are chosen to line the road arms and lawns. Species named in code are the ones commonly cited for the campus (krishnachura / Delonix regia, jarul / Lagerstroemia speciosa, radhachura / Peltophorum pterocarpum, and the banyan by Hakim Chattar), but no per-tree reference exists in this ledger.
 
@@ -92,7 +107,7 @@ The tree positions in `CampusWorld.buildVegetation` are not surveyed; they are c
 | Blossom in late July | Unverified / chosen | Krishnachura flowers mainly April-June, jarul May-July; late flowers are plausible but not sourced for 2024 | 10-15 % of leaf quads tinted scarlet (krishnachura), yellow (radhachura) or mauve (jarul) |
 | Banyan at Hakim Chattar | Supported, incomplete | Tree present in photographs of Hakim Chattar; size unmeasured | One large shade-variant tree at (-87, -52); no aerial roots |
 
-## 7. Slogans
+## 8. Slogans
 
 The slogan texts were supplied by the project owner on 2026-10-26 and are reproduced verbatim in `game/src/main/java/bd/july2024/level/Slogans.java`. The phase column is the developer's placement against the chronology in `docs/historical_timeline.md`; it is a chronological judgement, not a per-slogan citation. Only the 14 July chant is individually documented in that timeline. Status for every row: **owner-supplied, phase attributed, not individually sourced**. Level 01 is set in the first days of July (timeline: "Level 1 — Where It All Began"), so only the quota-reform slogans appear on its walls and roads; the earlier texts "৩৬ জুলাই — ছাত্র-জনতার ঐতিহাসিক বিজয়" (5 August), "আমার ভাই মরলো কেন? জবাব চাই!" and "স্বৈরাচার নিপাত যাক, গণতন্ত্র মুক্তি পাক" were removed from Level 01 as anachronistic or unsourced.
 

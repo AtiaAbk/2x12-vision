@@ -39,6 +39,7 @@ public class LightingManager {
     private FilterPostProcessor fpp;
     private DirectionalLightShadowFilter shadowFilter;
     private SSAOFilter ssaoFilter;
+    private FogFilter fogFilter;
     private ToneMapFilter toneMapFilter;
     private FXAAFilter fxaaFilter;
 
@@ -108,7 +109,15 @@ public class LightingManager {
                 System.err.println("[LightingManager] SSAOFilter failed: " + t.getMessage());
             }
 
-            // 3. Filmic Tone Mapping (Natural daylight dynamic range)
+            // 3. Atmospheric Summer Fog / Haze (Blends horizon and masks ground boundary)
+            try {
+                fogFilter = new FogFilter(new ColorRGBA(0.64f, 0.74f, 0.88f, 1.0f), 0.65f, 220f);
+                fpp.addFilter(fogFilter);
+            } catch (Throwable t) {
+                System.err.println("[LightingManager] FogFilter failed: " + t.getMessage());
+            }
+
+            // 4. Filmic Tone Mapping (Natural daylight dynamic range)
             try {
                 toneMapFilter = new ToneMapFilter();
                 toneMapFilter.setWhitePoint(new Vector3f(1.15f, 1.15f, 1.15f));
@@ -117,7 +126,7 @@ public class LightingManager {
                 System.err.println("[LightingManager] ToneMapFilter failed: " + t.getMessage());
             }
 
-            // 4. Fast Approximate Anti-Aliasing (FXAA 3.11)
+            // 5. Fast Approximate Anti-Aliasing (FXAA 3.11)
             try {
                 fxaaFilter = new FXAAFilter();
                 fpp.addFilter(fxaaFilter);
@@ -126,7 +135,7 @@ public class LightingManager {
             }
 
             viewPort.addProcessor(fpp);
-            System.out.println("[LightingManager] Successfully attached FilterPostProcessor (Shadows + SSAO + ToneMap + FXAA) to viewPort.");
+            System.out.println("[LightingManager] Successfully attached FilterPostProcessor (Shadows + SSAO + Fog + ToneMap + FXAA) to viewPort.");
         } catch (Throwable t) {
             System.err.println("[LightingManager] Post processor setup failed: " + t.getMessage());
         }
@@ -157,8 +166,13 @@ public class LightingManager {
         if (ssaoFilter != null) ssaoFilter.setEnabled(enabled);
     }
 
+    public void setFogEnabled(boolean enabled) {
+        if (fogFilter != null) fogFilter.setEnabled(enabled);
+    }
+
     public DirectionalLightShadowFilter getShadowFilter() { return shadowFilter; }
     public SSAOFilter getSsaoFilter() { return ssaoFilter; }
+    public FogFilter getFogFilter() { return fogFilter; }
     public FXAAFilter getFxaaFilter() { return fxaaFilter; }
 
     public DirectionalLight getSun() { return sun; }
